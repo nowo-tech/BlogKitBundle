@@ -1,0 +1,9 @@
+{
+    "bundles": {
+        "Nowo\\BlogKitBundle\\NowoBlogKitBundle": ["all"]
+    },
+    "copy-from-recipe": {
+        "config/": "%CONFIG_DIR%/"
+    },
+    "aliases": ["nowo-blog-kit", "blog-kit"]
+}

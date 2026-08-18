@@ -1,0 +1,102 @@
+{% trans_default_domain 'NowoBlogKitBundle' %}
+{% extends nowo_blog_kit_public_layout %}
+
+{% block title %}{{ page_title }}{% endblock %}
+{% block meta_description %}{{ page_description }}{% endblock %}
+
+{% block body %}
+<article class="section">
+  <div class="container">
+    {% set has_left = aside_left is not empty %}
+    {% set has_right = aside_right is not empty %}
+    <div class="blog-layout{{ has_left and has_right ? ' blog-layout--both' : (has_left ? ' blog-layout--left' : '') }}">
+      {% if has_left %}
+        <div class="blog-layout__aside blog-layout__aside--left">
+          {{ include('@NowoBlogKitBundle/public/_aside_show.html.twig', {
+            side: 'left',
+            widgets: aside_left,
+            filters: filters,
+            search_form: search_form,
+            sidebar_related: sidebar_related,
+            sidebar_tags: sidebar_tags,
+            sidebar_resources: sidebar_resources,
+            article: article,
+          }) }}
+        </div>
+      {% endif %}
+
+      <div class="blog-layout__main blog-article">
+        <header class="blog-article__header">
+          {% if article.published_at %}
+            <p class="blog-item__meta">
+              <time datetime="{{ article.published_at }}">{{ article.published_at }}</time>
+            </p>
+          {% endif %}
+          <h1>{{ article.title }}</h1>
+          {% if article.excerpt %}
+            <p class="page-header__intro">{{ article.excerpt }}</p>
+          {% endif %}
+          {% if article.tags is not empty %}
+            <ul class="blog-article__tags">
+              {% for tag in article.tags %}
+                <li>
+                  <a href="{{ path('blog_index', {tag: tag.slug}) }}" class="blog-tag">{{ tag.name }}</a>
+                </li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+        </header>
+
+        {% if article.image %}
+          <figure class="blog-article__figure">
+            <img
+              src="{{ article.image }}"
+              alt=""
+              class="blog-article__image blog-article__image--{{ hero_image_mode|default('contain') }}"
+            >
+          </figure>
+        {% endif %}
+
+        <div class="blog-article__body">
+          {{ article.body|raw }}
+        </div>
+
+        {% if show_share|default(true) %}
+          <section class="blog-article__share" aria-labelledby="blog-share-heading">
+            <h2 id="blog-share-heading" class="blog-article__share-title">{{ 'page.blog.share'|trans }}</h2>
+            <ul class="blog-share">
+              <li><a href="https://www.linkedin.com/sharing/share-offsite/?url={{ app.request.uri|url_encode }}" rel="noopener noreferrer" target="_blank">LinkedIn</a></li>
+              <li><a href="https://twitter.com/intent/tweet?url={{ app.request.uri|url_encode }}&text={{ article.title|url_encode }}" rel="noopener noreferrer" target="_blank">X</a></li>
+            </ul>
+          </section>
+        {% endif %}
+
+        {% if show_source_link|default(true) and article.linkedin_url %}
+          <p class="blog-article__source">
+            <a href="{{ article.linkedin_url }}" rel="noopener noreferrer" target="_blank">{{ 'page.blog.original_linkedin'|trans }}</a>
+          </p>
+        {% endif %}
+
+        {% if show_comments|default(true) %}
+          {{ include('@NowoBlogKitBundle/public/_comments.html.twig') }}
+        {% endif %}
+      </div>
+
+      {% if has_right %}
+        <div class="blog-layout__aside blog-layout__aside--right">
+          {{ include('@NowoBlogKitBundle/public/_aside_show.html.twig', {
+            side: 'right',
+            widgets: aside_right,
+            filters: filters,
+            search_form: search_form,
+            sidebar_related: sidebar_related,
+            sidebar_tags: sidebar_tags,
+            sidebar_resources: sidebar_resources,
+            article: article,
+          }) }}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</article>
+{% endblock %}

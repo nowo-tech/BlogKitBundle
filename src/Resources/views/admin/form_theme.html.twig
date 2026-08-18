@@ -1,0 +1,50 @@
+{% block _blog_article_resources_widget %}
+  {% set prototype_html %}
+    <div class="admin-collection__item" data-form-collection-target="entry">
+      <div class="admin-collection__fields">
+        {{ form_row(form.vars.prototype.title) }}
+        {{ form_row(form.vars.prototype.image) }}
+        {{ form_row(form.vars.prototype.position) }}
+      </div>
+      <button
+        type="button"
+        class="btn btn--ghost admin-collection__remove"
+        data-action="form-collection#remove"
+      >
+        {{ 'admin.collection.remove'|trans }}
+      </button>
+    </div>
+  {% endset %}
+
+  <div
+    class="admin-collection"
+    data-controller="form-collection"
+    data-prototype="{{ prototype_html|e('html_attr') }}"
+    data-form-collection-prototype-name-value="__name__"
+    data-form-collection-index-value="{{ form|length }}"
+  >
+    <div class="admin-collection__list" data-form-collection-target="list">
+      {% for resourceForm in form %}
+        <div class="admin-collection__item" data-form-collection-target="entry">
+          <div class="admin-collection__fields">
+            {{ form_row(resourceForm.title) }}
+            {{ form_row(resourceForm.image) }}
+            {{ form_row(resourceForm.position) }}
+          </div>
+          <button
+            type="button"
+            class="btn btn--ghost admin-collection__remove"
+            data-action="form-collection#remove"
+          >
+            {{ 'admin.collection.remove'|trans }}
+          </button>
+        </div>
+      {% else %}
+        <p class="admin-collection__empty text-muted" data-form-collection-target="empty">{{ 'admin.collection.empty_resources'|trans }}</p>
+      {% endfor %}
+    </div>
+    <button type="button" class="btn btn--ghost" data-action="form-collection#add">
+      {{ 'admin.collection.add_resource'|trans }}
+    </button>
+  </div>
+{% endblock %}

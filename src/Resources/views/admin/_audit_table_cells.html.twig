@@ -1,0 +1,3 @@
+{% trans_default_domain 'NowoBlogKitBundle' %}
+<td>{{ item.updatedAt ? item.updatedAt|date('Y-m-d H:i') : '—' }}</td>
+<td>{{ item.updatedBy ? item.updatedBy.userIdentifier : '—' }}</td>

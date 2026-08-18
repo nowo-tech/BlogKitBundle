@@ -1,0 +1,20 @@
+{% trans_default_domain 'NowoBlogKitBundle' %}
+{% import '@NowoUiKitBundle/macros/ui.html.twig' as ui %}
+{% set _css_fw = nowo_blog_kit_css_framework|default('tailwind') %}
+{% set compact = compact|default(false) %}
+{{ form_start(search_form, {attr: {class: 'blog-search' ~ (compact ? ' blog-search--aside' : ''), role: 'search'}}) }}
+    {% for field in search_form %}
+        {% if field.vars.name == 'q' %}
+            <label class="sr-only" for="{{ field.vars.id }}">{{ 'page.blog.search_label'|trans }}</label>
+            {{ form_widget(field) }}
+        {% elseif field.vars.name == 'tag' and filters.tag|default('') %}
+            {{ form_widget(field) }}
+        {% endif %}
+    {% endfor %}
+    <div class="blog-search__actions">
+        <button type="submit" class="{{ ui.btn('primary', 'sm', _css_fw) }}">{{ 'page.blog.search_submit'|trans }}</button>
+        {% if filters.q or filters.tag %}
+            <a href="{{ path('blog_index') }}" class="{{ ui.btn('secondary', 'sm', _css_fw) }}">{{ 'page.blog.search_clear'|trans }}</a>
+        {% endif %}
+    </div>
+{{ form_end(search_form) }}

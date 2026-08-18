@@ -1,0 +1,125 @@
+{% trans_default_domain 'NowoBlogKitBundle' %}
+{% import '@NowoUiKitBundle/macros/ui.html.twig' as ui %}
+{% set _css_fw = nowo_blog_kit_css_framework|default('tailwind') %}
+{% extends nowo_blog_kit_public_layout %}
+
+{% block title %}{{ page_title }}{% endblock %}
+{% block meta_description %}{{ page_description }}{% endblock %}
+
+{% block body %}
+<header class="page-header">
+  <div class="container">
+    <h1>{{ 'page.blog.heading'|trans }}</h1>
+    <p class="page-header__intro">{{ 'page.blog.intro'|trans }}</p>
+  </div>
+</header>
+<section class="section">
+  <div class="container">
+    <div class="blog-filters">
+      {{ include('@NowoBlogKitBundle/public/_search.html.twig', {search_form: search_form, filters: filters}) }}
+
+      {% if tags is not empty %}
+        <div class="blog-tags" aria-label="{{ 'page.blog.tags_label'|trans }}">
+          {% for tag in tags %}
+            {% set tag_query = filters.q ? {q: filters.q, tag: tag.slug} : {tag: tag.slug} %}
+            <a
+              href="{{ path('blog_index', tag_query) }}"
+              class="blog-tag{{ filters.tag == tag.slug ? ' is-active' : '' }}"
+              aria-current="{{ filters.tag == tag.slug ? 'true' : 'false' }}"
+            >
+              {{ tag.name }}
+              <span class="blog-tag__count">{{ tag.count }}</span>
+            </a>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+
+    {% set cols_mobile = blog_settings.masonry_columns_mobile|default(1) %}
+    {% set cols_tablet = blog_settings.masonry_columns_tablet|default(2) %}
+    {% set cols_desktop = blog_settings.masonry_columns_desktop|default(2) %}
+    {% set has_left = aside_left is not empty %}
+    {% set has_right = aside_right is not empty %}
+
+    <div class="blog-layout{{ has_left and has_right ? ' blog-layout--both' : (has_left ? ' blog-layout--left' : '') }}">
+      {% if has_left %}
+        <div class="blog-layout__aside blog-layout__aside--left">
+          {{ include('@NowoBlogKitBundle/public/_aside_index.html.twig', {
+            side: 'left',
+            widgets: aside_left,
+            filters: filters,
+            search_form: aside_search_form,
+            sidebar_latest: sidebar_latest,
+            sidebar_tags: sidebar_tags,
+          }) }}
+        </div>
+      {% endif %}
+
+      <div class="blog-layout__main">
+        {% if articles is not empty %}
+          {% set is_infinite = listing_mode|default('paginated') == 'infinite' %}
+          <div
+            class="blog-feed"
+            style="--blog-cols-sm: {{ cols_mobile }}; --blog-cols-md: {{ cols_tablet }}; --blog-cols-lg: {{ cols_desktop }};"
+            {% if is_infinite %}
+              data-controller="blog-infinite"
+              data-blog-infinite-url-value="{{ path('blog_index') }}"
+              data-blog-infinite-page-value="{{ pagination.page }}"
+              data-blog-infinite-total-pages-value="{{ pagination.total_pages }}"
+              data-blog-infinite-cols-mobile-value="{{ cols_mobile }}"
+              data-blog-infinite-cols-tablet-value="{{ cols_tablet }}"
+              data-blog-infinite-cols-desktop-value="{{ cols_desktop }}"
+            {% endif %}
+          >
+            <div
+              class="blog-masonry"
+              style="--blog-cols-sm: {{ cols_mobile }}; --blog-cols-md: {{ cols_tablet }}; --blog-cols-lg: {{ cols_desktop }};"
+              {% if is_infinite %} data-blog-infinite-target="list"{% endif %}
+            >
+              {{ include('@NowoBlogKitBundle/public/_items.html.twig', {
+                articles: articles,
+                filters: filters,
+                card_options: card_options|default({show_image: true, show_excerpt: true, show_tags: true}),
+              }) }}
+            </div>
+
+            {% if is_infinite %}
+              <div
+                class="blog-infinite"
+                data-blog-infinite-target="sentinel"
+                {% if pagination.page >= pagination.total_pages %}hidden{% endif %}
+              >
+                <p class="blog-infinite__status" data-blog-infinite-target="status" hidden>
+                  {{ 'page.blog.loading_more'|trans }}
+                </p>
+              </div>
+              {% if pagination.page >= pagination.total_pages and pagination.total > 0 %}
+                <p class="blog-infinite__end">{{ 'page.blog.end_of_list'|trans }}</p>
+              {% endif %}
+            {% else %}
+              {{ include('@NowoBlogKitBundle/admin/_pagination.html.twig', {pagination: pagination, route: 'blog_index', filters: filters}) }}
+            {% endif %}
+          </div>
+        {% else %}
+          <p>
+            {{ (filters.q or filters.tag ? 'page.blog.empty_filtered' : 'page.blog.empty')|trans }}
+          </p>
+        {% endif %}
+      </div>
+
+      {% if has_right %}
+        <div class="blog-layout__aside blog-layout__aside--right">
+          {{ include('@NowoBlogKitBundle/public/_aside_index.html.twig', {
+            side: 'right',
+            widgets: aside_right,
+            filters: filters,
+            search_form: aside_search_form,
+            sidebar_latest: sidebar_latest,
+            sidebar_tags: sidebar_tags,
+          }) }}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endblock %}

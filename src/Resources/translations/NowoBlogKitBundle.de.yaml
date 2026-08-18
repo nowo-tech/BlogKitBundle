@@ -1,0 +1,269 @@
+# Nowo Blog Kit Bundle — de
+admin:
+  action:
+    approve: Freigeben
+    back: Zurück
+    cancel: Abbrechen
+    delete: Löschen
+    edit: Bearbeiten
+    reject: Ablehnen
+    save: Speichern
+  articles:
+    edit: Edit article
+    empty: No articles yet.
+    new: New article
+    title: Artikel
+  audit:
+    updated_at: Updated
+    updated_by: Updated by
+  collection:
+    add_resource: Add resource
+    empty_resources: No resources yet.
+    remove: Remove
+  column:
+    actions: Actions
+    article: Artikel
+    articles: Artikel
+    author: Autor
+    comment: Kommentar
+    date: Datum
+    name: Name
+    position: Position
+    slug: Slug
+    status: Status
+    title: Title
+  comments:
+    empty: Noch keine Kommentare.
+    pending_count: '%count% ausstehend'
+    title: Kommentare
+  confirm:
+    delete_article: 'Delete this article?'
+    delete_comment: 'Diesen Kommentar löschen?'
+    delete_tag: 'Dieses Tag löschen?'
+  filter:
+    apply: Apply
+    article: Article
+    author: Author
+    body: Body
+    clear: Clear
+    name: Name
+    published: Published
+    published_no: 'No'
+    published_yes: 'Yes'
+    slug: Slug
+    title: Title
+  flash:
+    article_created: Article created.
+    article_deleted: Article deleted.
+    article_updated: Article updated.
+    comment_approved: Comment approved.
+    comment_deleted: Comment deleted.
+    comment_rejected: Comment rejected.
+    reply_invalid: Invalid reply.
+    reply_published: Reply published.
+    settings_saved: Settings saved.
+    tag_created: Tag created.
+    tag_deleted: Tag deleted.
+    tag_in_use: This tag is still used by articles.
+    tag_updated: Tag updated.
+  locale_tabs:
+    label: Locales
+  pagination:
+    label: Pagination
+    next: Next
+    page: Page
+    prev: Previous
+  settings:
+    lead: 'Configure listing, cards, asides and article extras.'
+    title: Blog-Einstellungen
+  status:
+    all: Alle
+    approved: Freigegeben
+    draft: Draft
+    pending: Ausstehend
+    published: Published
+    rejected: Abgelehnt
+  tags:
+    edit: Edit tag
+    empty: Noch keine Tags.
+    lead: Artikel mit Tags organisieren.
+    new: New tag
+    title: Tags
+  title: Blog
+admin_blog_article_filter:
+  slug:
+    label: Slug
+  title:
+    label: Title
+admin_blog_comment_filter:
+  article:
+    label: Article
+  author:
+    label: Author
+  body:
+    label: Body
+  status:
+    label: Status
+admin_blog_tag_filter:
+  name:
+    label: Name
+  slug:
+    label: Slug
+blog:
+  article:
+    hashtags_label: Hashtags
+    not_found: Artikel nicht gefunden.
+  comments:
+    empty: No comments yet.
+    error_invalid: Please check the form and try again.
+    error_reply: Could not publish the reply.
+    form_lead: Your comment will be reviewed before it appears.
+    form_title: Leave a comment
+    privacy_accept: I accept the privacy policy
+    privacy_required: You must accept the privacy policy.
+    reply_submit: Reply
+    submit: Kommentar senden
+    success_pending: 'Thanks! Your comment is pending moderation.'
+    title: Kommentare
+blog_article:
+  image:
+    label: Image URL
+  linkedin_url:
+    label: LinkedIn URL
+  position:
+    label: Position
+  published:
+    label: Published
+  published_at:
+    label: Published at
+  resources:
+    label: Resources
+  slug:
+    label: Slug
+  tags:
+    label: Tags
+blog_article_resource:
+  image:
+    label: Image URL
+  position:
+    label: Position
+  title:
+    label: Title
+blog_article_translation:
+  body:
+    label: Body
+  excerpt:
+    label: Excerpt
+  meta_description:
+    label: Meta description
+  meta_title:
+    label: Meta title
+  title:
+    label: Title
+blog_public_search:
+  q:
+    label: Search
+blog_settings:
+  aside_placement:
+    choices:
+      'off': 'Off'
+      both: Both
+      left: Left
+      right: Right
+  hero_image_mode:
+    choices:
+      contain: Contain
+      cover: Cover
+    label: Hero image mode
+  index_aside_latest:
+    label: 'Index aside: latest'
+  index_aside_search:
+    label: 'Index aside: search'
+  index_aside_tags:
+    label: 'Index aside: tags'
+  index_aside_tags_limit:
+    label: Aside tags limit
+  index_latest_limit:
+    label: Latest articles limit
+  index_tags_limit:
+    label: Index tags limit
+  listing_mode:
+    choices:
+      infinite: Infinite scroll
+      paginated: Paginated
+    label: Listing mode
+  masonry_columns_desktop:
+    label: Masonry columns (desktop)
+  masonry_columns_mobile:
+    label: Masonry columns (mobile)
+  masonry_columns_tablet:
+    label: Masonry columns (tablet)
+  per_page:
+    label: Articles per page
+  related_limit:
+    label: Related articles limit
+  resources_include_linkedin:
+    label: Include LinkedIn in resources
+  show_aside_article_tags:
+    label: 'Article aside: tags'
+  show_aside_related:
+    label: 'Article aside: related'
+  show_aside_resources:
+    label: 'Article aside: resources'
+  show_aside_search:
+    label: 'Article aside: search'
+  show_card_excerpt:
+    label: Show card excerpt
+  show_card_image:
+    label: Show card image
+  show_card_tags:
+    label: Show card tags
+  show_comments:
+    label: Show comments
+  show_share:
+    label: Show share actions
+  show_source_link:
+    label: Show source link
+blog_tag:
+  slug:
+    label: Slug
+blog_tag_translation:
+  name:
+    label: Name
+cms:
+  edit_blog_post: Edit post
+page:
+  blog:
+    empty: Noch keine Artikel.
+    empty_filtered: Keine Artikel entsprechen Ihrer Suche.
+    end_of_list: You have reached the end.
+    heading: Blog
+    intro: 'Neuigkeiten, Leitfäden und Produkt-Updates.'
+    loading_more: Loading more…
+    original_linkedin: Original post on LinkedIn
+    read_more: Weiterlesen
+    resource_linkedin: LinkedIn
+    resource_linkedin_hint: View on LinkedIn
+    resources_heading: Resources
+    resources_label: Resources
+    search_clear: Clear search
+    search_label: Suche
+    search_placeholder: Artikel suchen…
+    search_submit: Suchen
+    share: Teilen
+    sidebar_article_tags: Tags
+    sidebar_label: Browse
+    sidebar_latest: Latest
+    sidebar_related: Related
+    sidebar_tags: Tags
+    tags_label: Tags
+public_blog_comment:
+  author_name:
+    label: Name
+  body:
+    label: Comment
+  privacy_accepted:
+    label: Privacy policy
+staff_blog_comment_reply:
+  body:
+    label: Reply

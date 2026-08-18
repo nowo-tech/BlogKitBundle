@@ -1,0 +1,12 @@
+{#
+  Host wrapper around UiKit canonical row actions (REQ-UI-001).
+  Always forces icon display for admin tables.
+
+  @var actions list Action hashes for @NowoUiKitBundle/partials/_row_actions.html.twig
+  @var framework string|null Optional css_framework override (default: nowo_ui_kit / tailwind)
+#}
+{% include '@NowoUiKitBundle/partials/_row_actions.html.twig' with {
+  framework: framework|default(nowo_ui_kit_css_framework|default('tailwind')),
+  display: 'icon',
+  actions: actions,
+} only %}

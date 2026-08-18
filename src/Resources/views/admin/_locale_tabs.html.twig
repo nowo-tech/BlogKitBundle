@@ -1,0 +1,113 @@
+{# Expects `translations` = form field (CollectionType of locale-aware entries).
+   Optional: `active_locale` (request/UI locale for the initially selected tab).
+   Optional: `id_prefix` to avoid duplicate DOM ids when multiple tab sets exist. #}
+{% set default_locale = nowo_blog_kit_default_locale|default('es') %}
+{% set active_locale = active_locale|default(default_locale) %}
+{% if active_locale is empty %}
+  {% set active_locale = default_locale %}
+{% endif %}
+{% set id_prefix = id_prefix|default('locale') %}
+
+<div
+  class="admin-locale-tabs"
+  data-controller="locale-tabs"
+  data-locale-tabs
+  data-locale-tabs-active="{{ active_locale }}"
+>
+  <div class="admin-locale-tabs__list" role="tablist" aria-label="{{ 'admin.locale_tabs.label'|trans }}">
+    {% for translationForm in translations %}
+      {% set locale = translationForm.vars.data.locale|default(translationForm.locale.vars.value|default('')) %}
+      {% if locale is not empty and locale == default_locale %}
+        {% set tab_id = id_prefix ~ '-tab-' ~ locale %}
+        {% set panel_id = id_prefix ~ '-panel-' ~ locale %}
+        <button
+          type="button"
+          class="admin-locale-tabs__tab{{ locale == active_locale ? ' is-active' : '' }}"
+          id="{{ tab_id }}"
+          role="tab"
+          data-locale-tabs-target="tab"
+          data-action="locale-tabs#switch"
+          data-locale-tab="{{ locale }}"
+          aria-selected="{{ locale == active_locale ? 'true' : 'false' }}"
+          aria-controls="{{ panel_id }}"
+          {% if locale != active_locale %}tabindex="-1"{% endif %}
+        >
+          <span class="admin-locale-tabs__required" aria-hidden="true">*</span>
+          {{ locale|upper }} — {{ ('locale.' ~ locale)|trans }}
+        </button>
+      {% endif %}
+    {% endfor %}
+    {% for translationForm in translations %}
+      {% set locale = translationForm.vars.data.locale|default(translationForm.locale.vars.value|default('')) %}
+      {% if locale is not empty and locale != default_locale %}
+        {% set tab_id = id_prefix ~ '-tab-' ~ locale %}
+        {% set panel_id = id_prefix ~ '-panel-' ~ locale %}
+        <button
+          type="button"
+          class="admin-locale-tabs__tab{{ locale == active_locale ? ' is-active' : '' }}"
+          id="{{ tab_id }}"
+          role="tab"
+          data-locale-tabs-target="tab"
+          data-action="locale-tabs#switch"
+          data-locale-tab="{{ locale }}"
+          aria-selected="{{ locale == active_locale ? 'true' : 'false' }}"
+          aria-controls="{{ panel_id }}"
+          {% if locale != active_locale %}tabindex="-1"{% endif %}
+        >
+          {{ locale|upper }} — {{ ('locale.' ~ locale)|trans }}
+        </button>
+      {% endif %}
+    {% endfor %}
+  </div>
+
+  <div class="admin-locale-tabs__panels">
+    {% for translationForm in translations %}
+      {% set locale = translationForm.vars.data.locale|default(translationForm.locale.vars.value|default('')) %}
+      {% if locale is not empty and locale == default_locale %}
+        {% set tab_id = id_prefix ~ '-tab-' ~ locale %}
+        {% set panel_id = id_prefix ~ '-panel-' ~ locale %}
+        <div
+          class="admin-locale-tabs__panel{{ locale == active_locale ? ' is-active' : '' }}"
+          id="{{ panel_id }}"
+          role="tabpanel"
+          data-locale-tabs-target="panel"
+          data-locale-panel="{{ locale }}"
+          aria-labelledby="{{ tab_id }}"
+          {% if locale != active_locale %}hidden{% endif %}
+        >
+          {% for translationField in translationForm %}
+            {% if translationField.vars.name != 'locale' %}
+              {{ form_row(translationField, {required: true}) }}
+            {% else %}
+              {{ form_widget(translationField) }}
+            {% endif %}
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endfor %}
+    {% for translationForm in translations %}
+      {% set locale = translationForm.vars.data.locale|default(translationForm.locale.vars.value|default('')) %}
+      {% if locale is not empty and locale != default_locale %}
+        {% set tab_id = id_prefix ~ '-tab-' ~ locale %}
+        {% set panel_id = id_prefix ~ '-panel-' ~ locale %}
+        <div
+          class="admin-locale-tabs__panel{{ locale == active_locale ? ' is-active' : '' }}"
+          id="{{ panel_id }}"
+          role="tabpanel"
+          data-locale-tabs-target="panel"
+          data-locale-panel="{{ locale }}"
+          aria-labelledby="{{ tab_id }}"
+          {% if locale != active_locale %}hidden{% endif %}
+        >
+          {% for translationField in translationForm %}
+            {% if translationField.vars.name != 'locale' %}
+              {{ form_row(translationField) }}
+            {% else %}
+              {{ form_widget(translationField) }}
+            {% endif %}
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endfor %}
+  </div>
+</div>

@@ -1,0 +1,269 @@
+# Nowo Blog Kit Bundle — es
+admin:
+  action:
+    approve: Aprobar
+    back: Volver
+    cancel: Cancelar
+    delete: Eliminar
+    edit: Editar
+    reject: Rechazar
+    save: Guardar
+  articles:
+    edit: Editar artículo
+    empty: Todavía no hay artículos.
+    new: Nuevo artículo
+    title: Artículos
+  audit:
+    updated_at: Actualizado
+    updated_by: Actualizado por
+  collection:
+    add_resource: Añadir recurso
+    empty_resources: Todavía no hay recursos.
+    remove: Quitar
+  column:
+    actions: Acciones
+    article: Artículo
+    articles: Artículos
+    author: Autor
+    comment: Comentario
+    date: Fecha
+    name: Nombre
+    position: Posición
+    slug: Slug
+    status: Estado
+    title: Título
+  comments:
+    empty: Todavía no hay comentarios.
+    pending_count: '%count% pendientes'
+    title: Comentarios
+  confirm:
+    delete_article: '¿Eliminar este artículo?'
+    delete_comment: '¿Eliminar este comentario?'
+    delete_tag: '¿Eliminar esta etiqueta?'
+  filter:
+    apply: Aplicar
+    article: Artículo
+    author: Autor
+    body: Contenido
+    clear: Limpiar
+    name: Nombre
+    published: Publicado
+    published_no: 'No'
+    published_yes: Sí
+    slug: Slug
+    title: Título
+  flash:
+    article_created: Artículo creado.
+    article_deleted: Artículo eliminado.
+    article_updated: Artículo actualizado.
+    comment_approved: Comentario aprobado.
+    comment_deleted: Comentario eliminado.
+    comment_rejected: Comentario rechazado.
+    reply_invalid: Respuesta no válida.
+    reply_published: Respuesta publicada.
+    settings_saved: Ajustes guardados.
+    tag_created: Etiqueta creada.
+    tag_deleted: Etiqueta eliminada.
+    tag_in_use: Esta etiqueta sigue usada por artículos.
+    tag_updated: Etiqueta actualizada.
+  locale_tabs:
+    label: Idiomas
+  pagination:
+    label: Paginación
+    next: Siguiente
+    page: Página
+    prev: Anterior
+  settings:
+    lead: 'Configura listado, tarjetas, laterales y extras del artículo.'
+    title: Ajustes del blog
+  status:
+    all: Todos
+    approved: Aprobado
+    draft: Borrador
+    pending: Pendiente
+    published: Publicado
+    rejected: Rechazado
+  tags:
+    edit: Editar etiqueta
+    empty: Todavía no hay etiquetas.
+    lead: Organiza los artículos con etiquetas.
+    new: Nueva etiqueta
+    title: Etiquetas
+  title: Blog
+admin_blog_article_filter:
+  slug:
+    label: Slug
+  title:
+    label: Título
+admin_blog_comment_filter:
+  article:
+    label: Artículo
+  author:
+    label: Autor
+  body:
+    label: Contenido
+  status:
+    label: Estado
+admin_blog_tag_filter:
+  name:
+    label: Nombre
+  slug:
+    label: Slug
+blog:
+  article:
+    hashtags_label: Hashtags
+    not_found: Artículo no encontrado.
+  comments:
+    empty: Todavía no hay comentarios.
+    error_invalid: Revisa el formulario e inténtalo de nuevo.
+    error_reply: No se pudo publicar la respuesta.
+    form_lead: Tu comentario se revisará antes de publicarse.
+    form_title: Deja un comentario
+    privacy_accept: Acepto la política de privacidad
+    privacy_required: Debes aceptar la política de privacidad.
+    reply_submit: Responder
+    submit: Enviar comentario
+    success_pending: '¡Gracias! Tu comentario está pendiente de moderación.'
+    title: Comentarios
+blog_article:
+  image:
+    label: URL de imagen
+  linkedin_url:
+    label: URL de LinkedIn
+  position:
+    label: Posición
+  published:
+    label: Publicado
+  published_at:
+    label: Fecha de publicación
+  resources:
+    label: Recursos
+  slug:
+    label: Slug
+  tags:
+    label: Etiquetas
+blog_article_resource:
+  image:
+    label: URL de imagen
+  position:
+    label: Posición
+  title:
+    label: Título
+blog_article_translation:
+  body:
+    label: Cuerpo
+  excerpt:
+    label: Extracto
+  meta_description:
+    label: Meta descripción
+  meta_title:
+    label: Meta título
+  title:
+    label: Título
+blog_public_search:
+  q:
+    label: Buscar
+blog_settings:
+  aside_placement:
+    choices:
+      'off': Desactivado
+      both: Ambos
+      left: Izquierda
+      right: Derecha
+  hero_image_mode:
+    choices:
+      contain: Contener
+      cover: Cubrir
+    label: Modo de imagen hero
+  index_aside_latest:
+    label: 'Lateral índice: últimos'
+  index_aside_search:
+    label: 'Lateral índice: búsqueda'
+  index_aside_tags:
+    label: 'Lateral índice: etiquetas'
+  index_aside_tags_limit:
+    label: Límite de etiquetas laterales
+  index_latest_limit:
+    label: Límite de últimos artículos
+  index_tags_limit:
+    label: Límite de etiquetas en índice
+  listing_mode:
+    choices:
+      infinite: Scroll infinito
+      paginated: Paginado
+    label: Modo de listado
+  masonry_columns_desktop:
+    label: Columnas masonry (escritorio)
+  masonry_columns_mobile:
+    label: Columnas masonry (móvil)
+  masonry_columns_tablet:
+    label: Columnas masonry (tablet)
+  per_page:
+    label: Artículos por página
+  related_limit:
+    label: Límite de relacionados
+  resources_include_linkedin:
+    label: Incluir LinkedIn en recursos
+  show_aside_article_tags:
+    label: 'Lateral artículo: etiquetas'
+  show_aside_related:
+    label: 'Lateral artículo: relacionados'
+  show_aside_resources:
+    label: 'Lateral artículo: recursos'
+  show_aside_search:
+    label: 'Lateral artículo: búsqueda'
+  show_card_excerpt:
+    label: Mostrar extracto en tarjeta
+  show_card_image:
+    label: Mostrar imagen en tarjeta
+  show_card_tags:
+    label: Mostrar etiquetas en tarjeta
+  show_comments:
+    label: Mostrar comentarios
+  show_share:
+    label: Mostrar acciones de compartir
+  show_source_link:
+    label: Mostrar enlace a origen
+blog_tag:
+  slug:
+    label: Slug
+blog_tag_translation:
+  name:
+    label: Nombre
+cms:
+  edit_blog_post: Editar entrada
+page:
+  blog:
+    empty: Todavía no hay artículos.
+    empty_filtered: Ningún artículo coincide con tu búsqueda.
+    end_of_list: Has llegado al final.
+    heading: Blog
+    intro: 'Noticias, guías y novedades del producto.'
+    loading_more: Cargando más…
+    original_linkedin: Publicación original en LinkedIn
+    read_more: Leer más
+    resource_linkedin: LinkedIn
+    resource_linkedin_hint: Ver en LinkedIn
+    resources_heading: Recursos
+    resources_label: Recursos
+    search_clear: Limpiar búsqueda
+    search_label: Buscar
+    search_placeholder: Buscar artículos…
+    search_submit: Buscar
+    share: Compartir
+    sidebar_article_tags: Etiquetas
+    sidebar_label: Explorar
+    sidebar_latest: Últimos
+    sidebar_related: Relacionados
+    sidebar_tags: Etiquetas
+    tags_label: Etiquetas
+public_blog_comment:
+  author_name:
+    label: Nombre
+  body:
+    label: Comentario
+  privacy_accepted:
+    label: Política de privacidad
+staff_blog_comment_reply:
+  body:
+    label: Respuesta

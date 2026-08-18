@@ -1,0 +1,12 @@
+{% trans_default_domain 'NowoBlogKitBundle' %}
+{% if pagination is not null and pagination.total_pages|default(0) > 1 %}
+  <nav class="nowo-ui-pagination" aria-label="{{ 'admin.pagination.label'|trans }}">
+    <p>{{ 'admin.pagination.page'|trans({'%page%': pagination.page, '%total%': pagination.total_pages}) }}</p>
+    {% if pagination.page > 1 %}
+      <a href="{{ path(route, filters|default({})|merge({page: pagination.page - 1})) }}">{{ 'admin.pagination.prev'|trans }}</a>
+    {% endif %}
+    {% if pagination.page < pagination.total_pages %}
+      <a href="{{ path(route, filters|default({})|merge({page: pagination.page + 1})) }}">{{ 'admin.pagination.next'|trans }}</a>
+    {% endif %}
+  </nav>
+{% endif %}

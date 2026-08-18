@@ -1,0 +1,18 @@
+{% trans_default_domain 'NowoBlogKitBundle' %}
+{% import '@NowoUiKitBundle/macros/ui.html.twig' as ui %}
+{% set _css_fw = nowo_blog_kit_css_framework|default('tailwind') %}
+{% extends nowo_blog_kit_layout %}
+{% block title %}{{ page_title|trans }}{% endblock %}
+{% block admin %}
+<h1>{{ page_title|trans }}</h1>
+<p>{{ 'admin.settings.lead'|trans }}</p>
+{{ form_start(form, {attr: {class: 'nowo-ui-form'}}) }}
+  {% for field in form %}
+    {{ form_row(field) }}
+  {% endfor %}
+  <div class="nowo-ui-form-actions">
+    <button type="submit" class="{{ ui.btn('primary', null, _css_fw) }}">{{ 'admin.action.save'|trans }}</button>
+    <a href="{{ path('admin_blog_index') }}" class="{{ ui.btn('secondary', null, _css_fw) }}">{{ 'admin.action.cancel'|trans }}</a>
+  </div>
+{{ form_end(form) }}
+{% endblock %}

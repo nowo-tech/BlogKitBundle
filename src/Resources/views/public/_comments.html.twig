@@ -1,0 +1,77 @@
+{% trans_default_domain 'NowoBlogKitBundle' %}
+{% import '@NowoUiKitBundle/macros/ui.html.twig' as ui %}
+{% set _css_fw = nowo_blog_kit_css_framework|default('tailwind') %}
+
+<section class="blog-comments" id="comments" aria-labelledby="blog-comments-title">
+  <div class="container blog-comments__inner">
+    <h2 id="blog-comments-title" class="blog-comments__title">{{ 'blog.comments.title'|trans }}</h2>
+
+    {% if comments is not empty %}
+      <ol class="blog-comments__list">
+        {% for comment in comments %}
+          <li class="blog-comment{% if comment.staffAuthor %} blog-comment--staff{% endif %}">
+            <article class="blog-comment__card">
+              <header class="blog-comment__header">
+                <strong class="blog-comment__author">{{ comment.displayAuthorName }}</strong>
+                <time class="blog-comment__date" datetime="{{ comment.createdAt|date('c') }}">
+                  {{ comment.createdAt|date('Y-m-d H:i') }}
+                </time>
+              </header>
+              <div class="blog-comment__body">{{ comment.body|nl2br }}</div>
+            </article>
+
+            {% if comment.approvedReplies is not empty %}
+              <ol class="blog-comments__replies">
+                {% for reply in comment.approvedReplies %}
+                  <li class="blog-comment blog-comment--reply{% if reply.staffAuthor %} blog-comment--staff{% endif %}">
+                    <article class="blog-comment__card">
+                      <header class="blog-comment__header">
+                        <strong class="blog-comment__author">{{ reply.displayAuthorName }}</strong>
+                        <time class="blog-comment__date" datetime="{{ reply.createdAt|date('c') }}">
+                          {{ reply.createdAt|date('Y-m-d H:i') }}
+                        </time>
+                      </header>
+                      <div class="blog-comment__body">{{ reply.body|nl2br }}</div>
+                    </article>
+                  </li>
+                {% endfor %}
+              </ol>
+            {% endif %}
+
+            {% if can_moderate_comments and reply_forms[comment.id] is defined %}
+              <div class="blog-comment__moderator">
+                {{ form_start(reply_forms[comment.id], {attr: {class: 'blog-comment__reply-form'}}) }}
+                  {% for field in reply_forms[comment.id] %}
+                    {{ form_row(field) }}
+                  {% endfor %}
+                  <button type="submit" class="{{ ui.btn('secondary', 'sm', _css_fw) }}">{{ 'blog.comments.reply_submit'|trans }}</button>
+                {{ form_end(reply_forms[comment.id]) }}
+              </div>
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ol>
+    {% else %}
+      <p class="blog-comments__empty">{{ 'blog.comments.empty'|trans }}</p>
+    {% endif %}
+
+    <div class="blog-comments__form">
+      <h3 class="blog-comments__form-title">{{ 'blog.comments.form_title'|trans }}</h3>
+      <p class="blog-comments__form-lead">{{ 'blog.comments.form_lead'|trans }}</p>
+      {{ form_start(comment_form, {attr: {class: 'form-card'}}) }}
+        {% for field in comment_form %}
+          {% if field.vars.name == 'privacyAccepted' %}
+            {{ form_row(field, {
+              label: 'blog.comments.privacy_accept'|trans({'%url%': nowo_blog_kit_privacy_url|default('#')}),
+              label_html: true,
+              translation_domain: false,
+            }) }}
+          {% else %}
+            {{ form_row(field) }}
+          {% endif %}
+        {% endfor %}
+        <button type="submit" class="{{ ui.btn('primary', null, _css_fw) }}">{{ 'blog.comments.submit'|trans }}</button>
+      {{ form_end(comment_form) }}
+    </div>
+  </div>
+</section>

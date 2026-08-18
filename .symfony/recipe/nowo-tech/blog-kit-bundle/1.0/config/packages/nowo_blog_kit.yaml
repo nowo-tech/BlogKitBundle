@@ -1,0 +1,15 @@
+nowo_blog_kit:
+    # user_class: App\Entity\Auth\User
+    default_locale: es
+    locales: [es, en]
+    security:
+        manage_roles: [ROLE_EDITOR]
+        moderate_roles: [ROLE_MODERATOR]
+        configure_roles: [ROLE_ADMIN]
+        allow_unauthenticated: false
+    web_ui:
+        layout_template: 'admin/layout.html.twig'
+        public_layout_template: 'base.html.twig'
+        css_framework: tailwind
+    doctrine:
+        table_prefix: ''

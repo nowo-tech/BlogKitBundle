@@ -1,0 +1,57 @@
+{% trans_default_domain 'NowoBlogKitBundle' %}
+{% if widgets is not empty %}
+  <aside class="blog-aside blog-aside--{{ side }}" aria-label="{{ 'page.blog.sidebar_label'|trans }}">
+    {% if 'search' in widgets %}
+      <section class="blog-aside__section">
+        <h2 class="blog-aside__title">{{ 'page.blog.search_label'|trans }}</h2>
+        {{ include('@NowoBlogKitBundle/public/_search.html.twig', {
+          search_form: search_form,
+          filters: filters,
+          compact: true,
+        }) }}
+      </section>
+    {% endif %}
+
+    {% if 'latest' in widgets and sidebar_latest is not empty %}
+      <section class="blog-aside__section">
+        <h2 class="blog-aside__title">{{ 'page.blog.sidebar_latest'|trans }}</h2>
+        <ul class="blog-aside__posts">
+          {% for article in sidebar_latest %}
+            <li class="blog-aside__post">
+              <a href="{{ path('blog_show', {slug: article.slug}) }}" class="blog-aside__post-link{{ article.image ? '' : ' blog-aside__post-link--text' }}">
+                {% if article.image %}
+                  <img src="{{ article.image }}" alt="" class="blog-aside__thumb" loading="lazy">
+                {% endif %}
+                <span class="blog-aside__post-body">
+                  {% if article.published_at %}
+                    <time class="blog-aside__meta" datetime="{{ article.published_at }}">{{ article.published_at }}</time>
+                  {% endif %}
+                  <span class="blog-aside__post-title">{{ article.title }}</span>
+                </span>
+              </a>
+            </li>
+          {% endfor %}
+        </ul>
+      </section>
+    {% endif %}
+
+    {% if 'tags' in widgets and sidebar_tags is not empty %}
+      <section class="blog-aside__section">
+        <h2 class="blog-aside__title">{{ 'page.blog.sidebar_tags'|trans }}</h2>
+        <div class="blog-aside__tags" aria-label="{{ 'page.blog.sidebar_tags'|trans }}">
+          {% for tag in sidebar_tags %}
+            {% set tag_query = filters.q ? {q: filters.q, tag: tag.slug} : {tag: tag.slug} %}
+            <a
+              href="{{ path('blog_index', tag_query) }}"
+              class="blog-tag blog-tag--sm{{ filters.tag == tag.slug ? ' is-active' : '' }}"
+              aria-current="{{ filters.tag == tag.slug ? 'true' : 'false' }}"
+            >
+              {{ tag.name }}
+              <span class="blog-tag__count">{{ tag.count }}</span>
+            </a>
+          {% endfor %}
+        </div>
+      </section>
+    {% endif %}
+  </aside>
+{% endif %}

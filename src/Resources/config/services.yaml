@@ -1,0 +1,43 @@
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+
+    Nowo\BlogKitBundle\:
+        resource: '../../*'
+        exclude:
+            - '../../DependencyInjection/'
+            - '../../Entity/'
+            - '../../Controller/'
+            - '../../NowoBlogKitBundle.php'
+            - '../../Resources/'
+            - '../../Event/'
+
+    Nowo\BlogKitBundle\Controller\:
+        resource: '../../Controller/'
+        tags: ['controller.service_arguments']
+
+    Nowo\BlogKitBundle\Locale\BlogLocales:
+        public: true
+        arguments:
+            $defaultLocale: '%nowo_blog_kit.default_locale%'
+            $locales: '%nowo_blog_kit.locales%'
+
+    Nowo\BlogKitBundle\Form\:
+        resource: '../../Form/'
+        tags: ['form.type']
+
+    Nowo\BlogKitBundle\Twig\BlogKitExtension:
+        arguments:
+            $layoutTemplate: '%nowo_blog_kit.web_ui.layout_template%'
+            $publicLayoutTemplate: '%nowo_blog_kit.web_ui.public_layout_template%'
+            $cssFramework: '%nowo_blog_kit.web_ui.css_framework%'
+            $defaultLocale: '%nowo_blog_kit.default_locale%'
+            $locales: '%nowo_blog_kit.locales%'
+            $privacyUrl: '%nowo_blog_kit.web_ui.privacy_url%'
+        tags: ['twig.extension']
+
+    Nowo\BlogKitBundle\EventSubscriber\BlogArticlePublishedDoctrineSubscriber:
+        tags:
+            - { name: doctrine.event_listener, event: onFlush }
+            - { name: doctrine.event_listener, event: postFlush }

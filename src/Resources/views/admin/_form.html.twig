@@ -1,0 +1,20 @@
+{% trans_default_domain 'NowoBlogKitBundle' %}
+{% import '@NowoUiKitBundle/macros/ui.html.twig' as ui %}
+{% set _css_fw = nowo_blog_kit_css_framework|default('tailwind') %}
+
+{{ form_start(form, {attr: {class: 'nowo-ui-form'}}) }}
+  {% for field in form %}
+    {% if field.vars.name == 'translations' %}
+      {{ include('@NowoBlogKitBundle/admin/_locale_tabs.html.twig', {
+        translations: field,
+        active_locale: active_locale|default(null),
+      }) }}
+    {% elseif field.vars.name != '_token' %}
+      {{ form_row(field) }}
+    {% endif %}
+  {% endfor %}
+  <div class="nowo-ui-form-actions">
+    <button type="submit" class="{{ ui.btn('primary', null, _css_fw) }}">{{ 'admin.action.save'|trans }}</button>
+    <a href="{{ cancel_path|default(path('admin_blog_index')) }}" class="{{ ui.btn('secondary', null, _css_fw) }}">{{ 'admin.action.cancel'|trans }}</a>
+  </div>
+{{ form_end(form) }}

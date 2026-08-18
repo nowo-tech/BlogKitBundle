@@ -1,0 +1,21 @@
+{% trans_default_domain 'NowoBlogKitBundle' %}
+<!DOCTYPE html>
+<html lang="{{ app.request.locale|default('en') }}">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ 'page.blog.heading'|trans }}{% endblock %}</title>
+    {% if block('meta_description') is defined %}
+        <meta name="description" content="{% block meta_description %}{% endblock %}">
+    {% endif %}
+    {% block stylesheets %}
+        <link rel="stylesheet" href="{{ asset('blog.css', 'nowo_blog_kit') }}">
+    {% endblock %}
+</head>
+<body>
+{% block body %}{% endblock %}
+{% block javascripts %}
+    <script src="{{ asset('blog-infinite-controller.js', 'nowo_blog_kit') }}" defer></script>
+{% endblock %}
+</body>
+</html>

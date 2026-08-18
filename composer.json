@@ -1,0 +1,119 @@
+{
+    "name": "nowo-tech/blog-kit-bundle",
+    "description": "Reusable Symfony blog kit: multilingual articles, tags, comments, settings, LinkedIn hashtags, and a secured admin CRUD UI.",
+    "type": "symfony-bundle",
+    "license": "MIT",
+    "keywords": [
+        "symfony",
+        "symfony-bundle",
+        "blog",
+        "cms",
+        "comments",
+        "nowo"
+    ],
+    "homepage": "https://github.com/nowo-tech/BlogKitBundle",
+    "support": {
+        "issues": "https://github.com/nowo-tech/BlogKitBundle/issues",
+        "source": "https://github.com/nowo-tech/BlogKitBundle",
+        "docs": "https://github.com/nowo-tech/BlogKitBundle#readme"
+    },
+    "authors": [
+        {
+            "name": "Héctor Franco Aceituno",
+            "email": "hectorfranco@nowo.tech",
+            "homepage": "https://github.com/HecFranco",
+            "role": "Developer"
+        },
+        {
+            "name": "Nowo.tech",
+            "homepage": "https://nowo.tech"
+        }
+    ],
+    "require": {
+        "php": ">=8.4 <8.6",
+        "doctrine/doctrine-bundle": "^2.10 || ^3.0",
+        "doctrine/orm": "^2.15 || ^3.0",
+        "nowo-tech/audit-kit-bundle": "^1.1",
+        "nowo-tech/form-kit-bundle": "^2.4",
+        "nowo-tech/routing-kit-bundle": "^1.4",
+        "nowo-tech/ui-kit-bundle": "^1.4",
+        "psr/clock": "^1.0",
+        "psr/log": "^1 || ^2 || ^3",
+        "symfony/clock": "^7.4 || ^8.0",
+        "symfony/config": "^7.4 || ^8.0",
+        "symfony/dependency-injection": "^7.4 || ^8.0",
+        "symfony/event-dispatcher": "^7.4 || ^8.0",
+        "symfony/form": "^7.4 || ^8.0",
+        "symfony/framework-bundle": "^7.4 || ^8.0",
+        "symfony/http-foundation": "^7.4 || ^8.0",
+        "symfony/http-kernel": "^7.4 || ^8.0",
+        "symfony/routing": "^7.4 || ^8.0",
+        "symfony/security-bundle": "^7.4 || ^8.0",
+        "symfony/security-core": "^7.4 || ^8.0",
+        "symfony/security-csrf": "^7.4 || ^8.0",
+        "symfony/translation": "^7.4 || ^8.0",
+        "symfony/twig-bundle": "^7.4 || ^8.0",
+        "symfony/validator": "^7.4 || ^8.0",
+        "symfony/yaml": "^7.4 || ^8.0",
+        "twig/extra-bundle": "^3.12",
+        "twig/string-extra": "^3.12",
+        "twig/twig": "^3.8"
+    },
+    "suggest": {
+        "nowo-tech/ckeditor5-editor-bundle": "Rich text body editor in admin article forms.",
+        "nowo-tech/pwa-bundle": "Listen to BlogArticlePublishedEvent to send Web Push.",
+        "symfony/flex": "Automatic Flex recipe installation"
+    },
+    "require-dev": {
+        "dg/bypass-finals": "^1.11",
+        "friendsofphp/php-cs-fixer": "^3.0",
+        "nowo-tech/phpstan-frankenphp": "^1.0",
+        "phpstan/extension-installer": "^1.4",
+        "phpstan/phpstan": "^2.0",
+        "phpstan/phpstan-phpunit": "^2.0",
+        "phpstan/phpstan-symfony": "^2.0",
+        "phpunit/phpunit": "^11.0 || ^12.0 || ^13.0",
+        "rector/rector": "^2.0",
+        "vincentlanglet/twig-cs-fixer": "^4.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Nowo\\BlogKitBundle\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Nowo\\BlogKitBundle\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "phpstan/extension-installer": true,
+            "rector/rector": true
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "archive": {
+        "exclude": [
+            "/demo",
+            "/.cursor"
+        ]
+    },
+    "scripts": {
+        "test": "@php vendor/bin/phpunit --colors=always",
+        "test-coverage": "@php vendor/bin/phpunit --colors=always --coverage-html coverage --coverage-clover coverage.xml --coverage-text",
+        "cs-check": "@php vendor/bin/php-cs-fixer fix --dry-run --diff --config=.php-cs-fixer.dist.php",
+        "cs-fix": "@php vendor/bin/php-cs-fixer fix --config=.php-cs-fixer.dist.php",
+        "rector": "@php vendor/bin/rector process",
+        "rector-dry": "@php vendor/bin/rector process --dry-run --no-progress-bar",
+        "phpstan": "@php vendor/bin/phpstan analyse --memory-limit=512M",
+        "qa": [
+            "@cs-check",
+            "@test"
+        ],
+        "twig:lint": "twig-cs-fixer lint --config=.twig-cs-fixer.php",
+        "twig:fix": "twig-cs-fixer fix --config=.twig-cs-fixer.php"
+    }
+}

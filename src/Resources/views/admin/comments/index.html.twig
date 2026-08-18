@@ -1,0 +1,89 @@
+{% trans_default_domain 'NowoBlogKitBundle' %}
+{% import '@NowoUiKitBundle/macros/ui.html.twig' as ui %}
+{% set _css_fw = nowo_blog_kit_css_framework|default('tailwind') %}
+{% extends nowo_blog_kit_layout %}
+{% block title %}{{ page_title|trans }}{% endblock %}
+{% block admin %}
+{% set status_query = filters|default({})|merge({status: filter}) %}
+<div class="{{ ui.page_header(_css_fw) }}">
+  <div>
+    <h1>{{ page_title|trans }}</h1>
+    {% if pending_count > 0 %}
+      <p>{{ 'admin.comments.pending_count'|trans({'%count%': pending_count}) }}</p>
+    {% endif %}
+  </div>
+  <div class="{{ ui.toolbar(_css_fw) }}">
+    <a href="{{ path('admin_blog_comments_index', status_query|merge({status: 'pending'})) }}" class="{{ ui.btn(filter == 'pending' ? 'primary' : 'secondary', 'sm', _css_fw) }}">{{ 'admin.status.pending'|trans }}</a>
+    <a href="{{ path('admin_blog_comments_index', status_query|merge({status: 'approved'})) }}" class="{{ ui.btn(filter == 'approved' ? 'primary' : 'secondary', 'sm', _css_fw) }}">{{ 'admin.status.approved'|trans }}</a>
+    <a href="{{ path('admin_blog_comments_index', status_query|merge({status: 'rejected'})) }}" class="{{ ui.btn(filter == 'rejected' ? 'primary' : 'secondary', 'sm', _css_fw) }}">{{ 'admin.status.rejected'|trans }}</a>
+    <a href="{{ path('admin_blog_comments_index', status_query|merge({status: 'all'})) }}" class="{{ ui.btn(filter == 'all' ? 'primary' : 'secondary', 'sm', _css_fw) }}">{{ 'admin.status.all'|trans }}</a>
+  </div>
+</div>
+
+{{ include('@NowoBlogKitBundle/admin/_list_filters.html.twig', {
+  route: 'admin_blog_comments_index',
+  filter_form: filter_form,
+  filters: filters|default({}),
+  clear_params: {status: filter},
+  fields: [
+    {name: 'author', label: 'admin.filter.author'|trans},
+    {name: 'article', label: 'admin.filter.article'|trans},
+    {name: 'body', label: 'admin.filter.body'|trans},
+  ],
+}) }}
+
+<div class="nowo-ui-card">
+  <table class="nowo-ui-table {{ ui.table(_css_fw) }}">
+    <thead>
+      <tr>
+        <th scope="col">{{ 'admin.column.date'|trans }}</th>
+        <th scope="col">{{ 'admin.column.article'|trans }}</th>
+        <th scope="col">{{ 'admin.column.author'|trans }}</th>
+        <th scope="col">{{ 'admin.column.comment'|trans }}</th>
+        <th scope="col">{{ 'admin.column.status'|trans }}</th>
+        <th scope="col"><span class="sr-only">{{ 'admin.column.actions'|trans }}</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in items %}
+        <tr>
+          <td><time datetime="{{ item.createdAt|date('c') }}">{{ item.createdAt|date('Y-m-d H:i') }}</time></td>
+          <td>
+            {% if item.article %}
+              <a href="{{ path('blog_show', {slug: item.article.slug}) }}" target="_blank" rel="noopener">{{ item.article.slug }}</a>
+            {% endif %}
+          </td>
+          <td>{{ item.displayAuthorName }}</td>
+          <td>{{ item.body|u.truncate(180) }}</td>
+          <td>{{ ('admin.status.' ~ item.status.value)|trans }}</td>
+          <td>
+            {% if action_forms[item.id] is defined %}
+              {% if item.status.value == 'pending' %}
+                {{ form_start(action_forms[item.id].approve) }}
+                  <button type="submit" class="{{ ui.btn('primary', 'sm', _css_fw) }}">{{ 'admin.action.approve'|trans }}</button>
+                {{ form_end(action_forms[item.id].approve) }}
+                {{ form_start(action_forms[item.id].reject) }}
+                  <button type="submit" class="{{ ui.btn('secondary', 'sm', _css_fw) }}">{{ 'admin.action.reject'|trans }}</button>
+                {{ form_end(action_forms[item.id].reject) }}
+              {% endif %}
+              {% if reply_forms[item.id] is defined %}
+                {{ form_start(reply_forms[item.id]) }}
+                  {% for field in reply_forms[item.id] %}
+                    {{ form_row(field) }}
+                  {% endfor %}
+                  <button type="submit" class="{{ ui.btn('secondary', 'sm', _css_fw) }}">{{ 'blog.comments.reply_submit'|trans }}</button>
+                {{ form_end(reply_forms[item.id]) }}
+              {% endif %}
+              {{ form_start(action_forms[item.id].delete) }}
+                <button type="submit" class="{{ ui.btn('danger', 'sm', _css_fw) }}" data-confirm="{{ 'admin.confirm.delete_comment'|trans }}">{{ 'admin.action.delete'|trans }}</button>
+              {{ form_end(action_forms[item.id].delete) }}
+            {% endif %}
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="6">{{ 'admin.comments.empty'|trans }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

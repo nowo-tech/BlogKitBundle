@@ -1,0 +1,23 @@
+{% trans_default_domain 'NowoBlogKitBundle' %}
+{% import '@NowoUiKitBundle/macros/ui.html.twig' as ui %}
+{% set _css_fw = nowo_blog_kit_css_framework|default('tailwind') %}
+{% set route_params = route_params|default({}) %}
+{% set clear_params = clear_params|default({}) %}
+
+{{ form_start(filter_form, {attr: {class: 'nowo-ui-filter-form ' ~ ui.search_form(_css_fw), novalidate: 'novalidate'}}) }}
+  <div class="nowo-ui-filter-fields">
+    {% for field in fields %}
+      {% set child = attribute(filter_form, field.name) %}
+      <div class="nowo-ui-filter-field">
+        <label class="nowo-ui-label" for="{{ child.vars.id }}">{{ field.label }}</label>
+        {{ form_widget(child) }}
+      </div>
+    {% endfor %}
+  </div>
+  <div class="nowo-ui-filter-actions">
+    <button type="submit" class="{{ ui.btn('primary', 'sm', _css_fw) }}">{{ 'admin.filter.apply'|trans }}</button>
+    {% if filters is not empty %}
+      <a href="{{ path(route, route_params|merge(clear_params)) }}" class="{{ ui.btn('secondary', 'sm', _css_fw) }}">{{ 'admin.filter.clear'|trans }}</a>
+    {% endif %}
+  </div>
+{{ form_end(filter_form) }}

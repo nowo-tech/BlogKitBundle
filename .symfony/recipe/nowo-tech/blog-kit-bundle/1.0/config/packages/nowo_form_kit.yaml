@@ -1,0 +1,12 @@
+# GET list filters (AbstractGetFilterType) require profile `filter`.
+nowo_form_kit:
+    default_profile: default
+    profiles:
+        filter:
+            alias: filter
+            translation_domain: NowoBlogKitBundle
+            auto_placeholder: true
+            auto_help: true
+            defaults:
+                label: false
+                required: false

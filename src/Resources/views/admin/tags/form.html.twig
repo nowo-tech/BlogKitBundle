@@ -1,0 +1,7 @@
+{% trans_default_domain 'NowoBlogKitBundle' %}
+{% extends nowo_blog_kit_layout %}
+{% block title %}{{ page_title|trans }}{% endblock %}
+{% block admin %}
+<h1>{{ page_title|trans }}</h1>
+{{ include('@NowoBlogKitBundle/admin/_form.html.twig', {cancel_path: path('admin_blog_tags_index')}) }}
+{% endblock %}

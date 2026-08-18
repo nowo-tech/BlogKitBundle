@@ -1,0 +1,91 @@
+{% trans_default_domain 'NowoBlogKitBundle' %}
+{% set main_widgets = [] %}
+{% for w in widgets %}
+  {% if w != 'resources' %}
+    {% set main_widgets = main_widgets|merge([w]) %}
+  {% endif %}
+{% endfor %}
+{% if main_widgets is not empty %}
+  <aside class="blog-aside blog-aside--{{ side }}" aria-label="{{ 'page.blog.sidebar_label'|trans }}">
+    {% if 'search' in main_widgets %}
+      <section class="blog-aside__section">
+        <h2 class="blog-aside__title">{{ 'page.blog.search_label'|trans }}</h2>
+        {{ include('@NowoBlogKitBundle/public/_search.html.twig', {
+          search_form: search_form,
+          filters: filters|default({q: '', tag: ''}),
+          compact: true,
+        }) }}
+      </section>
+    {% endif %}
+
+    {% if 'related' in main_widgets and sidebar_related is not empty %}
+      <section class="blog-aside__section">
+        <h2 class="blog-aside__title">{{ 'page.blog.sidebar_related'|trans }}</h2>
+        <ul class="blog-aside__posts">
+          {% for related in sidebar_related %}
+            <li class="blog-aside__post">
+              <a href="{{ path('blog_show', {slug: related.slug}) }}" class="blog-aside__post-link{{ related.image ? '' : ' blog-aside__post-link--text' }}">
+                {% if related.image %}
+                  <img src="{{ related.image }}" alt="" class="blog-aside__thumb" loading="lazy">
+                {% endif %}
+                <span class="blog-aside__post-body">
+                  {% if related.published_at %}
+                    <time class="blog-aside__meta" datetime="{{ related.published_at }}">{{ related.published_at }}</time>
+                  {% endif %}
+                  <span class="blog-aside__post-title">{{ related.title }}</span>
+                </span>
+              </a>
+            </li>
+          {% endfor %}
+        </ul>
+      </section>
+    {% endif %}
+
+    {% if 'tags' in main_widgets and sidebar_tags is not empty %}
+      <section class="blog-aside__section">
+        <h2 class="blog-aside__title">{{ 'page.blog.sidebar_article_tags'|trans }}</h2>
+        <div class="blog-aside__tags" aria-label="{{ 'page.blog.sidebar_article_tags'|trans }}">
+          {% for tag in sidebar_tags %}
+            <a href="{{ path('blog_index', {tag: tag.slug}) }}" class="blog-tag blog-tag--sm">
+              {{ tag.name }}
+              <span class="blog-tag__count">{{ tag.count }}</span>
+            </a>
+          {% endfor %}
+        </div>
+      </section>
+    {% endif %}
+  </aside>
+{% endif %}
+
+{% if 'resources' in widgets and sidebar_resources is not empty %}
+  <aside class="blog-aside blog-aside--resources blog-aside--{{ side }}" aria-label="{{ 'page.blog.resources_label'|trans }}">
+    <section class="blog-aside__section">
+      <h2 class="blog-aside__title">{{ 'page.blog.resources_heading'|trans }}</h2>
+      <ul class="blog-resources">
+        {% for resource in sidebar_resources %}
+          {% if resource.type|default('image') == 'linkedin' %}
+            <li class="blog-resources__item blog-resources__item--link">
+              <a href="{{ resource.url }}" class="blog-resources__external" target="_blank" rel="noopener noreferrer">
+                <span class="blog-resources__external-text">
+                  <span class="blog-resources__external-label">{{ 'page.blog.resource_linkedin'|trans }}</span>
+                  <span class="blog-resources__external-hint">{{ 'page.blog.resource_linkedin_hint'|trans }}</span>
+                </span>
+              </a>
+            </li>
+          {% elseif resource.image %}
+            <li class="blog-resources__item">
+              <figure class="blog-resources__figure">
+                <a href="{{ resource.image }}" class="blog-resources__link" target="_blank" rel="noopener noreferrer">
+                  <img src="{{ resource.image }}" alt="{{ resource.title|default(article.title) }}" class="blog-resources__image" loading="lazy">
+                </a>
+                {% if resource.title %}
+                  <figcaption class="blog-resources__caption">{{ resource.title }}</figcaption>
+                {% endif %}
+              </figure>
+            </li>
+          {% endif %}
+        {% endfor %}
+      </ul>
+    </section>
+  </aside>
+{% endif %}

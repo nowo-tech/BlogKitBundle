@@ -1,0 +1,3 @@
+nowo_blog_kit:
+    resource: ../../Controller/
+    type: attribute

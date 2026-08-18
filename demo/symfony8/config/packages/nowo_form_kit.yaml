@@ -1,0 +1,22 @@
+# FormKit profiles used by BlogKit admin (GET list filters use profile `filter`).
+# `blog_kit` is also prepended by NowoBlogKitExtension; this file keeps `filter` in the host app.
+nowo_form_kit:
+    default_profile: default
+    css_framework: bootstrap
+    profiles:
+        default:
+            alias: default
+            translation_domain: messages
+            defaults:
+                attr:
+                    class: form-control
+                row_attr:
+                    class: mb-3
+        filter:
+            alias: filter
+            translation_domain: NowoBlogKitBundle
+            auto_placeholder: true
+            auto_help: true
+            defaults:
+                label: false
+                required: false

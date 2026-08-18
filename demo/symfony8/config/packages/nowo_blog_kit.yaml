@@ -1,0 +1,14 @@
+nowo_blog_kit:
+    user_class: App\Entity\User
+    default_locale: es
+    locales: [es, en]
+    security:
+        manage_roles: [ROLE_ADMIN]
+        moderate_roles: [ROLE_ADMIN]
+        configure_roles: [ROLE_ADMIN]
+        allow_unauthenticated: false
+    web_ui:
+        css_framework: bootstrap5
+        icon_set: bootstrap-icons
+    doctrine:
+        table_prefix: ''

@@ -1,0 +1,67 @@
+{% trans_default_domain 'NowoBlogKitBundle' %}
+{% import '@NowoUiKitBundle/macros/ui.html.twig' as ui %}
+{% set _css_fw = nowo_blog_kit_css_framework|default('tailwind') %}
+{% extends nowo_blog_kit_layout %}
+{% block title %}{{ page_title|trans }}{% endblock %}
+{% block admin %}
+<div class="{{ ui.page_header(_css_fw) }}">
+  <div>
+    <h1>{{ page_title|trans }}</h1>
+    <p>{{ 'admin.tags.lead'|trans }}</p>
+  </div>
+  <div class="{{ ui.toolbar(_css_fw) }}">
+    <a href="{{ path('admin_blog_tags_new') }}" class="{{ ui.btn('primary', null, _css_fw) }}">{{ 'admin.tags.new'|trans }}</a>
+    <a href="{{ path('admin_blog_index') }}" class="{{ ui.btn('secondary', null, _css_fw) }}">{{ 'admin.action.back'|trans }}</a>
+  </div>
+</div>
+
+{{ include('@NowoBlogKitBundle/admin/_list_filters.html.twig', {
+  route: 'admin_blog_tags_index',
+  filter_form: filter_form,
+  filters: filters|default({}),
+  fields: [
+    {name: 'slug', label: 'admin.filter.slug'|trans},
+    {name: 'name', label: 'admin.filter.name'|trans},
+  ],
+}) }}
+
+<div class="nowo-ui-card">
+  <table class="nowo-ui-table {{ ui.table(_css_fw) }}">
+    <thead>
+      <tr>
+        <th scope="col">{{ 'admin.column.slug'|trans }}</th>
+        <th scope="col">{{ 'admin.column.name'|trans }}</th>
+        <th scope="col">{{ 'admin.column.articles'|trans }}</th>
+        <th scope="col"><span class="sr-only">{{ 'admin.column.actions'|trans }}</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in items %}
+        <tr>
+          <td><code>{{ item.slug }}</code></td>
+          <td>{{ item.name(nowo_blog_kit_default_locale) }}</td>
+          <td>{{ article_counts[item.id]|default(0) }}</td>
+          <td>
+            {{ include('@NowoBlogKitBundle/admin/_row_actions.html.twig', {actions: [
+              {kind: 'edit', href: path('admin_blog_tags_edit', {id: item.id}), label: 'admin.action.edit'|trans},
+              {
+                kind: 'delete',
+                method: 'POST',
+                href: path('admin_blog_tags_delete', {id: item.id}),
+                csrf_token: csrf_token('delete' ~ item.id),
+                csrf_field: 'csrf_only[_token]',
+                confirm_message: 'admin.confirm.delete_tag'|trans,
+                label: 'admin.action.delete'|trans,
+              },
+            ]}) }}
+          </td>
+        </tr>
+      {% else %}
+        <tr>
+          <td colspan="4">{{ 'admin.tags.empty'|trans }} <a href="{{ path('admin_blog_tags_new') }}">{{ 'admin.tags.new'|trans }}</a></td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

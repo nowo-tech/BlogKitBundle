@@ -1,0 +1,2 @@
+nowo_blog_kit:
+    resource: '@NowoBlogKitBundle/Resources/config/routing.yaml'
