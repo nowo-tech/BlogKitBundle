@@ -160,7 +160,7 @@ Flex usually registers `Twig\Extra\TwigExtraBundle\TwigExtraBundle` automaticall
 
 ## Published assets
 
-Run `php bin/console assets:install` so `blog.css` and `blog-infinite-controller.js` are available under `/bundles/nowoblogkit/` via the `nowo_blog_kit` asset package.
+Run `php bin/console assets:install` so `blog.css` and `blog-kit.js` are available under `/bundles/nowoblogkit/` via the `nowo_blog_kit` asset package. Rebuild frontend with `make assets` (Vite + pnpm).
 
 ## Verify
 

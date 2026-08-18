@@ -23,18 +23,21 @@ final class BlogCommentFilterType extends AbstractGetFilterType
             $this->addNamedField('author', 'search', [
                 'required' => false,
                 'help'     => false,
+                'label'    => 'admin.filter.author',
                 'attr'     => ['class' => 'admin-list-filters__control'],
             ]);
 
             $this->addNamedField('article', 'search', [
                 'required' => false,
                 'help'     => false,
+                'label'    => 'admin.filter.article',
                 'attr'     => ['class' => 'admin-list-filters__control'],
             ]);
 
             $this->addNamedField('body', 'search', [
                 'required' => false,
                 'help'     => false,
+                'label'    => 'admin.filter.body',
                 'attr'     => ['class' => 'admin-list-filters__control'],
             ]);
 

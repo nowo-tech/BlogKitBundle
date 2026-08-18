@@ -78,7 +78,7 @@ Admin create/edit/delete, comment approve/reject/reply/delete, settings save, an
 
 ## Infinite scroll HTML
 
-`blog-infinite-controller.js` inserts HTML fragments returned by `GET /blog?partial=1` using a `template` element. Those fragments are the bundle's own Twig cards (auto-escaped). Do not point the infinite-scroll URL at an untrusted origin.
+`blog-kit.js` inserts HTML fragments returned by `GET /blog?partial=1` using `DOMParser`. Those fragments are the bundle's own Twig cards (auto-escaped). Do not point the infinite-scroll URL at an untrusted origin.
 
 ## Operational guidance
 

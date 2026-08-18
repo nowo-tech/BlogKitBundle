@@ -153,3 +153,5 @@ nowo_blog_kit:
         css_framework: bootstrap5
         privacy_url: '/privacy'
 ```
+
+Admin pages extend `@NowoBlogKitBundle/admin/base.html.twig` and public pages extend `@NowoBlogKitBundle/public/base.html.twig`. Those templates call `{{ parent() }}` in `stylesheets` / `javascripts` and then load `nowo_ui_kit` + `nowo_blog_kit` assets (REQ-UI-001). Keep matching `stylesheets` and `javascripts` blocks in the host layout so stacking works. Do not fork every CRUD page to inject CSS/JS.

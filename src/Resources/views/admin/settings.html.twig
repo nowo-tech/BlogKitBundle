@@ -1,14 +1,16 @@
 {% trans_default_domain 'NowoBlogKitBundle' %}
 {% import '@NowoUiKitBundle/macros/ui.html.twig' as ui %}
 {% set _css_fw = nowo_blog_kit_css_framework|default('tailwind') %}
-{% extends nowo_blog_kit_layout %}
+{% extends '@NowoBlogKitBundle/admin/base.html.twig' %}
 {% block title %}{{ page_title|trans }}{% endblock %}
 {% block admin %}
 <h1>{{ page_title|trans }}</h1>
 <p>{{ 'admin.settings.lead'|trans }}</p>
 {{ form_start(form, {attr: {class: 'nowo-ui-form'}}) }}
-  {% for field in form %}
-    {{ form_row(field) }}
+  {% for child in form %}
+    {% if not child.rendered %}
+      {{ form_row(child) }}
+    {% endif %}
   {% endfor %}
   <div class="nowo-ui-form-actions">
     <button type="submit" class="{{ ui.btn('primary', null, _css_fw) }}">{{ 'admin.action.save'|trans }}</button>

@@ -98,17 +98,20 @@ Demo default URL: `http://localhost:8105`.
 | Area | Status | Command |
 | --- | --- | --- |
 | PHP `src/` coverage target | 100% | `make test-coverage-100` |
+| TS/JS `src/Resources/assets` | ≥90% | `make test-ts` |
 | Unit and bundle QA | Enabled | `make test` |
 | Full release checks | Enabled | `make release-check` |
 
 - PHP: 100%
-- TS/JS: N/A
+- TS/JS: 100%
 - Python: N/A
 
 ```bash
 make test
 make test-coverage
 make test-coverage-100
+make test-ts
+make assets
 make release-check
 ```
 

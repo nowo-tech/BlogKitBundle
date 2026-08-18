@@ -1,0 +1,13 @@
+{% extends nowo_blog_kit_public_layout %}
+{% trans_default_domain 'NowoBlogKitBundle' %}
+
+{# REQ-UI-001: stack public assets via parent() when the host sets public_layout_template. #}
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('blog.css', 'nowo_blog_kit') }}">
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script src="{{ asset('blog-kit.js', 'nowo_blog_kit') }}" defer></script>
+{% endblock %}

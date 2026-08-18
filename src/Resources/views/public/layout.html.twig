@@ -8,14 +8,10 @@
     {% if block('meta_description') is defined %}
         <meta name="description" content="{% block meta_description %}{% endblock %}">
     {% endif %}
-    {% block stylesheets %}
-        <link rel="stylesheet" href="{{ asset('blog.css', 'nowo_blog_kit') }}">
-    {% endblock %}
+    {% block stylesheets %}{% endblock %}
 </head>
 <body>
 {% block body %}{% endblock %}
-{% block javascripts %}
-    <script src="{{ asset('blog-infinite-controller.js', 'nowo_blog_kit') }}" defer></script>
-{% endblock %}
+{% block javascripts %}{% endblock %}
 </body>
 </html>

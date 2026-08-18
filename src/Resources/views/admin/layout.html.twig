@@ -7,10 +7,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}{{ 'admin.title'|trans }}{% endblock %}</title>
-    {% block stylesheets %}
-        <link rel="stylesheet" href="{{ asset('css/nowo-ui.css', 'nowo_ui_kit') }}">
-        <link rel="stylesheet" href="{{ asset('blog.css', 'nowo_blog_kit') }}">
-    {% endblock %}
+    {% block stylesheets %}{% endblock %}
 </head>
 <body class="nowo-ui-body">
     <div class="nowo-ui-container container py-4">

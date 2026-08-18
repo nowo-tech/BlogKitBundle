@@ -2,9 +2,11 @@
   {% set prototype_html %}
     <div class="admin-collection__item" data-form-collection-target="entry">
       <div class="admin-collection__fields">
-        {{ form_row(form.vars.prototype.title) }}
-        {{ form_row(form.vars.prototype.image) }}
-        {{ form_row(form.vars.prototype.position) }}
+        {% for child in form.vars.prototype %}
+          {% if not child.rendered %}
+            {{ form_row(child) }}
+          {% endif %}
+        {% endfor %}
       </div>
       <button
         type="button"
@@ -27,9 +29,11 @@
       {% for resourceForm in form %}
         <div class="admin-collection__item" data-form-collection-target="entry">
           <div class="admin-collection__fields">
-            {{ form_row(resourceForm.title) }}
-            {{ form_row(resourceForm.image) }}
-            {{ form_row(resourceForm.position) }}
+            {% for child in resourceForm %}
+              {% if not child.rendered %}
+                {{ form_row(child) }}
+              {% endif %}
+            {% endfor %}
           </div>
           <button
             type="button"

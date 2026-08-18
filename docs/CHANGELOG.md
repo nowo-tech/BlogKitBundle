@@ -24,6 +24,8 @@ Initial public release of **Blog Kit Bundle** (`nowo-tech/blog-kit-bundle`).
 - `BlogArticlePublishedEvent` after an article becomes published
 - Configurable security: manage / moderate / configure roles, custom checker, `allow_unauthenticated`
 - Configurable admin and public shells: `layout_template`, `public_layout_template`, `css_framework`
+- Admin/public `base.html.twig` wrappers that stack CSS/JS with `{{ parent() }}` (REQ-UI-001)
+- Vite + pnpm asset pipeline (`blog-kit.js`) for infinite scroll and CollectionType add/remove
 - Optional Doctrine `table_prefix`
 - Symfony Flex recipe and FrankenPHP demo (`demo/symfony8`, default port `8105`)
 - Integrator documentation and Spec Kit baseline

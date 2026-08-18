@@ -22,12 +22,14 @@ final class BlogTagFilterType extends AbstractGetFilterType
             $this->addNamedField('slug', 'search', [
                 'required' => false,
                 'help'     => false,
+                'label'    => 'admin.filter.slug',
                 'attr'     => ['class' => 'admin-list-filters__control'],
             ]);
 
             $this->addNamedField('name', 'search', [
                 'required' => false,
                 'help'     => false,
+                'label'    => 'admin.filter.name',
                 'attr'     => ['class' => 'admin-list-filters__control'],
             ]);
         });

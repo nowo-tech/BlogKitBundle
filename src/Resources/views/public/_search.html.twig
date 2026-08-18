@@ -3,12 +3,13 @@
 {% set _css_fw = nowo_blog_kit_css_framework|default('tailwind') %}
 {% set compact = compact|default(false) %}
 {{ form_start(search_form, {attr: {class: 'blog-search' ~ (compact ? ' blog-search--aside' : ''), role: 'search'}}) }}
-    {% for field in search_form %}
-        {% if field.vars.name == 'q' %}
-            <label class="sr-only" for="{{ field.vars.id }}">{{ 'page.blog.search_label'|trans }}</label>
-            {{ form_widget(field) }}
-        {% elseif field.vars.name == 'tag' and filters.tag|default('') %}
-            {{ form_widget(field) }}
+    {% if search_form.q is defined %}
+        <label class="sr-only" for="{{ search_form.q.vars.id }}">{{ 'page.blog.search_label'|trans }}</label>
+        {{ form_widget(search_form.q) }}
+    {% endif %}
+    {% for child in search_form %}
+        {% if not child.rendered %}
+            {{ form_widget(child) }}
         {% endif %}
     {% endfor %}
     <div class="blog-search__actions">

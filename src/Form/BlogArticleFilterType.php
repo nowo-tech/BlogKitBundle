@@ -22,18 +22,21 @@ final class BlogArticleFilterType extends AbstractGetFilterType
             $this->addNamedField('title', 'search', [
                 'required' => false,
                 'help'     => false,
+                'label'    => 'admin.filter.title',
                 'attr'     => ['class' => 'admin-list-filters__control'],
             ]);
 
             $this->addNamedField('slug', 'search', [
                 'required' => false,
                 'help'     => false,
+                'label'    => 'admin.filter.slug',
                 'attr'     => ['class' => 'admin-list-filters__control'],
             ]);
 
             $this->addFilterSelect('published', [
                 'required' => false,
                 'help'     => false,
+                'label'    => 'admin.filter.published',
                 'choices'  => [
                     'admin.filter.published_yes' => '1',
                     'admin.filter.published_no'  => '0',

@@ -6,12 +6,17 @@
 
 {{ form_start(filter_form, {attr: {class: 'nowo-ui-filter-form ' ~ ui.search_form(_css_fw), novalidate: 'novalidate'}}) }}
   <div class="nowo-ui-filter-fields">
-    {% for field in fields %}
-      {% set child = attribute(filter_form, field.name) %}
-      <div class="nowo-ui-filter-field">
-        <label class="nowo-ui-label" for="{{ child.vars.id }}">{{ field.label }}</label>
+    {% for child in filter_form %}
+      {% if not child.rendered and child.vars.block_prefixes[1]|default('') != 'hidden' %}
+        <div class="nowo-ui-filter-field">
+          {{ form_row(child) }}
+        </div>
+      {% endif %}
+    {% endfor %}
+    {% for child in filter_form %}
+      {% if not child.rendered %}
         {{ form_widget(child) }}
-      </div>
+      {% endif %}
     {% endfor %}
   </div>
   <div class="nowo-ui-filter-actions">

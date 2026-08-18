@@ -1,14 +1,15 @@
 {% trans_default_domain 'NowoBlogKitBundle' %}
 {{ form_start(form, {attr: {class: 'nowo-ui-form cms-modal-form', id: 'cms-modal-active-form'}}) }}
-  {% for field in form %}
-    {% if field.vars.name == 'translations' %}
-      {{ include('@NowoBlogKitBundle/admin/_locale_tabs.html.twig', {
-        translations: field,
-        active_locale: locale|default(active_locale|default(null)),
-        id_prefix: 'cms-locale',
-      }) }}
-    {% else %}
-      {{ form_row(field) }}
+  {% if form.translations is defined %}
+    {{ include('@NowoBlogKitBundle/admin/_locale_tabs.html.twig', {
+      translations: form.translations,
+      active_locale: locale|default(active_locale|default(null)),
+      id_prefix: 'cms-locale',
+    }) }}
+  {% endif %}
+  {% for child in form %}
+    {% if not child.rendered %}
+      {{ form_row(child) }}
     {% endif %}
   {% endfor %}
 {{ form_end(form) }}

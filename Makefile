@@ -137,7 +137,7 @@ validate-translations: ensure-up
 check-twig-extra:
 	@chmod +x .scripts/check-twig-extra.sh
 	@./.scripts/check-twig-extra.sh
-release-check: ensure-up check-no-cursor-coauthor check-open-prs check-twig-extra composer-sync cs-fix cs-check rector-dry phpstan validate-translations test-coverage release-check-demos
+release-check: ensure-up check-no-cursor-coauthor check-open-prs check-twig-extra composer-sync cs-fix cs-check rector-dry phpstan validate-translations assets test-ts test-coverage release-check-demos
 
 # REQ-TEST-011 — boot demo stack and assert one HTTP 200
 # classic mode keeps FrankenPHP up before vendor/ is installed on fresh CI checkouts
@@ -183,11 +183,16 @@ update: ensure-up
 validate: ensure-up
 	$(COMPOSE) exec -T $(SERVICE_PHP) composer validate --strict
 
-assets:
-	@echo "No Vite build. Published CSS/JS live in src/Resources/public/ (REQ-ASSETS-004). Stimulus source: src/Resources/assets/src/blog-infinite-controller.ts"
+assets: ensure-up
+	@$(COMPOSE) exec -T -e CI=true $(SERVICE_PHP) pnpm install --frozen-lockfile
+	@$(COMPOSE) exec -T -e CI=true $(SERVICE_PHP) pnpm run build
+	@echo "Assets: src/Resources/public/blog-kit.js"
 
-test-ts:
-	@echo "No TypeScript test suite (REQ-TEST-009 N/A)"
+test-ts: ensure-up
+	@$(COMPOSE) exec -T -e CI=true $(SERVICE_PHP) pnpm install --frozen-lockfile
+	@$(COMPOSE) exec -T $(SERVICE_PHP) pnpm run test:coverage | tee coverage-ts.txt
+	@chmod +x .scripts/ts-coverage-percent.sh
+	@./.scripts/ts-coverage-percent.sh coverage-ts.txt
 
 # Setup git hooks for pre-commit checks
 check-no-cursor-coauthor:

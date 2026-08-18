@@ -1,6 +1,7 @@
 {# Expects `translations` = form field (CollectionType of locale-aware entries).
    Optional: `active_locale` (request/UI locale for the initially selected tab).
-   Optional: `id_prefix` to avoid duplicate DOM ids when multiple tab sets exist. #}
+   Optional: `id_prefix` to avoid duplicate DOM ids when multiple tab sets exist.
+   Tabs use UiKit nowo-ui-tabs (REQ-UI-001 / REQ-UX-001). #}
 {% set default_locale = nowo_blog_kit_default_locale|default('es') %}
 {% set active_locale = active_locale|default(default_locale) %}
 {% if active_locale is empty %}
@@ -10,9 +11,8 @@
 
 <div
   class="admin-locale-tabs"
-  data-controller="locale-tabs"
-  data-locale-tabs
-  data-locale-tabs-active="{{ active_locale }}"
+  data-nowo-ui-tabs
+  data-nowo-ui-tabs-active="{{ active_locale }}"
 >
   <div class="admin-locale-tabs__list" role="tablist" aria-label="{{ 'admin.locale_tabs.label'|trans }}">
     {% for translationForm in translations %}
@@ -25,9 +25,9 @@
           class="admin-locale-tabs__tab{{ locale == active_locale ? ' is-active' : '' }}"
           id="{{ tab_id }}"
           role="tab"
-          data-locale-tabs-target="tab"
-          data-action="locale-tabs#switch"
-          data-locale-tab="{{ locale }}"
+          data-nowo-ui-tabs-trigger
+          data-nowo-ui-tab-id="{{ locale }}"
+          {% if locale == active_locale %}data-active{% endif %}
           aria-selected="{{ locale == active_locale ? 'true' : 'false' }}"
           aria-controls="{{ panel_id }}"
           {% if locale != active_locale %}tabindex="-1"{% endif %}
@@ -47,9 +47,9 @@
           class="admin-locale-tabs__tab{{ locale == active_locale ? ' is-active' : '' }}"
           id="{{ tab_id }}"
           role="tab"
-          data-locale-tabs-target="tab"
-          data-action="locale-tabs#switch"
-          data-locale-tab="{{ locale }}"
+          data-nowo-ui-tabs-trigger
+          data-nowo-ui-tab-id="{{ locale }}"
+          {% if locale == active_locale %}data-active{% endif %}
           aria-selected="{{ locale == active_locale ? 'true' : 'false' }}"
           aria-controls="{{ panel_id }}"
           {% if locale != active_locale %}tabindex="-1"{% endif %}
@@ -70,16 +70,17 @@
           class="admin-locale-tabs__panel{{ locale == active_locale ? ' is-active' : '' }}"
           id="{{ panel_id }}"
           role="tabpanel"
-          data-locale-tabs-target="panel"
-          data-locale-panel="{{ locale }}"
+          data-nowo-ui-tabs-panel
+          data-nowo-ui-tab-id="{{ locale }}"
           aria-labelledby="{{ tab_id }}"
           {% if locale != active_locale %}hidden{% endif %}
         >
-          {% for translationField in translationForm %}
-            {% if translationField.vars.name != 'locale' %}
-              {{ form_row(translationField, {required: true}) }}
-            {% else %}
-              {{ form_widget(translationField) }}
+          {% if translationForm.locale is defined %}
+            {{ form_widget(translationForm.locale) }}
+          {% endif %}
+          {% for child in translationForm %}
+            {% if not child.rendered %}
+              {{ form_row(child, {required: true}) }}
             {% endif %}
           {% endfor %}
         </div>
@@ -94,16 +95,17 @@
           class="admin-locale-tabs__panel{{ locale == active_locale ? ' is-active' : '' }}"
           id="{{ panel_id }}"
           role="tabpanel"
-          data-locale-tabs-target="panel"
-          data-locale-panel="{{ locale }}"
+          data-nowo-ui-tabs-panel
+          data-nowo-ui-tab-id="{{ locale }}"
           aria-labelledby="{{ tab_id }}"
           {% if locale != active_locale %}hidden{% endif %}
         >
-          {% for translationField in translationForm %}
-            {% if translationField.vars.name != 'locale' %}
-              {{ form_row(translationField) }}
-            {% else %}
-              {{ form_widget(translationField) }}
+          {% if translationForm.locale is defined %}
+            {{ form_widget(translationForm.locale) }}
+          {% endif %}
+          {% for child in translationForm %}
+            {% if not child.rendered %}
+              {{ form_row(child) }}
             {% endif %}
           {% endfor %}
         </div>

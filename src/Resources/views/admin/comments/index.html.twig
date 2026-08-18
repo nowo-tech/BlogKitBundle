@@ -1,7 +1,7 @@
 {% trans_default_domain 'NowoBlogKitBundle' %}
 {% import '@NowoUiKitBundle/macros/ui.html.twig' as ui %}
 {% set _css_fw = nowo_blog_kit_css_framework|default('tailwind') %}
-{% extends nowo_blog_kit_layout %}
+{% extends '@NowoBlogKitBundle/admin/base.html.twig' %}
 {% block title %}{{ page_title|trans }}{% endblock %}
 {% block admin %}
 {% set status_query = filters|default({})|merge({status: filter}) %}
@@ -25,11 +25,6 @@
   filter_form: filter_form,
   filters: filters|default({}),
   clear_params: {status: filter},
-  fields: [
-    {name: 'author', label: 'admin.filter.author'|trans},
-    {name: 'article', label: 'admin.filter.article'|trans},
-    {name: 'body', label: 'admin.filter.body'|trans},
-  ],
 }) }}
 
 <div class="nowo-ui-card">
@@ -59,24 +54,33 @@
           <td>
             {% if action_forms[item.id] is defined %}
               {% if item.status.value == 'pending' %}
-                {{ form_start(action_forms[item.id].approve) }}
-                  <button type="submit" class="{{ ui.btn('primary', 'sm', _css_fw) }}">{{ 'admin.action.approve'|trans }}</button>
-                {{ form_end(action_forms[item.id].approve) }}
-                {{ form_start(action_forms[item.id].reject) }}
-                  <button type="submit" class="{{ ui.btn('secondary', 'sm', _css_fw) }}">{{ 'admin.action.reject'|trans }}</button>
-                {{ form_end(action_forms[item.id].reject) }}
+                {{ include('@NowoBlogKitBundle/admin/_csrf_action_form.html.twig', {
+                  form: action_forms[item.id].approve,
+                  button_class: ui.btn('primary', 'sm', _css_fw),
+                  button_label: 'admin.action.approve'|trans,
+                }) }}
+                {{ include('@NowoBlogKitBundle/admin/_csrf_action_form.html.twig', {
+                  form: action_forms[item.id].reject,
+                  button_class: ui.btn('secondary', 'sm', _css_fw),
+                  button_label: 'admin.action.reject'|trans,
+                }) }}
               {% endif %}
               {% if reply_forms[item.id] is defined %}
                 {{ form_start(reply_forms[item.id]) }}
-                  {% for field in reply_forms[item.id] %}
-                    {{ form_row(field) }}
+                  {% for child in reply_forms[item.id] %}
+                    {% if not child.rendered %}
+                      {{ form_row(child) }}
+                    {% endif %}
                   {% endfor %}
                   <button type="submit" class="{{ ui.btn('secondary', 'sm', _css_fw) }}">{{ 'blog.comments.reply_submit'|trans }}</button>
                 {{ form_end(reply_forms[item.id]) }}
               {% endif %}
-              {{ form_start(action_forms[item.id].delete) }}
-                <button type="submit" class="{{ ui.btn('danger', 'sm', _css_fw) }}" data-confirm="{{ 'admin.confirm.delete_comment'|trans }}">{{ 'admin.action.delete'|trans }}</button>
-              {{ form_end(action_forms[item.id].delete) }}
+              {{ include('@NowoBlogKitBundle/admin/_csrf_action_form.html.twig', {
+                form: action_forms[item.id].delete,
+                button_class: ui.btn('danger', 'sm', _css_fw),
+                button_label: 'admin.action.delete'|trans,
+                confirm_message: 'admin.confirm.delete_comment'|trans,
+              }) }}
             {% endif %}
           </td>
         </tr>

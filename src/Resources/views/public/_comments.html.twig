@@ -41,8 +41,10 @@
             {% if can_moderate_comments and reply_forms[comment.id] is defined %}
               <div class="blog-comment__moderator">
                 {{ form_start(reply_forms[comment.id], {attr: {class: 'blog-comment__reply-form'}}) }}
-                  {% for field in reply_forms[comment.id] %}
-                    {{ form_row(field) }}
+                  {% for child in reply_forms[comment.id] %}
+                    {% if not child.rendered %}
+                      {{ form_row(child) }}
+                    {% endif %}
                   {% endfor %}
                   <button type="submit" class="{{ ui.btn('secondary', 'sm', _css_fw) }}">{{ 'blog.comments.reply_submit'|trans }}</button>
                 {{ form_end(reply_forms[comment.id]) }}
@@ -59,15 +61,16 @@
       <h3 class="blog-comments__form-title">{{ 'blog.comments.form_title'|trans }}</h3>
       <p class="blog-comments__form-lead">{{ 'blog.comments.form_lead'|trans }}</p>
       {{ form_start(comment_form, {attr: {class: 'form-card'}}) }}
-        {% for field in comment_form %}
-          {% if field.vars.name == 'privacyAccepted' %}
-            {{ form_row(field, {
-              label: 'blog.comments.privacy_accept'|trans({'%url%': nowo_blog_kit_privacy_url|default('#')}),
-              label_html: true,
-              translation_domain: false,
-            }) }}
-          {% else %}
-            {{ form_row(field) }}
+        {% if comment_form.privacyAccepted is defined %}
+          {{ form_row(comment_form.privacyAccepted, {
+            label: 'blog.comments.privacy_accept'|trans({'%url%': nowo_blog_kit_privacy_url|default('#')}),
+            label_html: true,
+            translation_domain: false,
+          }) }}
+        {% endif %}
+        {% for child in comment_form %}
+          {% if not child.rendered %}
+            {{ form_row(child) }}
           {% endif %}
         {% endfor %}
         <button type="submit" class="{{ ui.btn('primary', null, _css_fw) }}">{{ 'blog.comments.submit'|trans }}</button>

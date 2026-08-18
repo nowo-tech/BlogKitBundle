@@ -1,7 +1,7 @@
 {% trans_default_domain 'NowoBlogKitBundle' %}
 {% import '@NowoUiKitBundle/macros/ui.html.twig' as ui %}
 {% set _css_fw = nowo_blog_kit_css_framework|default('tailwind') %}
-{% extends nowo_blog_kit_layout %}
+{% extends '@NowoBlogKitBundle/admin/base.html.twig' %}
 {% block title %}{{ page_title|trans }}{% endblock %}
 {% block admin %}
 <div class="{{ ui.page_header(_css_fw) }}">
@@ -21,11 +21,6 @@
   route: 'admin_blog_index',
   filter_form: filter_form,
   filters: filters|default({}),
-  fields: [
-    {name: 'title', label: 'admin.filter.title'|trans},
-    {name: 'slug', label: 'admin.filter.slug'|trans},
-    {name: 'published', label: 'admin.filter.published'|trans},
-  ],
 }) }}
 
 <div class="nowo-ui-card">

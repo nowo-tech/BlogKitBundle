@@ -134,7 +134,10 @@ Maps **100%** of production PHP files under `src/` (70 units). Test and demo tre
 | `Resources/views/**/*.twig` | Admin and public templates | FR-PUB-001, FR-ADM-001, FR-TWIG-001 |
 | `Resources/translations/NowoBlogKitBundle.*.yaml` | Locales en/es/it/fr/pt/de/nl | FR-I18N-002, FR-I18N-003 |
 | `Resources/public/blog.css` | Public styles | FR-PUB-001 |
-| `Resources/public/blog-infinite-controller.js` | Infinite scroll | FR-PUB-002 |
-| `Resources/assets/src/blog-infinite-controller.ts` | Stimulus source | FR-PUB-002 |
+| `Resources/public/blog-kit.js` | Infinite scroll + collection IIFE | FR-PUB-002, FR-ADM-001 |
+| `Resources/public/blog-infinite-controller.js` | Legacy filename copy of `blog-kit.js` | FR-PUB-002 |
+| `Resources/assets/src/blog-kit.ts` | Vite IIFE entry | FR-PUB-002 |
+| `Resources/assets/src/blog-infinite-controller.ts` | Infinite scroll module | FR-PUB-002 |
+| `Resources/assets/src/blog-form-collection.ts` | CollectionType add/remove | FR-ADM-001 |
 | `Resources/config/services.yaml` | Service autowire | FR-CFG-002 |
 | `Resources/config/routing.yaml` | Attribute controller import | FR-BUNDLE-001 |

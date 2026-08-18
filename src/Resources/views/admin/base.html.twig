@@ -1,0 +1,17 @@
+{% extends nowo_blog_kit_layout %}
+{% trans_default_domain 'NowoBlogKitBundle' %}
+
+{# REQ-UI-001: stack bundle assets via parent() so a host layout_template keeps its chrome. #}
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('css/nowo-ui.css', 'nowo_ui_kit') }}">
+    <link rel="stylesheet" href="{{ asset('blog.css', 'nowo_blog_kit') }}">
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script src="{{ asset('js/nowo-ui-tabs.js', 'nowo_ui_kit') }}" defer></script>
+    <script src="{{ asset('js/nowo-ui-confirm.js', 'nowo_ui_kit') }}" defer></script>
+    <script src="{{ asset('js/nowo-ui-modal.js', 'nowo_ui_kit') }}" defer></script>
+    <script src="{{ asset('blog-kit.js', 'nowo_blog_kit') }}" defer></script>
+{% endblock %}

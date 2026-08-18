@@ -118,7 +118,9 @@ Common override targets:
 
 - `templates/bundles/NowoBlogKitBundle/public/index.html.twig`
 - `templates/bundles/NowoBlogKitBundle/public/show.html.twig`
+- `templates/bundles/NowoBlogKitBundle/public/base.html.twig`
 - `templates/bundles/NowoBlogKitBundle/public/layout.html.twig`
+- `templates/bundles/NowoBlogKitBundle/admin/base.html.twig`
 - `templates/bundles/NowoBlogKitBundle/admin/layout.html.twig`
 - `templates/bundles/NowoBlogKitBundle/admin/index.html.twig`
 
@@ -139,14 +141,21 @@ See [CONFIGURATION.md](CONFIGURATION.md).
 
 ## Infinite scroll assets
 
-Published files (after `assets:install`):
+Published files (after `assets:install` / `make assets`):
 
 - `asset('blog.css', 'nowo_blog_kit')`
-- `asset('blog-infinite-controller.js', 'nowo_blog_kit')`
+- `asset('blog-kit.js', 'nowo_blog_kit')`
 
-The default public layout loads both. The JS boots `[data-controller="blog-infinite"]` without requiring a host Stimulus application.
+Admin and public pages extend `@NowoBlogKitBundle/admin/base.html.twig` and `@NowoBlogKitBundle/public/base.html.twig`. Those bases call `{{ parent() }}` then load bundle CSS/JS (REQ-UI-001). Point `layout_template` / `public_layout_template` at the host layout; do not copy every page template.
 
-Stimulus source for Symfony UX hosts: `src/Resources/assets/src/blog-infinite-controller.ts`. If you register that controller in the host Stimulus app, override `public/layout.html.twig` and drop the bundled script tag so infinite scroll does not bind twice.
+`blog-kit.js` boots:
+
+- `[data-controller="blog-infinite"]` (public masonry infinite scroll)
+- `[data-controller="form-collection"]` (article resource CollectionType)
+
+No host Stimulus application is required. TypeScript sources live in `src/Resources/assets/src/` and are built with Vite (`pnpm run build`).
+
+Admin locale tabs use UiKit `nowo-ui-tabs` (`asset('js/nowo-ui-tabs.js', 'nowo_ui_kit')`).
 
 ## Rich text notes
 
