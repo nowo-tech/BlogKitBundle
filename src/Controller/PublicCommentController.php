@@ -11,6 +11,8 @@ use Nowo\BlogKitBundle\Form\StaffBlogCommentReplyType;
 use Nowo\BlogKitBundle\Model\BlogUserInterface;
 use Nowo\BlogKitBundle\Repository\BlogArticleRepository;
 use Nowo\BlogKitBundle\Repository\BlogCommentRepository;
+use Nowo\BlogKitBundle\Security\BlogKitAccessCheckerInterface;
+use Nowo\BlogKitBundle\Security\BlogProtection;
 use Nowo\BlogKitBundle\Service\BlogCommentManager;
 use Nowo\RoutingKitBundle\Attribute\Routable;
 use Nowo\RoutingKitBundle\Attribute\RouteParam;
@@ -30,6 +32,8 @@ final class PublicCommentController extends AbstractController
         private readonly BlogCommentRepository $blogCommentRepository,
         private readonly BlogCommentManager $blogCommentManager,
         private readonly TranslatorInterface $translator,
+        private readonly BlogProtection $protection,
+        private readonly BlogKitAccessCheckerInterface $accessChecker,
     ) {
     }
 
@@ -40,7 +44,8 @@ final class PublicCommentController extends AbstractController
     public function create(string $slug, Request $request): RedirectResponse
     {
         $blogArticle = $this->findPublishedArticle($slug);
-        $form        = $this->createForm(PublicBlogCommentType::class);
+        $this->protection->rateLimiter()->consume($request, $blogArticle);
+        $form = $this->createForm(PublicBlogCommentType::class);
         $form->handleRequest($request);
 
         if (!$form->isSubmitted() || !$form->isValid()) {
@@ -96,7 +101,7 @@ final class PublicCommentController extends AbstractController
         $data = $form->getData();
         $user = $this->getUser();
 
-        if (!$user instanceof BlogUserInterface) {
+        if (!$this->accessChecker->canModerate() || !$user instanceof BlogUserInterface) {
             throw $this->createAccessDeniedException();
         }
 

@@ -8,6 +8,7 @@ use Nowo\BlogKitBundle\Entity\BlogSettings;
 use Nowo\BlogKitBundle\Enum\BlogAsidePlacement;
 use Nowo\BlogKitBundle\Enum\BlogHeroImageMode;
 use Nowo\BlogKitBundle\Enum\BlogListingMode;
+use Nowo\BlogKitBundle\Enum\BlogMasonryStrategy;
 use Nowo\BlogKitBundle\Service\BlogSettingsProvider;
 use Nowo\BlogKitBundle\Tests\Support\RepositoryTestSupport;
 use PHPUnit\Framework\Attributes\Test;
@@ -59,6 +60,8 @@ final class BlogSettingsProviderTest extends TestCase
     public function itReturnsTypedAccessorsAndAsideSlots(): void
     {
         self::assertSame(BlogListingMode::Infinite, $this->provider->listingMode());
+        self::assertSame(BlogMasonryStrategy::Masonry, $this->provider->masonryStrategy());
+        self::assertSame(['mobile' => 1, 'tablet' => 2, 'desktop' => 2], $this->provider->masonryColumns());
         self::assertSame(12, $this->provider->perPage());
         self::assertSame(8, $this->provider->indexLatestLimit());
         self::assertSame(3, $this->provider->relatedLimit());
@@ -85,19 +88,25 @@ final class BlogSettingsProviderTest extends TestCase
     public function itFallsBackForInvalidEnums(): void
     {
         $invalidSettings = $this->createSettingsFromArray([
-            'listing_mode'           => 'legacy',
-            'per_page'               => 30,
-            'index_latest_limit'     => 0,
-            'related_limit'          => 0,
-            'index_tags_limit'       => 999,
-            'index_aside_tags_limit' => 999,
-            'hero_image_mode'        => 'zoom',
-            'show_aside_search'      => 'sideways',
-            'show_comments'          => null,
+            'listing_mode'            => 'legacy',
+            'masonry_strategy'        => 'waterfall',
+            'masonry_columns_mobile'  => 9,
+            'masonry_columns_tablet'  => 9,
+            'masonry_columns_desktop' => 9,
+            'per_page'                => 30,
+            'index_latest_limit'      => 0,
+            'related_limit'           => 0,
+            'index_tags_limit'        => 999,
+            'index_aside_tags_limit'  => 999,
+            'hero_image_mode'         => 'zoom',
+            'show_aside_search'       => 'sideways',
+            'show_comments'           => null,
         ]);
         $provider = $this->createProvider($invalidSettings);
 
         self::assertSame(BlogListingMode::Paginated, $provider->listingMode());
+        self::assertSame(BlogMasonryStrategy::Masonry, $provider->masonryStrategy());
+        self::assertSame(['mobile' => 2, 'tablet' => 2, 'desktop' => 3], $provider->masonryColumns());
         self::assertSame(24, $provider->perPage());
         self::assertSame(1, $provider->indexLatestLimit());
         self::assertSame(1, $provider->relatedLimit());
@@ -108,9 +117,68 @@ final class BlogSettingsProviderTest extends TestCase
         self::assertFalse($provider->bool('show_comments', false));
     }
 
-    private function createProvider(BlogSettings $settings): BlogSettingsProvider
+    #[Test]
+    public function inheritAndBlankListingModeUseYamlDefault(): void
     {
-        return new BlogSettingsProvider(RepositoryTestSupport::blogSettingsRepository($settings));
+        $inherit = $this->createProvider(new BlogSettings(), 'infinite');
+        self::assertSame(BlogListingMode::Infinite, $inherit->listingMode());
+
+        $blank = $this->createSettingsFromArray(['listing_mode' => '', 'per_page' => 6]);
+        self::assertSame(BlogListingMode::Paginated, $this->createProvider($blank)->listingMode());
+
+        $yamlInvalid = $this->createProvider(new BlogSettings(), 'nope');
+        self::assertSame(BlogListingMode::Paginated, $yamlInvalid->listingMode());
+    }
+
+    #[Test]
+    public function inheritAndBlankMasonryUseYamlDefaults(): void
+    {
+        $inherit = $this->createProvider(new BlogSettings(), 'paginated', 'grid', 2, 2, 3);
+        self::assertSame(BlogMasonryStrategy::Grid, $inherit->masonryStrategy());
+        self::assertSame(['mobile' => 2, 'tablet' => 2, 'desktop' => 3], $inherit->masonryColumns());
+
+        $blank = $this->createSettingsFromArray([
+            'masonry_strategy'        => '',
+            'masonry_columns_mobile'  => 0,
+            'masonry_columns_tablet'  => 0,
+            'masonry_columns_desktop' => 0,
+            'per_page'                => 6,
+        ]);
+        self::assertSame(BlogMasonryStrategy::Masonry, $this->createProvider($blank)->masonryStrategy());
+        self::assertSame(['mobile' => 1, 'tablet' => 2, 'desktop' => 2], $this->createProvider($blank)->masonryColumns());
+
+        $yamlInvalid = $this->createProvider(new BlogSettings(), 'paginated', 'nope', 0, 0, 0);
+        self::assertSame(BlogMasonryStrategy::Masonry, $yamlInvalid->masonryStrategy());
+        self::assertSame(['mobile' => 1, 'tablet' => 1, 'desktop' => 1], $yamlInvalid->masonryColumns());
+
+        $override = $this->createSettingsFromArray([
+            'masonry_strategy'        => 'list',
+            'masonry_columns_mobile'  => 2,
+            'masonry_columns_tablet'  => 1,
+            'masonry_columns_desktop' => 3,
+            'per_page'                => 6,
+        ]);
+        $overridden = $this->createProvider($override, 'paginated', 'grid', 1, 2, 2);
+        self::assertSame(BlogMasonryStrategy::List, $overridden->masonryStrategy());
+        self::assertSame(['mobile' => 2, 'tablet' => 1, 'desktop' => 3], $overridden->masonryColumns());
+    }
+
+    private function createProvider(
+        BlogSettings $settings,
+        string $listingModeDefault = 'paginated',
+        string $masonryStrategyDefault = 'masonry',
+        int $masonryColumnsMobileDefault = 1,
+        int $masonryColumnsTabletDefault = 2,
+        int $masonryColumnsDesktopDefault = 2,
+    ): BlogSettingsProvider {
+        return new BlogSettingsProvider(
+            RepositoryTestSupport::blogSettingsRepository($settings),
+            $listingModeDefault,
+            $masonryStrategyDefault,
+            $masonryColumnsMobileDefault,
+            $masonryColumnsTabletDefault,
+            $masonryColumnsDesktopDefault,
+        );
     }
 
     /** @param array<string, mixed> $values */

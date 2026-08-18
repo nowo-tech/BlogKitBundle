@@ -47,7 +47,7 @@ composer require twig/extra-bundle twig/string-extra
 When the Flex recipe is available, it copies:
 
 - `config/packages/nowo_blog_kit.yaml`
-- `config/packages/nowo_form_kit.yaml` (filter profile used by admin GET filters)
+- `config/packages/nowo_form_kit.yaml` (filter profile + `type_map.entity` for article tags)
 - `config/routes/nowo_blog_kit.yaml`
 
 Recipe source in this repository:
@@ -80,16 +80,37 @@ nowo_blog_kit:
         moderate_roles: [ROLE_MODERATOR]
         configure_roles: [ROLE_ADMIN]
         allow_unauthenticated: false
+        object_access:
+            strategy: none
     web_ui:
         layout_template: '@NowoBlogKitBundle/admin/layout.html.twig'
         public_layout_template: '@NowoBlogKitBundle/public/layout.html.twig'
         css_framework: bootstrap5
         icon_set: bootstrap-icons
         row_actions_display: icon
+    listing:
+        mode: paginated
+        masonry:
+            strategy: masonry
+            columns_mobile: 1
+            columns_tablet: 2
+            columns_desktop: 2
+    comments:
+        rate_limit:
+            strategy: fixed_window
+            limit: 5
+            interval_seconds: 60
+        captcha:
+            strategy: honeypot
+    html:
+        sanitize:
+            strategy: none
     doctrine:
         table_prefix: ''
         connection: default
 ```
+
+See [CONFIGURATION.md](CONFIGURATION.md) for rate-limit, CAPTCHA, and HTML sanitizer strategies.
 
 ## Routes
 
@@ -145,7 +166,7 @@ security:
         - { path: ^/admin/blog, roles: ROLE_EDITOR }
 ```
 
-You can replace role-based access with a custom service via `security.access_checker`.
+You can replace role-based access with a custom service via `security.access_checker`. Scope publications with `security.object_access` (`owner` or a host `BlogKitResourceAccessCheckerInterface`).
 
 ## User entity
 
@@ -172,7 +193,7 @@ Run `php bin/console assets:install` so `blog.css` and `blog-kit.js` are availab
 
 Rebuild frontend with `make assets` (Vite + pnpm).
 
-The bundle does **not** ship Bootstrap, Tailwind, or Foundation CSS. Set `web_ui.css_framework` to match the host (`bootstrap5`, `tailwind`, `foundation`, `custom`) and load that stack in `public_layout_template`. Public markup stays on semantic `blog-*` classes plus UiKit buttons.
+The bundle does **not** ship Bootstrap, Tailwind, or Foundation CSS. Set `web_ui.css_framework` to match the host (`bootstrap5`, `tailwind`, `foundation`, `custom`) and load that stack in both `layout_template` (admin) and `public_layout_template`. Public markup stays on semantic `blog-*` classes plus UiKit buttons. For Bootstrap hosts, register `twig.form_themes` with `@NowoFormKitBundle/form/static_blocks.html.twig` then `bootstrap_5_layout.html.twig`, and load Bootstrap Icons if `icon_set: bootstrap-icons`.
 
 ## Verify
 

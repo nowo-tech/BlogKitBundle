@@ -8,11 +8,33 @@ nowo_blog_kit:
         moderate_roles: [ROLE_MODERATOR]
         configure_roles: [ROLE_ADMIN]
         allow_unauthenticated: false
+        object_access:
+            strategy: none
+            # strategy: owner
+            # strategy: service
+            # service: App\Security\BlogPublicationAccessChecker
     web_ui:
         layout_template: 'admin/layout.html.twig'
         public_layout_template: 'base.html.twig'
         css_framework: bootstrap5
         icon_set: bootstrap-icons
         row_actions_display: icon
+    listing:
+        mode: paginated
+        masonry:
+            strategy: masonry
+            columns_mobile: 1
+            columns_tablet: 2
+            columns_desktop: 2
+    comments:
+        rate_limit:
+            strategy: fixed_window
+            limit: 5
+            interval_seconds: 60
+        captcha:
+            strategy: honeypot
+    html:
+        sanitize:
+            strategy: none
     doctrine:
         table_prefix: ''

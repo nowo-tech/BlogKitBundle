@@ -9,6 +9,9 @@ use Nowo\BlogKitBundle\Entity\BlogArticle;
 use Nowo\BlogKitBundle\Entity\BlogComment;
 use Nowo\BlogKitBundle\Entity\BlogCommentStatus;
 use Nowo\BlogKitBundle\Repository\BlogCommentRepository;
+use Nowo\BlogKitBundle\Security\AllowAllBlogKitResourceAccessChecker;
+use Nowo\BlogKitBundle\Security\BlogKitAccessDenied;
+use Nowo\BlogKitBundle\Security\BlogKitResourceAccessCheckerInterface;
 use Nowo\BlogKitBundle\Service\BlogCommentManager;
 use Nowo\BlogKitBundle\Tests\Support\ControllerTestHelper;
 use Nowo\BlogKitBundle\Tests\Support\LocaleTestSupport;
@@ -60,14 +63,12 @@ final class BlogCommentControllerTest extends TestCase
             ->method('render')
             ->with(
                 '@NowoBlogKitBundle/admin/comments/index.html.twig',
-                self::callback(static function (array $parameters) use ($comment): bool {
-                    return $parameters['items'] === [$comment]
-                        && $parameters['filters'] === ['author' => 'Ana']
-                        && $parameters['filter'] === 'pending'
-                        && $parameters['pending_count'] === 3
-                        && $parameters['filter_form'] instanceof FormView
-                        && isset($parameters['reply_forms'][5], $parameters['action_forms'][5]);
-                }),
+                self::callback(static fn (array $parameters): bool => $parameters['items'] === [$comment]
+                    && $parameters['filters'] === ['author' => 'Ana']
+                    && $parameters['filter'] === 'pending'
+                    && $parameters['pending_count'] === 3
+                    && $parameters['filter_form'] instanceof FormView
+                    && isset($parameters['reply_forms'][5], $parameters['action_forms'][5])),
             )
             ->willReturn('pending');
 
@@ -83,6 +84,41 @@ final class BlogCommentControllerTest extends TestCase
         $response = $controller->index($request);
 
         self::assertSame('pending', $response->getContent());
+    }
+
+    #[Test]
+    public function indexSkipsActionFormsWhenObjectAccessRejectsTheComment(): void
+    {
+        $request = Request::create('/admin/blog/comments', 'GET');
+        $comment = $this->createComment(5, BlogCommentStatus::Pending);
+
+        $repository = $this->createMock(BlogCommentRepository::class);
+        $repository->method('findFiltered')->willReturn([$comment]);
+        $repository->method('countPending')->willReturn(1);
+
+        $csrfFactory = $this->createMock(CsrfOnlyFormFactory::class);
+        $csrfFactory->expects(self::never())->method('createNamed');
+
+        $twig = $this->createMock(Environment::class);
+        $twig->expects(self::once())
+            ->method('render')
+            ->with(
+                '@NowoBlogKitBundle/admin/comments/index.html.twig',
+                self::callback(static fn (array $parameters): bool => $parameters['action_forms'] === []
+                    && $parameters['reply_forms'] === []),
+            )
+            ->willReturn('index');
+
+        $controller = $this->createController(
+            request: $request,
+            repository: $repository,
+            csrfOnlyFormFactory: $csrfFactory,
+            filterFormFactory: ControllerTestHelper::filterFormFactory(),
+            twig: $twig,
+            accessDenied: $this->rejectingAccessDenied(),
+        );
+
+        self::assertSame('index', $controller->index($request)->getContent());
     }
 
     #[Test]
@@ -392,6 +428,21 @@ final class BlogCommentControllerTest extends TestCase
         self::assertSame(['admin.flash.comment_deleted'], $request->getSession()->getFlashBag()->get('success'));
     }
 
+    #[Test]
+    public function approveDeniesWhenObjectAccessRejectsTheComment(): void
+    {
+        $request = Request::create('/admin/blog/comments/5/approve', 'POST');
+        $comment = $this->createComment(5, BlogCommentStatus::Pending);
+
+        $this->expectException(AccessDeniedException::class);
+        $this->expectExceptionMessage('comment');
+
+        $this->createController(
+            request: $request,
+            accessDenied: $this->rejectingAccessDenied(),
+        )->approve($comment, $request);
+    }
+
     private function createController(
         ?Request $request = null,
         ?BlogCommentRepository $repository = null,
@@ -401,6 +452,7 @@ final class BlogCommentControllerTest extends TestCase
         ?FormFactoryInterface $formFactory = null,
         ?Environment $twig = null,
         ?TestUser $user = null,
+        ?BlogKitAccessDenied $accessDenied = null,
     ): BlogCommentController {
         $request ??= Request::create('/admin/blog/comments', 'GET');
 
@@ -409,6 +461,7 @@ final class BlogCommentControllerTest extends TestCase
             $manager ?? $this->createMock(BlogCommentManager::class),
             $csrfOnlyFormFactory ?? ControllerTestHelper::csrfOnlyFormFactory(),
             $filterFormFactory ?? ControllerTestHelper::filterFormFactory(),
+            $accessDenied ?? new BlogKitAccessDenied(new AllowAllBlogKitResourceAccessChecker()),
         );
 
         ControllerTestHelper::bind($controller, $request, array_filter([
@@ -468,5 +521,13 @@ final class BlogCommentControllerTest extends TestCase
         $reflection->setValue($comment, $id);
 
         return $comment;
+    }
+
+    private function rejectingAccessDenied(): BlogKitAccessDenied
+    {
+        $checker = $this->createMock(BlogKitResourceAccessCheckerInterface::class);
+        $checker->method('canModerateComment')->willReturn(false);
+
+        return new BlogKitAccessDenied($checker);
     }
 }

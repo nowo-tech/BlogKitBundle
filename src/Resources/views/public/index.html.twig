@@ -33,9 +33,10 @@
       {% endif %}
     </div>
 
-    {% set cols_mobile = blog_settings.masonry_columns_mobile|default(1) %}
-    {% set cols_tablet = blog_settings.masonry_columns_tablet|default(2) %}
-    {% set cols_desktop = blog_settings.masonry_columns_desktop|default(2) %}
+    {% set masonry_strategy = masonry_strategy|default('masonry') %}
+    {% set cols_mobile = masonry_columns.mobile|default(1) %}
+    {% set cols_tablet = masonry_columns.tablet|default(2) %}
+    {% set cols_desktop = masonry_columns.desktop|default(2) %}
     {% set has_left = aside_left is not empty %}
     {% set has_right = aside_right is not empty %}
 
@@ -67,10 +68,11 @@
               data-blog-infinite-cols-mobile-value="{{ cols_mobile }}"
               data-blog-infinite-cols-tablet-value="{{ cols_tablet }}"
               data-blog-infinite-cols-desktop-value="{{ cols_desktop }}"
+              data-blog-infinite-layout-value="{{ masonry_strategy }}"
             {% endif %}
           >
             <div
-              class="blog-masonry"
+              class="blog-masonry blog-masonry--{{ masonry_strategy }}"
               style="--blog-cols-sm: {{ cols_mobile }}; --blog-cols-md: {{ cols_tablet }}; --blog-cols-lg: {{ cols_desktop }};"
               {% if is_infinite %} data-blog-infinite-target="list"{% endif %}
             >

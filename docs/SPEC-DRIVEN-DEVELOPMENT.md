@@ -26,17 +26,17 @@ In this repository, spec-driven development has three layers that stay in sync:
 | US-01 | As a visitor, I browse published articles at `/blog` and open `/blog/{slug}` |
 | US-02 | As a visitor, I search and filter by tag, including infinite-scroll listing when enabled |
 | US-03 | As a visitor, I submit a comment that waits for moderation |
-| US-04 | As an editor, I create, edit, publish, and delete multilingual articles and tags |
+| US-04 | As an editor, I create, edit, publish, and delete multilingual articles and tags (optional `owner` object access) |
 | US-05 | As a moderator, I approve, reject, reply to, and delete comments |
-| US-06 | As an administrator, I configure listing mode, asides, and public display options |
+| US-06 | As an administrator, I configure listing mode, masonry layout, asides, comment protection, HTML sanitizer, and public display options |
 | US-07 | As an integrator, I adapt security, layouts, locales, and `user_class` from configuration |
 | US-08 | As a maintainer, I run the Symfony 8 FrankenPHP demo and QA checks |
 
 ## Functional scope
 
-**In scope:** multilingual articles and tags, moderated comments, singleton settings, public Twig rendering, admin CRUD, hashtag sync command, published event, custom access checking, Twig namespace and overrides, Doctrine persistence, Symfony Flex recipe, FrankenPHP demo.
+**In scope:** multilingual articles and tags, moderated comments (rate-limit and CAPTCHA strategies), optional article HTML sanitizer, singleton settings, public Twig rendering, admin CRUD, object-level publication access (`none` / `owner` / host `service`), hashtag sync command, published event, custom access checking, Twig namespace and overrides, Doctrine persistence, Symfony Flex recipe, FrankenPHP demo.
 
-**Non-goals:** full CMS page builder, untrusted-user HTML sanitization, comment rate limiting, or owning the host authentication system.
+**Non-goals:** full CMS page builder, or owning the host authentication system.
 
 ## Validating the spec
 
@@ -54,6 +54,7 @@ make release-check
 | --- | --- | --- |
 | REQ-DOCS-002 | `README.md` | Canonical documentation link order |
 | REQ-UI-002 | `docs/SECURITY.md`, security config | Admin routes require access unless explicitly relaxed |
+| REQ-TWIG-005 | `.scripts/check-no-raw-html-form.sh` | Kit Twig has no raw `<form>` / `<input>` |
 | REQ-TWIG-001 | `TwigPathsPass` | Host Twig overrides win over bundle templates |
 | REQ-TWIG-004 | `docs/INSTALLATION.md`, demo bundles | Twig Extra requirement is documented |
 | REQ-I18N-001 | `docs/USAGE.md`, `docs/CONFIGURATION.md` | Translation override path |

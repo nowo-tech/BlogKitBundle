@@ -5,10 +5,61 @@ This document describes how to upgrade **Blog Kit Bundle** between released vers
 ## Table of contents
 
 - [Unreleased](#unreleased)
+- [1.1.0](#110)
 - [1.0.0](#100)
 - [Future releases](#future-releases)
 
 ## Unreleased
+
+No upgrade notes yet.
+
+## 1.1.0
+
+Schema: `content_blog_settings` gains `comment_rate_limit_strategy`, `comment_rate_limit_limit`, `comment_rate_limit_interval_seconds`, `comment_captcha_strategy`, `html_sanitize_strategy`, and `masonry_strategy` (defaults `inherit` / `0`). Column defaults for `masonry_columns_*` become `0` (YAML inherit). `listing_mode` default becomes `inherit` (YAML `listing.mode`). Run Doctrine schema update.
+
+New YAML keys:
+
+```yaml
+nowo_blog_kit:
+    security:
+        object_access:
+            strategy: none           # none | owner | service
+            service: null
+    listing:
+        mode: paginated          # paginated | infinite
+        masonry:
+            strategy: masonry    # masonry | grid | list
+            columns_mobile: 1    # 1–2
+            columns_tablet: 2    # 1–2
+            columns_desktop: 2   # 1–3
+    comments:
+        rate_limit:
+            strategy: fixed_window   # none | fixed_window | per_ip_article | sliding_window | service
+            limit: 5                 # 0 disables
+            interval_seconds: 60
+            service: null
+        captcha:
+            strategy: honeypot       # none | honeypot | recaptcha_v2 | recaptcha_v3 | hcaptcha | turnstile | service
+            site_key: ''
+            secret_key: ''
+            min_score: 0.5
+            honeypot_field: website
+            service: null
+    html:
+        sanitize:
+            strategy: none           # none | strip | allowlist | service
+            service: null
+```
+
+Defaults enable a honeypot and a per-IP fixed window (5 / 60s). Set `comments.rate_limit.strategy: none` and `comments.captcha.strategy: none` to restore the previous open form. CAPTCHA provider keys must stay in YAML, not in the settings admin.
+
+New settings rows inherit `listing.mode` and `listing.masonry` from YAML (`paginated` + `masonry` by default). Existing `listing_mode=paginated` rows keep numbered pages until changed in admin. Existing masonry column values (`1`/`2`/`2`) keep overriding YAML until set to `0`.
+
+Staff replies on the public article now require `canModerate()`.
+
+New YAML `security.object_access` (`none` default). Set `strategy: owner` so editors only manage publications they created (`createdBy`). `canConfigure()` still sees every row. For custom rules implement `BlogKitResourceAccessCheckerInterface` and set `strategy: service`. This is the bundle access layer (`BlogKitAccessDenied`), not a Symfony Security voter. Roles are unchanged.
+
+The extension prepends FormKit `type_map.entity` → `Symfony\Bridge\Doctrine\Form\Type\EntityType` so article tag fields resolve. You can still override `nowo_form_kit.type_map` in the host. Bootstrap 5 hosts should register `twig.form_themes` (`@NowoFormKitBundle/form/static_blocks.html.twig` then `bootstrap_5_layout.html.twig`) and load framework CSS / Bootstrap Icons in `web_ui.layout_template`. See the FrankenPHP demo under `demo/symfony8/`.
 
 ## 1.0.0
 

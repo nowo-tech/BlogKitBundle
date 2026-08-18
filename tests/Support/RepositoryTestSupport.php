@@ -15,7 +15,7 @@ final class RepositoryTestSupport
     public static function blogSettingsRepository(BlogSettings $settings): BlogSettingsRepository
     {
         return new class($settings) extends BlogSettingsRepository {
-            public function __construct(private BlogSettings $singleton)
+            public function __construct(private readonly BlogSettings $singleton)
             {
             }
 

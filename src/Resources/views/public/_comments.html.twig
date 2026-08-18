@@ -61,6 +61,13 @@
       <h3 class="blog-comments__form-title">{{ 'blog.comments.form_title'|trans }}</h3>
       <p class="blog-comments__form-lead">{{ 'blog.comments.form_lead'|trans }}</p>
       {{ form_start(comment_form, {attr: {class: 'form-card'}}) }}
+        {% set captcha = nowo_blog_kit_captcha() %}
+        {% if captcha.script_url %}
+          <script src="{{ captcha.script_url }}" async defer></script>
+        {% endif %}
+        {% if captcha.widget_class %}
+          <div class="{{ captcha.widget_class }}" data-sitekey="{{ captcha.site_key }}"></div>
+        {% endif %}
         {% if comment_form.privacyAccepted is defined %}
           {{ form_row(comment_form.privacyAccepted, {
             label: 'blog.comments.privacy_accept'|trans({'%url%': nowo_blog_kit_privacy_url|default('#')}),

@@ -1020,7 +1020,7 @@
             "dist": {
                 "type": "path",
                 "url": "/var/blog-kit-bundle",
-                "reference": "daae9544a5d9f7025d5ec95c4cde5900255022f2"
+                "reference": "0faac53a1b9d752bbf340610bb228dc650926deb"
             },
             "require": {
                 "doctrine/doctrine-bundle": "^2.10 || ^3.0",
@@ -1028,8 +1028,8 @@
                 "nowo-tech/audit-kit-bundle": "^1.1",
                 "nowo-tech/form-kit-bundle": "^2.4",
                 "nowo-tech/routing-kit-bundle": "^1.4",
-                "nowo-tech/ui-kit-bundle": "^1.4",
-                "php": ">=8.2 <8.6",
+                "nowo-tech/ui-kit-bundle": "^1.5",
+                "php": ">=8.4 <8.6",
                 "psr/clock": "^1.0",
                 "psr/log": "^1 || ^2 || ^3",
                 "symfony/clock": "^7.4 || ^8.0",
@@ -1060,7 +1060,7 @@
                 "phpstan/phpstan": "^2.0",
                 "phpstan/phpstan-phpunit": "^2.0",
                 "phpstan/phpstan-symfony": "^2.0",
-                "phpunit/phpunit": "^11.0 || ^12.0 || ^13.0",
+                "phpunit/phpunit": "^11.5",
                 "rector/rector": "^2.0",
                 "vincentlanglet/twig-cs-fixer": "^4.0"
             },
@@ -1070,6 +1070,11 @@
                 "symfony/flex": "Automatic Flex recipe installation"
             },
             "type": "symfony-bundle",
+            "extra": {
+                "symfony": {
+                    "bundle": "Nowo\\BlogKitBundle\\NowoBlogKitBundle"
+                }
+            },
             "autoload": {
                 "psr-4": {
                     "Nowo\\BlogKitBundle\\": "src/"

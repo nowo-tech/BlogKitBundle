@@ -5,13 +5,17 @@ declare(strict_types=1);
 namespace Nowo\BlogKitBundle\Tests\Unit\Service;
 
 use Nowo\BlogKitBundle\Enum\BlogListingMode;
+use Nowo\BlogKitBundle\Enum\BlogMasonryStrategy;
+use Nowo\BlogKitBundle\Enum\HtmlSanitizeStrategy;
 use Nowo\BlogKitBundle\Repository\BlogArticleRepository;
 use Nowo\BlogKitBundle\Repository\BlogTagRepository;
+use Nowo\BlogKitBundle\Security\BlogProtection;
 use Nowo\BlogKitBundle\Service\BlogArticleBodyEnhancer;
 use Nowo\BlogKitBundle\Service\BlogCatalog;
 use Nowo\BlogKitBundle\Service\BlogHashtagProcessor;
 use Nowo\BlogKitBundle\Service\BlogLocalesLocaleResolver;
 use Nowo\BlogKitBundle\Service\BlogSettingsProvider;
+use Nowo\BlogKitBundle\Tests\Support\BlogProtectionTestFactory;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
@@ -48,12 +52,20 @@ final class BlogCatalogTest extends TestCase
         $provider = $this->createMock(BlogSettingsProvider::class);
         $provider->expects(self::once())->method('listingMode')->willReturn(BlogListingMode::Infinite);
         $provider->expects(self::once())->method('perPage')->willReturn(9);
+        $provider->expects(self::once())->method('masonryStrategy')->willReturn(BlogMasonryStrategy::Grid);
+        $provider->expects(self::once())->method('masonryColumns')->willReturn([
+            'mobile'  => 1,
+            'tablet'  => 2,
+            'desktop' => 3,
+        ]);
 
         $catalog = $this->createCatalog(blogSettingsProvider: $provider);
 
         self::assertSame($provider, $catalog->blogSettings());
         self::assertSame('infinite', $catalog->blogListingMode());
         self::assertSame(9, $catalog->blogPerPage());
+        self::assertSame('grid', $catalog->blogMasonryStrategy());
+        self::assertSame(['mobile' => 1, 'tablet' => 2, 'desktop' => 3], $catalog->blogMasonryColumns());
     }
 
     #[Test]
@@ -299,6 +311,43 @@ final class BlogCatalogTest extends TestCase
         ], $catalog->blogArticleBySlug('body-post'));
     }
 
+    #[Test]
+    public function itSanitizesArticleBodyBeforeHashtagsWhenProtectionIsConfigured(): void
+    {
+        $article = [
+            'slug'  => 'body-post',
+            'body'  => '<p>Hi</p><script>x</script>',
+            'title' => 'Body post',
+        ];
+
+        $articleRepository = $this->createMock(BlogArticleRepository::class);
+        $articleRepository->expects(self::once())
+            ->method('fetchPublishedDetailBySlug')
+            ->with('body-post', 'es')
+            ->willReturn($article);
+
+        $processor = $this->createMock(BlogHashtagProcessor::class);
+        $processor->expects(self::once())
+            ->method('localizeHashtagLinks')
+            ->with(self::callback(static fn (string $html): bool => !str_contains($html, 'script')))
+            ->willReturn('<p>Hi</p>');
+
+        $enhancer = $this->createMock(BlogArticleBodyEnhancer::class);
+        $enhancer->expects(self::once())
+            ->method('enhance')
+            ->with('<p>Hi</p>')
+            ->willReturn('<p>Hi</p>');
+
+        $catalog = $this->createCatalog(
+            blogArticleRepository: $articleRepository,
+            blogHashtagProcessor: $processor,
+            blogArticleBodyEnhancer: $enhancer,
+            blogProtection: BlogProtectionTestFactory::create(['htmlStrategy' => HtmlSanitizeStrategy::Allowlist]),
+        );
+
+        self::assertSame('<p>Hi</p>', $catalog->blogArticleBySlug('body-post')['body']);
+    }
+
     private function createCatalog(
         ?RequestStack $requestStack = null,
         ?BlogArticleRepository $blogArticleRepository = null,
@@ -307,6 +356,7 @@ final class BlogCatalogTest extends TestCase
         ?BlogHashtagProcessor $blogHashtagProcessor = null,
         ?BlogArticleBodyEnhancer $blogArticleBodyEnhancer = null,
         ?BlogLocalesLocaleResolver $localeResolver = null,
+        ?BlogProtection $blogProtection = null,
     ): BlogCatalog {
         $requestStack ??= new RequestStack();
         $blogArticleRepository ??= $this->createMock(BlogArticleRepository::class);
@@ -325,6 +375,7 @@ final class BlogCatalogTest extends TestCase
             $blogHashtagProcessor,
             $blogArticleBodyEnhancer,
             $localeResolver,
+            $blogProtection,
         );
     }
 }

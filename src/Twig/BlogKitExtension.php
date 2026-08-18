@@ -4,8 +4,13 @@ declare(strict_types=1);
 
 namespace Nowo\BlogKitBundle\Twig;
 
+use Nowo\BlogKitBundle\Entity\BlogArticle;
+use Nowo\BlogKitBundle\Entity\BlogComment;
+use Nowo\BlogKitBundle\Entity\BlogTag;
 use Nowo\BlogKitBundle\Enum\CssFramework;
 use Nowo\BlogKitBundle\Security\BlogKitAccessCheckerInterface;
+use Nowo\BlogKitBundle\Security\BlogKitResourceAccessCheckerInterface;
+use Nowo\BlogKitBundle\Security\BlogProtection;
 use Twig\Extension\AbstractExtension;
 use Twig\Extension\GlobalsInterface;
 use Twig\TwigFunction;
@@ -28,6 +33,8 @@ final class BlogKitExtension extends AbstractExtension implements GlobalsInterfa
         private readonly BlogKitAccessCheckerInterface $accessChecker,
         private readonly string $iconSet = 'bootstrap-icons',
         private readonly string $rowActionsDisplay = 'icon',
+        private readonly ?BlogProtection $protection = null,
+        private readonly ?BlogKitResourceAccessCheckerInterface $resourceAccess = null,
     ) {
     }
 
@@ -38,6 +45,10 @@ final class BlogKitExtension extends AbstractExtension implements GlobalsInterfa
     {
         return [
             new TwigFunction('nowo_blog_kit_container_class', $this->containerClass(...)),
+            new TwigFunction('nowo_blog_kit_captcha', $this->captchaContext(...)),
+            new TwigFunction('nowo_blog_kit_can_manage_article', $this->canManageArticle(...)),
+            new TwigFunction('nowo_blog_kit_can_manage_tag', $this->canManageTag(...)),
+            new TwigFunction('nowo_blog_kit_can_moderate_comment', $this->canModerateComment(...)),
         ];
     }
 
@@ -61,6 +72,35 @@ final class BlogKitExtension extends AbstractExtension implements GlobalsInterfa
             CssFramework::Custom,
             CssFramework::None => 'blog-container',
         };
+    }
+
+    /**
+     * @return array{enabled: bool, strategy: string, site_key: string, script_url: string, widget_class: string}
+     */
+    public function captchaContext(): array
+    {
+        return $this->protection?->captcha()->twigContext() ?? [
+            'enabled'      => false,
+            'strategy'     => 'none',
+            'site_key'     => '',
+            'script_url'   => '',
+            'widget_class' => '',
+        ];
+    }
+
+    public function canManageArticle(BlogArticle $article): bool
+    {
+        return $this->resourceAccess?->canManageArticle($article) ?? true;
+    }
+
+    public function canManageTag(BlogTag $tag): bool
+    {
+        return $this->resourceAccess?->canManageTag($tag) ?? true;
+    }
+
+    public function canModerateComment(BlogComment $comment): bool
+    {
+        return $this->resourceAccess?->canModerateComment($comment) ?? true;
     }
 
     public function getGlobals(): array

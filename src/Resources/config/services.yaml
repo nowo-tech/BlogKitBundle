@@ -12,6 +12,11 @@ services:
             - '../../NowoBlogKitBundle.php'
             - '../../Resources/'
             - '../../Event/'
+            - '../../Security/BlogProtection.php'
+            - '../../Security/BlogProtectionConfig.php'
+            - '../../Security/Captcha/'
+            - '../../Security/Html/'
+            - '../../Security/RateLimit/'
 
     Nowo\BlogKitBundle\Controller\:
         resource: '../../Controller/'
@@ -37,9 +42,15 @@ services:
             $privacyUrl: '%nowo_blog_kit.web_ui.privacy_url%'
             $iconSet: '%nowo_blog_kit.web_ui.icon_set%'
             $rowActionsDisplay: '%nowo_blog_kit.web_ui.row_actions_display%'
+            $protection: '@Nowo\BlogKitBundle\Security\BlogProtection'
         tags: ['twig.extension']
 
     Nowo\BlogKitBundle\EventSubscriber\BlogArticlePublishedDoctrineSubscriber:
         tags:
             - { name: doctrine.event_listener, event: onFlush }
             - { name: doctrine.event_listener, event: postFlush }
+
+    Nowo\BlogKitBundle\EventSubscriber\BlogArticleHtmlSanitizeSubscriber:
+        tags:
+            - { name: doctrine.event_listener, event: prePersist }
+            - { name: doctrine.event_listener, event: preUpdate }

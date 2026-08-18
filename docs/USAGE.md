@@ -35,12 +35,12 @@ Only **published** articles with a non-empty body are visible on `blog_show`.
 
 | Route name | Path | Checker |
 | --- | --- | --- |
-| `admin_blog_index` | `/admin/blog` | `canManage()` |
-| `admin_blog_new` / `admin_blog_edit` | `/admin/blog/new`, `/admin/blog/{id}/edit` | `canManage()` |
-| `admin_blog_edit_modal` / `admin_blog_inline_update` | inline CMS modal | `canManage()` |
-| `admin_blog_delete` | `POST /admin/blog/{id}/delete` | `canManage()` |
-| `admin_blog_tags_*` | `/admin/blog/tags` | `canManage()` |
-| `admin_blog_comments_*` | `/admin/blog/comments` | `canModerate()` |
+| `admin_blog_index` | `/admin/blog` | `canManage()` + object listing filter |
+| `admin_blog_new` / `admin_blog_edit` | `/admin/blog/new`, `/admin/blog/{id}/edit` | `canManage()` + `BlogKitAccessDenied` on the article |
+| `admin_blog_edit_modal` / `admin_blog_inline_update` | inline CMS modal | `canManage()` + `BlogKitAccessDenied` on the article |
+| `admin_blog_delete` | `POST /admin/blog/{id}/delete` | `canManage()` + `BlogKitAccessDenied` on the article |
+| `admin_blog_tags_*` | `/admin/blog/tags` | `canManage()` + `BlogKitAccessDenied` on mutations |
+| `admin_blog_comments_*` | `/admin/blog/comments` | `canModerate()` + `BlogKitAccessDenied` on mutations |
 | `admin_blog_settings` | `/admin/blog/settings` | `canConfigure()` |
 
 List screens are paginated (`web_ui.page_size`). Deletes open a native `<dialog>` confirm with POST + CSRF in the footer.
@@ -49,11 +49,19 @@ List screens are paginated (`web_ui.page_size`). Deletes open a native `<dialog>
 
 Public visitors submit `PublicBlogCommentType`. New comments start **pending** and appear on the article only after a moderator approves them at `/admin/blog/comments`.
 
-Staff replies use `StaffBlogCommentReplyType` on the public article (when `canModerate()` is true) or from the admin queue.
+Comment spam controls are first-class:
+
+- **Rate limit** — YAML `comments.rate_limit` (`fixed_window` per IP by default, 5 / 60s). Other strategies: `per_ip_article`, `sliding_window`, `none`, or a host `service`.
+- **CAPTCHA** — YAML `comments.captcha` (`honeypot` by default). Also `recaptcha_v2`, `recaptcha_v3`, `hcaptcha`, `turnstile`, `none`, or a host `service`.
+- Operators can switch strategies (not secrets) at `/admin/blog/settings`.
+
+Staff replies use `StaffBlogCommentReplyType` on the public article (when `canModerate()` is true) or from the admin queue. The public reply POST also requires `canModerate()`.
 
 ## Blog settings
 
-`BlogSettings` is a singleton edited at `/admin/blog/settings`. It controls listing mode (`paginated` / `infinite`), per-page size, masonry columns, card fields, aside placement, related-article limits, comments, share links, and hero image mode.
+`BlogSettings` is a singleton edited at `/admin/blog/settings`. It controls listing mode (`inherit` / `paginated` / `infinite`), per-page size, card layout (`inherit` / `masonry` / `grid` / `list`), masonry columns (`0` = YAML), card fields, aside placement, related-article limits, comments, share links, hero image mode, comment rate-limit / CAPTCHA strategies, and HTML sanitizer strategy.
+
+YAML `listing.mode` (`paginated` or `infinite`) is the default when admin listing mode is `inherit`. YAML `listing.masonry` is the default when admin layout is `inherit` and column fields are `0`. `per_page` is the page size and the infinite-scroll batch.
 
 ## Hashtag sync command
 
@@ -103,6 +111,19 @@ nowo_blog_kit:
     security:
         access_checker: App\Security\BlogEditorAccessChecker
 ```
+
+Roles decide who can open the admin UI. To scope **publications** (and optionally tags/comments) further, set `security.object_access`:
+
+```yaml
+nowo_blog_kit:
+    security:
+        object_access:
+            strategy: owner   # none | owner | service
+```
+
+`owner` lets editors change articles they created (`createdBy` / AuditKit). Users with `canConfigure()` still see every row. Unowned legacy articles stay editable by any manager. Implement `BlogKitResourceAccessCheckerInterface` and set `strategy: service` for teams or workflow rules. Controllers throw via `BlogKitAccessDenied`. This is **not** a Symfony Security voter or ACL.
+
+The extension prepends FormKit `type_map.entity` so `BlogArticleType` tags resolve. Hosts can still override `nowo_form_kit.type_map`.
 
 ## Host meta providers
 
@@ -180,6 +201,6 @@ Admin locale tabs use UiKit `nowo-ui-tabs` (`asset('js/nowo-ui-tabs.js', 'nowo_u
 
 ## Rich text notes
 
-`public/show.html.twig` renders `article.body` with `|raw` so editor-authored HTML can display. Treat that HTML as trusted CMS content, or sanitize before persist/render if untrusted authors can reach article forms.
+`public/show.html.twig` renders `article.body` with `|raw`. Set `html.sanitize.strategy` to `allowlist` or `strip` (or a host sanitizer) so untrusted HTML is cleaned on save and on public render. `none` keeps trusted-editor HTML unchanged.
 
 Comment bodies use auto-escaping plus `|nl2br`.

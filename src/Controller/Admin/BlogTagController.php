@@ -11,6 +11,7 @@ use Nowo\BlogKitBundle\Form\BlogTagFilterType;
 use Nowo\BlogKitBundle\Form\BlogTagType;
 use Nowo\BlogKitBundle\Locale\BlogLocales;
 use Nowo\BlogKitBundle\Repository\BlogTagRepository;
+use Nowo\BlogKitBundle\Security\BlogKitAccessDenied;
 use Nowo\FormKitBundle\Form\CsrfOnlyFormFactory;
 use Nowo\FormKitBundle\Form\GetFilterFormFactory;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -34,6 +35,7 @@ final class BlogTagController extends AbstractController
         private readonly CsrfOnlyFormFactory $csrfOnlyFormFactory,
         private readonly GetFilterFormFactory $filterFormFactory,
         private readonly BlogLocales $blogLocales,
+        private readonly BlogKitAccessDenied $accessDenied,
     ) {
     }
 
@@ -50,7 +52,7 @@ final class BlogTagController extends AbstractController
         $deleteForms = [];
         foreach ($items as $item) {
             $id = $item->getId();
-            if ($id === null) {
+            if ($id === null || !$this->accessDenied->resourceAccess()->canManageTag($item)) {
                 continue;
             }
             $deleteForms[$id] = $this->csrfOnlyFormFactory->createNamed(
@@ -95,6 +97,8 @@ final class BlogTagController extends AbstractController
     #[Route('/admin/blog/tags/{id}/edit', name: 'admin_blog_tags_edit', requirements: ['id' => '\d+'])]
     public function edit(BlogTag $blogTag, Request $request): Response
     {
+        $this->accessDenied->denyUnlessCanManageTag($blogTag);
+
         $form = $this->createForm(BlogTagType::class, $blogTag);
         $form->handleRequest($request);
 
@@ -115,6 +119,8 @@ final class BlogTagController extends AbstractController
     #[Route('/admin/blog/tags/{id}/delete', name: 'admin_blog_tags_delete', requirements: ['id' => '\d+'], methods: ['POST'])]
     public function delete(BlogTag $blogTag, Request $request): RedirectResponse
     {
+        $this->accessDenied->denyUnlessCanManageTag($blogTag);
+
         $form = $this->csrfOnlyFormFactory->createNamed(
             $this->generateUrl('admin_blog_tags_delete', ['id' => $blogTag->getId()]),
             'delete' . $blogTag->getId(),

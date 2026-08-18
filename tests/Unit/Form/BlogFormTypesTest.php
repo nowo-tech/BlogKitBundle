@@ -65,30 +65,36 @@ final class BlogFormTypesTest extends TestCase
         $form     = $this->createForm($type, $settings);
 
         $form->submit([
-            'listingMode'              => 'infinite',
-            'perPage'                  => '12',
-            'masonryColumnsMobile'     => '1',
-            'masonryColumnsTablet'     => '2',
-            'masonryColumnsDesktop'    => '3',
-            'showCardImage'            => true,
-            'showCardExcerpt'          => false,
-            'showCardTags'             => true,
-            'indexTagsLimit'           => '15',
-            'indexAsideSearch'         => 'right',
-            'indexAsideLatest'         => 'left',
-            'indexAsideTags'           => 'both',
-            'indexLatestLimit'         => '8',
-            'indexAsideTagsLimit'      => '10',
-            'showAsideSearch'          => 'left',
-            'showAsideRelated'         => 'right',
-            'showAsideArticleTags'     => 'off',
-            'showAsideResources'       => 'both',
-            'relatedLimit'             => '4',
-            'resourcesIncludeLinkedin' => false,
-            'showShare'                => true,
-            'showComments'             => false,
-            'showSourceLink'           => true,
-            'heroImageMode'            => 'cover',
+            'listingMode'                     => 'infinite',
+            'perPage'                         => '12',
+            'masonryStrategy'                 => 'grid',
+            'masonryColumnsMobile'            => '1',
+            'masonryColumnsTablet'            => '2',
+            'masonryColumnsDesktop'           => '3',
+            'showCardImage'                   => true,
+            'showCardExcerpt'                 => false,
+            'showCardTags'                    => true,
+            'indexTagsLimit'                  => '15',
+            'indexAsideSearch'                => 'right',
+            'indexAsideLatest'                => 'left',
+            'indexAsideTags'                  => 'both',
+            'indexLatestLimit'                => '8',
+            'indexAsideTagsLimit'             => '10',
+            'showAsideSearch'                 => 'left',
+            'showAsideRelated'                => 'right',
+            'showAsideArticleTags'            => 'off',
+            'showAsideResources'              => 'both',
+            'relatedLimit'                    => '4',
+            'resourcesIncludeLinkedin'        => false,
+            'showShare'                       => true,
+            'showComments'                    => false,
+            'showSourceLink'                  => true,
+            'heroImageMode'                   => 'cover',
+            'commentRateLimitStrategy'        => 'fixed_window',
+            'commentRateLimitLimit'           => '8',
+            'commentRateLimitIntervalSeconds' => '120',
+            'commentCaptchaStrategy'          => 'honeypot',
+            'htmlSanitizeStrategy'            => 'allowlist',
         ]);
 
         $options = $this->resolvedOptions($type);
@@ -96,13 +102,19 @@ final class BlogFormTypesTest extends TestCase
         self::assertSame(BlogSettings::class, $options['data_class']);
         self::assertSame('NowoBlogKitBundle', $options['translation_domain']);
         self::assertTrue($form->has('listingMode'));
+        self::assertTrue($form->has('masonryStrategy'));
         self::assertTrue($form->has('heroImageMode'));
         self::assertSame('infinite', $settings->getListingMode());
         self::assertSame(12, $settings->getPerPage());
+        self::assertSame('grid', $settings->getMasonryStrategy());
         self::assertSame(3, $settings->getMasonryColumnsDesktop());
         self::assertFalse($settings->isShowCardExcerpt());
         self::assertFalse($settings->isShowComments());
         self::assertSame('cover', $settings->getHeroImageMode());
+        self::assertSame('fixed_window', $settings->getCommentRateLimitStrategy());
+        self::assertSame(8, $settings->getCommentRateLimitLimit());
+        self::assertSame('honeypot', $settings->getCommentCaptchaStrategy());
+        self::assertSame('allowlist', $settings->getHtmlSanitizeStrategy());
 
         $perPageConstraints = $form->get('perPage')->getConfig()->getOption('constraints');
         self::assertCount(1, $perPageConstraints);

@@ -8,7 +8,11 @@ use Doctrine\ORM\EntityManagerInterface;
 use Nowo\BlogKitBundle\Controller\Admin\BlogTagController;
 use Nowo\BlogKitBundle\Entity\BlogArticle;
 use Nowo\BlogKitBundle\Entity\BlogTag;
+use Nowo\BlogKitBundle\Entity\BlogTagTranslation;
 use Nowo\BlogKitBundle\Repository\BlogTagRepository;
+use Nowo\BlogKitBundle\Security\AllowAllBlogKitResourceAccessChecker;
+use Nowo\BlogKitBundle\Security\BlogKitAccessDenied;
+use Nowo\BlogKitBundle\Security\BlogKitResourceAccessCheckerInterface;
 use Nowo\BlogKitBundle\Tests\Support\ControllerTestHelper;
 use Nowo\BlogKitBundle\Tests\Support\LocaleTestSupport;
 use Nowo\FormKitBundle\Form\CsrfOnlyFormFactory;
@@ -72,6 +76,40 @@ final class BlogTagControllerTest extends TestCase
         $response = $controller->index($request);
 
         self::assertSame('index', $response->getContent());
+    }
+
+    #[Test]
+    public function indexSkipsDeleteFormsWhenObjectAccessRejectsTheTag(): void
+    {
+        $request = Request::create('/admin/blog/tags', 'GET');
+        $tag     = $this->createTag(3, 'php');
+
+        $repository = $this->createMock(BlogTagRepository::class);
+        $repository->method('findFiltered')->willReturn([$tag]);
+        $repository->method('countArticlesByTagId')->willReturn([]);
+
+        $csrfFactory = $this->createMock(CsrfOnlyFormFactory::class);
+        $csrfFactory->expects(self::never())->method('createNamed');
+
+        $twig = $this->createMock(Environment::class);
+        $twig->expects(self::once())
+            ->method('render')
+            ->with(
+                '@NowoBlogKitBundle/admin/tags/index.html.twig',
+                self::callback(static fn (array $parameters): bool => $parameters['delete_forms'] === []),
+            )
+            ->willReturn('index');
+
+        $controller = $this->createController(
+            request: $request,
+            repository: $repository,
+            csrfOnlyFormFactory: $csrfFactory,
+            filterFormFactory: ControllerTestHelper::filterFormFactory(),
+            twig: $twig,
+            accessDenied: $this->rejectingAccessDenied(),
+        );
+
+        self::assertSame('index', $controller->index($request)->getContent());
     }
 
     #[Test]
@@ -275,6 +313,21 @@ final class BlogTagControllerTest extends TestCase
         $controller->delete($tag, $request);
     }
 
+    #[Test]
+    public function editDeniesWhenObjectAccessRejectsTheTag(): void
+    {
+        $request = Request::create('/admin/blog/tags/3/edit', 'GET');
+        $tag     = $this->createTag(3, 'php');
+
+        $this->expectException(AccessDeniedException::class);
+        $this->expectExceptionMessage('tag');
+
+        $this->createController(
+            request: $request,
+            accessDenied: $this->rejectingAccessDenied(),
+        )->edit($tag, $request);
+    }
+
     private function createController(
         ?Request $request = null,
         ?BlogTagRepository $repository = null,
@@ -283,6 +336,7 @@ final class BlogTagControllerTest extends TestCase
         ?GetFilterFormFactory $filterFormFactory = null,
         ?FormFactoryInterface $formFactory = null,
         ?Environment $twig = null,
+        ?BlogKitAccessDenied $accessDenied = null,
     ): BlogTagController {
         $request ??= Request::create('/admin/blog/tags', 'GET');
 
@@ -292,6 +346,7 @@ final class BlogTagControllerTest extends TestCase
             $csrfOnlyFormFactory ?? ControllerTestHelper::csrfOnlyFormFactory(),
             $filterFormFactory ?? ControllerTestHelper::filterFormFactory(),
             LocaleTestSupport::create(),
+            $accessDenied ?? new BlogKitAccessDenied(new AllowAllBlogKitResourceAccessChecker()),
         );
 
         ControllerTestHelper::bind($controller, $request, array_filter([
@@ -325,7 +380,7 @@ final class BlogTagControllerTest extends TestCase
             ->ensureTranslations();
 
         $translation = $tag->getTranslation('es');
-        if ($translation !== null) {
+        if ($translation instanceof BlogTagTranslation) {
             $translation->setName(strtoupper($slug));
         }
 
@@ -333,5 +388,13 @@ final class BlogTagControllerTest extends TestCase
         $reflection->setValue($tag, $id);
 
         return $tag;
+    }
+
+    private function rejectingAccessDenied(): BlogKitAccessDenied
+    {
+        $checker = $this->createMock(BlogKitResourceAccessCheckerInterface::class);
+        $checker->method('canManageTag')->willReturn(false);
+
+        return new BlogKitAccessDenied($checker);
     }
 }

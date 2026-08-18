@@ -8,6 +8,9 @@ All options live under the root key `nowo_blog_kit`.
 - [Top-level options](#top-level-options)
 - [security](#security)
 - [web_ui](#web_ui)
+- [listing](#listing)
+- [comments](#comments)
+- [html](#html)
 - [doctrine](#doctrine)
 - [Twig globals](#twig-globals)
 - [FormKit profiles](#formkit-profiles)
@@ -28,6 +31,9 @@ nowo_blog_kit:
         configure_roles: [ROLE_ADMIN]
         access_checker: null
         allow_unauthenticated: false
+        object_access:
+            strategy: none
+            service: null
     web_ui:
         layout_template: '@NowoBlogKitBundle/admin/layout.html.twig'
         public_layout_template: '@NowoBlogKitBundle/public/layout.html.twig'
@@ -36,6 +42,30 @@ nowo_blog_kit:
         row_actions_display: icon
         page_size: 20
         privacy_url: '#'
+    listing:
+        mode: paginated
+        masonry:
+            strategy: masonry
+            columns_mobile: 1
+            columns_tablet: 2
+            columns_desktop: 2
+    comments:
+        rate_limit:
+            strategy: fixed_window
+            limit: 5
+            interval_seconds: 60
+            service: null
+        captcha:
+            strategy: honeypot
+            site_key: ''
+            secret_key: ''
+            min_score: 0.5
+            honeypot_field: website
+            service: null
+    html:
+        sanitize:
+            strategy: none
+            service: null
     doctrine:
         table_prefix: ''
         connection: default
@@ -64,8 +94,10 @@ This bundle uses a single configuration tree. It does not expose `default_profil
 | `configure_roles` | `[ROLE_ADMIN]` | Settings screen (`admin_blog_settings`). |
 | `access_checker` | `null` | Optional service id implementing `BlogKitAccessCheckerInterface`. |
 | `allow_unauthenticated` | `false` | When `true`, the bundle uses an allow-all checker. Intended only for trusted demos. |
+| `object_access.strategy` | `none` | After roles: `none` (every granted editor sees all rows), `owner` (publications scoped to `createdBy`; configure roles see all), or `service`. |
+| `object_access.service` | `null` | Service id implementing `BlogKitResourceAccessCheckerInterface` when `strategy: service`. |
 
-The bundle enforces access on route names beginning with `admin_blog` (`BlogKitAdminAccessSubscriber`).
+The bundle enforces **roles** on route names beginning with `admin_blog` (`BlogKitAdminAccessSubscriber`). Object checks run in admin controllers via `BlogKitAccessDenied` (edit/delete/inline, and listing filter for `owner` / custom services). Twig helpers `nowo_blog_kit_can_manage_article()`, `nowo_blog_kit_can_manage_tag()`, and `nowo_blog_kit_can_moderate_comment()` hide row actions; they are not a substitute for the service.
 
 ## web_ui
 
@@ -78,6 +110,57 @@ The bundle enforces access on route names beginning with `admin_blog` (`BlogKitA
 | `row_actions_display` | `icon` | Admin table row actions: `icon`, `text`, or `icon_text`. Switching this MUST NOT require forking list Twig. Prepended to UiKit when the host has not set `nowo_ui_kit.row_actions_display`. |
 | `page_size` | `20` | Admin list page size (1–200). |
 | `privacy_url` | `#` | URL used in the public comment privacy checkbox label. |
+
+## listing
+
+Public `/blog` index. Admin settings can override with `inherit` (use YAML). Column fields use `0` to keep YAML.
+
+| Key | Default | Description |
+| --- | --- | --- |
+| `mode` | `paginated` | `paginated` (numbered pages) or `infinite` (IntersectionObserver loads `?partial=1` card fragments). |
+| `masonry.strategy` | `masonry` | `masonry` (packed columns), `grid` (uniform rows), or `list` (single column). |
+| `masonry.columns_mobile` | `1` | Columns below 640px (`1`–`2`). Ignored when strategy is `list`. |
+| `masonry.columns_tablet` | `2` | Columns from 640px (`1`–`2`). Ignored when strategy is `list`. |
+| `masonry.columns_desktop` | `2` | Columns from 960px (`1`–`3`). Ignored when strategy is `list`. |
+
+`BlogSettings.per_page` (admin) is the page size and the infinite-scroll batch size.
+
+## comments
+
+Public `POST /blog/{slug}/comments` protection. Admin settings (`/admin/blog/settings`) can override the strategies with `inherit` meaning “use YAML”. CAPTCHA `site_key` / `secret_key` are YAML-only.
+
+### comments.rate_limit
+
+| Key | Default | Description |
+| --- | --- | --- |
+| `strategy` | `fixed_window` | `none`, `fixed_window` (per IP), `per_ip_article`, `sliding_window`, or `service`. |
+| `limit` | `5` | Max posts per interval. `0` disables the limiter. |
+| `interval_seconds` | `60` | Window length. |
+| `service` | `null` | Service id implementing `BlogCommentRateLimiterInterface` when `strategy: service`. |
+
+Requires Symfony `cache.app`. Without a cache pool, limiting is skipped.
+
+### comments.captcha
+
+| Key | Default | Description |
+| --- | --- | --- |
+| `strategy` | `honeypot` | `none`, `honeypot`, `recaptcha_v2`, `recaptcha_v3`, `hcaptcha`, `turnstile`, or `service`. |
+| `site_key` | `''` | Public widget key for remote providers. |
+| `secret_key` | `''` | Server-side verification key. |
+| `min_score` | `0.5` | Minimum reCAPTCHA v3 score. |
+| `honeypot_field` | `website` | Hidden field name for the honeypot strategy. |
+| `service` | `null` | Service id implementing `BlogCommentCaptchaStrategyInterface` when `strategy: service`. |
+
+Remote providers need `site_key` and `secret_key`. Missing keys fail closed (form invalid).
+
+## html
+
+| Key | Default | Description |
+| --- | --- | --- |
+| `sanitize.strategy` | `none` | `none` (trusted-editor `\|raw`), `strip`, `allowlist` (safe CMS tags + YouTube/Vimeo iframes), or `service`. |
+| `sanitize.service` | `null` | Service id implementing `BlogHtmlSanitizerInterface` when `strategy: service`. |
+
+Sanitizing runs on article translation persist and again on public render (before hashtag links / body enhancer).
 
 ## doctrine
 
@@ -117,6 +200,10 @@ Twig function:
 | Function | Meaning |
 | --- | --- |
 | `nowo_blog_kit_container_class()` | Width wrapper (`blog-container`) plus `container` (Bootstrap/Tabler) or `grid-container` (Foundation). Tailwind / `custom` / `none` stay on `blog-container` only. |
+| `nowo_blog_kit_captcha()` | Active comment CAPTCHA context (`strategy`, `site_key`, `script_url`, `widget_class`). |
+| `nowo_blog_kit_can_manage_article(article)` | Object-level publication access (after roles). |
+| `nowo_blog_kit_can_manage_tag(tag)` | Object-level tag access. |
+| `nowo_blog_kit_can_moderate_comment(comment)` | Object-level comment moderation access. |
 
 ## FormKit profiles
 
@@ -125,7 +212,9 @@ The extension prepends FormKit profiles when the host has not already defined th
 - `blog_kit` — defaults for blog forms (`translation_domain: NowoBlogKitBundle`)
 - `filter` — GET list filters (`auto_placeholder`, no labels)
 
-Override those keys in `nowo_form_kit.profiles` if you need project-specific form chrome.
+The extension also prepends FormKit `type_map.entity` → `Symfony\Bridge\Doctrine\Form\Type\EntityType` so article tag fields resolve. Override `nowo_form_kit.type_map` in the host if needed.
+
+Override those keys in `nowo_form_kit.profiles` if you need project-specific form chrome. For Bootstrap 5 hosts, set `nowo_form_kit.css_framework: bootstrap` (FormKit has no `bootstrap5` value), add `field_types` for `checkbox` / `choice`, and register `twig.form_themes` with `@NowoFormKitBundle/form/static_blocks.html.twig` then `bootstrap_5_layout.html.twig`. The FrankenPHP demo does this in `demo/symfony8/config/packages/`.
 
 ## Translation overrides
 
@@ -156,12 +245,33 @@ nowo_blog_kit:
         access_checker: App\Security\BlogEditorAccessChecker
 ```
 
+**Editors only manage their own publications:**
+
+```yaml
+nowo_blog_kit:
+    security:
+        manage_roles: [ROLE_EDITOR]
+        configure_roles: [ROLE_ADMIN]
+        object_access:
+            strategy: owner
+```
+
+**Custom object-level rules (teams, workflow, …):**
+
+```yaml
+nowo_blog_kit:
+    security:
+        object_access:
+            strategy: service
+            service: App\Security\BlogPublicationAccessChecker
+```
+
 **Host layout + CSS framework (do not fork page templates):**
 
 ```yaml
 nowo_blog_kit:
     web_ui:
-        layout_template: 'admin/layout.html.twig'   # project chrome; default bundle layout is for demos
+        layout_template: 'admin/layout.html.twig'   # project chrome (demo FrankenPHP uses this)
         public_layout_template: 'base.html.twig'
         css_framework: bootstrap5   # or: tailwind | foundation | custom
         icon_set: bootstrap-icons
@@ -212,6 +322,38 @@ nowo_blog_kit:
         css_framework: custom
         icon_set: svg_inline
         row_actions_display: text
+```
+
+**Public listing (paginator or infinite scroll):**
+
+```yaml
+nowo_blog_kit:
+    listing:
+        mode: infinite   # paginated | infinite
+        masonry:
+            strategy: masonry   # masonry | grid | list
+            columns_mobile: 1
+            columns_tablet: 2
+            columns_desktop: 2
+```
+
+**Comment rate limit + CAPTCHA + HTML sanitizer:**
+
+```yaml
+nowo_blog_kit:
+    comments:
+        rate_limit:
+            strategy: per_ip_article
+            limit: 3
+            interval_seconds: 120
+        captcha:
+            strategy: recaptcha_v3
+            site_key: '%env(BLOG_CAPTCHA_SITE_KEY)%'
+            secret_key: '%env(BLOG_CAPTCHA_SECRET_KEY)%'
+            min_score: 0.5
+    html:
+        sanitize:
+            strategy: allowlist
 ```
 
 Admin pages extend `@NowoBlogKitBundle/admin/base.html.twig` and public pages extend `@NowoBlogKitBundle/public/base.html.twig`. Those templates call `{{ parent() }}` in `stylesheets` / `javascripts` and then load `nowo_ui_kit` + `nowo_blog_kit` assets inside nested `nowo_ui_styles` / `nowo_ui_scripts` (REQ-UI-001). Keep matching `stylesheets` and `javascripts` blocks in the host layout so stacking works. Override only those nested blocks if you need extra CSS/JS. Do not fork every CRUD page to inject CSS/JS.

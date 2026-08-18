@@ -4,7 +4,7 @@
 {% set route_params = route_params|default({}) %}
 {% set clear_params = clear_params|default({}) %}
 
-{{ form_start(filter_form, {attr: {class: 'nowo-ui-filter-form ' ~ ui.search_form(_css_fw), novalidate: 'novalidate'}}) }}
+{{ form_start(filter_form, {attr: {class: 'nowo-ui-filters nowo-ui-filter-form ' ~ ui.search_form(_css_fw), novalidate: 'novalidate'}}) }}
   <div class="nowo-ui-filter-fields">
     {% for child in filter_form %}
       {% if not child.rendered and child.vars.block_prefixes[1]|default('') != 'hidden' %}
@@ -19,7 +19,7 @@
       {% endif %}
     {% endfor %}
   </div>
-  <div class="nowo-ui-filter-actions">
+  <div class="nowo-ui-filters__actions nowo-ui-filter-actions">
     <button type="submit" class="{{ ui.btn('primary', 'sm', _css_fw) }}">{{ 'admin.filter.apply'|trans }}</button>
     {% if filters is not empty %}
       <a href="{{ path(route, route_params|merge(clear_params)) }}" class="{{ ui.btn('secondary', 'sm', _css_fw) }}">{{ 'admin.filter.clear'|trans }}</a>

@@ -11,7 +11,9 @@ use Nowo\BlogKitBundle\Form\BlogArticleFilterType;
 use Nowo\BlogKitBundle\Form\BlogArticleType;
 use Nowo\BlogKitBundle\Form\BlogInlineModalType;
 use Nowo\BlogKitBundle\Locale\BlogLocales;
+use Nowo\BlogKitBundle\Model\BlogUserInterface;
 use Nowo\BlogKitBundle\Repository\BlogArticleRepository;
+use Nowo\BlogKitBundle\Security\BlogKitAccessDenied;
 use Nowo\FormKitBundle\Form\CsrfOnlyFormFactory;
 use Nowo\FormKitBundle\Form\GetFilterFormFactory;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -37,6 +39,7 @@ final class BlogArticleController extends AbstractController
         private readonly CsrfOnlyFormFactory $csrfOnlyFormFactory,
         private readonly GetFilterFormFactory $filterFormFactory,
         private readonly BlogLocales $blogLocales,
+        private readonly BlogKitAccessDenied $accessDenied,
         #[Autowire('%nowo_blog_kit.web_ui.page_size%')]
         private readonly int $pageSize,
     ) {
@@ -55,13 +58,18 @@ final class BlogArticleController extends AbstractController
         ]);
 
         $page   = max(1, $request->query->getInt('page', 1));
-        $result = $this->blogArticleRepository->findFilteredPaginated($filters, $page, $this->pageSize);
+        $result = $this->blogArticleRepository->findFilteredPaginated(
+            $filters,
+            $page,
+            $this->pageSize,
+            $this->accessDenied->resourceAccess()->articleListingCreatedById(),
+        );
 
         /** @var array<int, FormView> $deleteForms */
         $deleteForms = [];
         foreach ($result['items'] as $item) {
             $id = $item->getId();
-            if ($id === null) {
+            if ($id === null || !$this->accessDenied->resourceAccess()->canManageArticle($item)) {
                 continue;
             }
             $deleteForms[$id] = $this->csrfOnlyFormFactory->createNamed(
@@ -90,6 +98,11 @@ final class BlogArticleController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            $user = $this->getUser();
+            if ($user instanceof BlogUserInterface) {
+                $blogArticle->setCreatedBy($user);
+            }
+
             $this->entityManager->persist($blogArticle);
             $this->entityManager->flush();
             $this->addFlash('success', 'admin.flash.article_created');
@@ -106,6 +119,8 @@ final class BlogArticleController extends AbstractController
     #[Route('/admin/blog/{id}/edit', name: 'admin_blog_edit', requirements: ['id' => '\d+'])]
     public function edit(BlogArticle $blogArticle, Request $request): Response
     {
+        $this->accessDenied->denyUnlessCanManageArticle($blogArticle);
+
         $form = $this->createForm(BlogArticleType::class, $blogArticle);
         $form->handleRequest($request);
 
@@ -126,18 +141,24 @@ final class BlogArticleController extends AbstractController
     #[Route('/admin/blog/{id}/edit-modal', name: 'admin_blog_edit_modal', requirements: ['id' => '\d+'], methods: ['GET'])]
     public function editModal(BlogArticle $blogArticle, Request $request): Response
     {
+        $this->accessDenied->denyUnlessCanManageArticle($blogArticle);
+
         return $this->renderInlineModal($blogArticle, $request);
     }
 
     #[Route('/admin/blog/{id}/inline', name: 'admin_blog_inline_update', requirements: ['id' => '\d+'], methods: ['POST'])]
     public function inlineUpdate(BlogArticle $blogArticle, Request $request): Response
     {
+        $this->accessDenied->denyUnlessCanManageArticle($blogArticle);
+
         return $this->handleInlineSubmit($blogArticle, $request, $this->entityManager);
     }
 
     #[Route('/admin/blog/{id}/delete', name: 'admin_blog_delete', requirements: ['id' => '\d+'], methods: ['POST'])]
     public function delete(BlogArticle $blogArticle, Request $request): RedirectResponse
     {
+        $this->accessDenied->denyUnlessCanManageArticle($blogArticle);
+
         $form = $this->csrfOnlyFormFactory->createNamed(
             $this->generateUrl('admin_blog_delete', ['id' => $blogArticle->getId()]),
             'delete' . $blogArticle->getId(),
@@ -155,7 +176,7 @@ final class BlogArticleController extends AbstractController
     private function renderInlineModal(BlogArticle $blogArticle, Request $request): Response
     {
         $locale = $request->getLocale();
-        $form   = $this->createInlineForm($blogArticle, $locale);
+        $form   = $this->createInlineForm($blogArticle);
 
         return $this->render('@NowoBlogKitBundle/admin/_modal_form.html.twig', [
             'form'   => $form,
@@ -169,7 +190,7 @@ final class BlogArticleController extends AbstractController
         EntityManagerInterface $entityManager,
     ): Response {
         $locale = $request->getLocale();
-        $form   = $this->createInlineForm($blogArticle, $locale);
+        $form   = $this->createInlineForm($blogArticle);
         $form->handleRequest($request);
 
         if (!$form->isSubmitted() || !$form->isValid()) {
@@ -188,7 +209,7 @@ final class BlogArticleController extends AbstractController
     }
 
     /** @return FormInterface<mixed> */
-    private function createInlineForm(BlogArticle $blogArticle, string $locale): FormInterface
+    private function createInlineForm(BlogArticle $blogArticle): FormInterface
     {
         $blogArticle->ensureTranslations($this->blogLocales->getAll());
 

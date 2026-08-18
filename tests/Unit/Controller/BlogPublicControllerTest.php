@@ -54,6 +54,12 @@ final class BlogPublicControllerTest extends TestCase
         $catalog->expects(self::once())->method('blogSettings')->willReturn($settings);
         $catalog->expects(self::once())->method('blogListingMode')->willReturn('paginated');
         $catalog->expects(self::once())->method('blogPerPage')->willReturn(6);
+        $catalog->expects(self::once())->method('blogMasonryStrategy')->willReturn('grid');
+        $catalog->expects(self::once())->method('blogMasonryColumns')->willReturn([
+            'mobile'  => 1,
+            'tablet'  => 2,
+            'desktop' => 3,
+        ]);
         $catalog->expects(self::once())
             ->method('blogArticlesPage')
             ->with(2, 6, 'Symfony', 'php')
@@ -93,7 +99,14 @@ final class BlogPublicControllerTest extends TestCase
                         'show_tags'    => true,
                     ]
                     && $parameters['aside_left'] === ['search']
-                    && $parameters['aside_right'] === ['latest', 'tags']),
+                    && $parameters['aside_right'] === ['latest', 'tags']
+                    && $parameters['listing_mode'] === 'paginated'
+                    && $parameters['masonry_strategy'] === 'grid'
+                    && $parameters['masonry_columns'] === [
+                        'mobile'  => 1,
+                        'tablet'  => 2,
+                        'desktop' => 3,
+                    ]),
             )
             ->willReturn('index');
 
@@ -353,16 +366,14 @@ final class BlogPublicControllerTest extends TestCase
             ->method('render')
             ->with(
                 '@NowoBlogKitBundle/public/show.html.twig',
-                self::callback(static function (array $parameters) use ($articleData, $commentA, $commentB): bool {
-                    return $parameters['page_title'] === 'Article title | Nowo'
-                        && $parameters['article'] === $articleData
-                        && $parameters['comments'] === [$commentA, $commentB]
-                        && $parameters['can_moderate_comments'] === true
-                        && count($parameters['reply_forms']) === 2
-                        && $parameters['sidebar_resources'][0]['type'] === 'linkedin'
-                        && $parameters['sidebar_resources'][0]['url'] === 'https://linkedin.example/post'
-                        && $parameters['show_comments'] === true;
-                }),
+                self::callback(static fn (array $parameters): bool => $parameters['page_title'] === 'Article title | Nowo'
+                    && $parameters['article'] === $articleData
+                    && $parameters['comments'] === [$commentA, $commentB]
+                    && $parameters['can_moderate_comments'] === true
+                    && count($parameters['reply_forms']) === 2
+                    && $parameters['sidebar_resources'][0]['type'] === 'linkedin'
+                    && $parameters['sidebar_resources'][0]['url'] === 'https://linkedin.example/post'
+                    && $parameters['show_comments'] === true),
             )
             ->willReturn('show');
 

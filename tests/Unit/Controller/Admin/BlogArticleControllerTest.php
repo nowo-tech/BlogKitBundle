@@ -8,11 +8,16 @@ use Doctrine\ORM\EntityManagerInterface;
 use InvalidArgumentException;
 use Nowo\BlogKitBundle\Controller\Admin\BlogArticleController;
 use Nowo\BlogKitBundle\Entity\BlogArticle;
+use Nowo\BlogKitBundle\Entity\BlogArticleTranslation;
 use Nowo\BlogKitBundle\Form\BlogArticleType;
 use Nowo\BlogKitBundle\Form\BlogInlineModalType;
 use Nowo\BlogKitBundle\Repository\BlogArticleRepository;
+use Nowo\BlogKitBundle\Security\AllowAllBlogKitResourceAccessChecker;
+use Nowo\BlogKitBundle\Security\BlogKitAccessDenied;
+use Nowo\BlogKitBundle\Security\BlogKitResourceAccessCheckerInterface;
 use Nowo\BlogKitBundle\Tests\Support\ControllerTestHelper;
 use Nowo\BlogKitBundle\Tests\Support\LocaleTestSupport;
+use Nowo\BlogKitBundle\Tests\Support\TestUser;
 use Nowo\FormKitBundle\Form\CsrfOnlyFormFactory;
 use Nowo\FormKitBundle\Form\GetFilterFormFactory;
 use PHPUnit\Framework\Attributes\Test;
@@ -45,7 +50,7 @@ final class BlogArticleControllerTest extends TestCase
         $repository = $this->createMock(BlogArticleRepository::class);
         $repository->expects(self::once())
             ->method('findFilteredPaginated')
-            ->with(['title' => 'Symfony'], 2, 12)
+            ->with(['title' => 'Symfony'], 2, 12, null)
             ->willReturn([
                 'items' => [$article, $unsaved],
                 'total' => 2,
@@ -148,6 +153,93 @@ final class BlogArticleControllerTest extends TestCase
 
         self::assertSame('/generated/admin_blog_index', $response->headers->get('Location'));
         self::assertSame(['admin.flash.article_created'], $request->getSession()->getFlashBag()->get('success'));
+    }
+
+    #[Test]
+    public function newAssignsCurrentUserAsCreatedBy(): void
+    {
+        $request = Request::create('/admin/blog/new', 'POST');
+        $user    = (new TestUser())->setId(9)->setEmail('editor@example.test');
+        $form    = $this->createConfiguredMock(FormInterface::class, [
+            'isSubmitted' => true,
+            'isValid'     => true,
+            'createView'  => new FormView(),
+        ]);
+        $form->expects(self::once())->method('handleRequest')->with($request);
+
+        $entityManager = $this->createMock(EntityManagerInterface::class);
+        $entityManager->expects(self::once())
+            ->method('persist')
+            ->with(self::callback(static fn (BlogArticle $article): bool => $article->getCreatedBy() === $user));
+
+        $controller = $this->createController(
+            request: $request,
+            entityManager: $entityManager,
+            formFactory: $this->createArticleFormFactory($form),
+            user: $user,
+        );
+
+        $controller->new($request);
+    }
+
+    #[Test]
+    public function editDeniesWhenObjectAccessRejectsTheArticle(): void
+    {
+        $request = Request::create('/admin/blog/5/edit', 'GET');
+        $article = $this->createArticle(5, 'foreign-article');
+
+        $this->expectException(AccessDeniedException::class);
+        $this->expectExceptionMessage('publication');
+
+        $this->createController(
+            request: $request,
+            accessDenied: $this->rejectingAccessDenied(),
+        )->edit($article, $request);
+    }
+
+    #[Test]
+    public function indexSkipsDeleteFormsWhenObjectAccessRejectsTheArticle(): void
+    {
+        $request = Request::create('/admin/blog', 'GET');
+        $article = $this->createArticle(10, 'owned');
+
+        $repository = $this->createMock(BlogArticleRepository::class);
+        $repository->expects(self::once())
+            ->method('findFilteredPaginated')
+            ->with([], 1, 20, 10)
+            ->willReturn([
+                'items' => [$article],
+                'total' => 1,
+                'page'  => 1,
+            ]);
+
+        $resourceAccess = $this->createMock(BlogKitResourceAccessCheckerInterface::class);
+        $resourceAccess->method('articleListingCreatedById')->willReturn(10);
+        $resourceAccess->method('canManageArticle')->willReturn(false);
+
+        $csrfFactory = $this->createMock(CsrfOnlyFormFactory::class);
+        $csrfFactory->expects(self::never())->method('createNamed');
+
+        $twig = $this->createMock(Environment::class);
+        $twig->expects(self::once())
+            ->method('render')
+            ->with(
+                '@NowoBlogKitBundle/admin/index.html.twig',
+                self::callback(static fn (array $parameters): bool => $parameters['items'] === [$article]
+                    && $parameters['delete_forms'] === []),
+            )
+            ->willReturn('index');
+
+        $controller = $this->createController(
+            request: $request,
+            repository: $repository,
+            csrfOnlyFormFactory: $csrfFactory,
+            filterFormFactory: ControllerTestHelper::filterFormFactory(),
+            twig: $twig,
+            accessDenied: new BlogKitAccessDenied($resourceAccess),
+        );
+
+        self::assertSame('index', $controller->index($request)->getContent());
     }
 
     #[Test]
@@ -404,6 +496,8 @@ final class BlogArticleControllerTest extends TestCase
         ?FormFactoryInterface $formFactory = null,
         ?Environment $twig = null,
         int $pageSize = 20,
+        ?BlogKitAccessDenied $accessDenied = null,
+        ?TestUser $user = null,
     ): BlogArticleController {
         $request ??= Request::create('/admin/blog', 'GET');
 
@@ -413,15 +507,24 @@ final class BlogArticleControllerTest extends TestCase
             $csrfOnlyFormFactory ?? ControllerTestHelper::csrfOnlyFormFactory(),
             $filterFormFactory ?? ControllerTestHelper::filterFormFactory(),
             LocaleTestSupport::create(),
+            $accessDenied ?? new BlogKitAccessDenied(new AllowAllBlogKitResourceAccessChecker()),
             $pageSize,
         );
 
         ControllerTestHelper::bind($controller, $request, array_filter([
             'twig'         => $twig,
             'form.factory' => $formFactory,
-        ]));
+        ]), $user);
 
         return $controller;
+    }
+
+    private function rejectingAccessDenied(): BlogKitAccessDenied
+    {
+        $checker = $this->createMock(BlogKitResourceAccessCheckerInterface::class);
+        $checker->method('canManageArticle')->willReturn(false);
+
+        return new BlogKitAccessDenied($checker);
     }
 
     private function createArticleFormFactory(FormInterface $articleForm, ?FormInterface $inlineForm = null): FormFactoryInterface
@@ -463,7 +566,7 @@ final class BlogArticleControllerTest extends TestCase
             ->ensureTranslations();
 
         $translation = $article->getTranslation('es');
-        if ($translation !== null) {
+        if ($translation instanceof BlogArticleTranslation) {
             $translation->setTitle('Article ' . $id)->setBody('Body');
         }
 

@@ -1,6 +1,9 @@
 # GET list filters (AbstractGetFilterType) require profile `filter`.
+# `entity` is required by BlogArticleType (tags). BlogKit also prepends this type_map.
 nowo_form_kit:
     default_profile: default
+    type_map:
+        entity: Symfony\Bridge\Doctrine\Form\Type\EntityType
     profiles:
         filter:
             alias: filter

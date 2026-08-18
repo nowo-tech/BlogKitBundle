@@ -6,6 +6,7 @@ namespace Nowo\BlogKitBundle\Tests\Integration;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
+use Nowo\BlogKitBundle\Entity\BlogArticle;
 use Nowo\BlogKitBundle\Repository\BlogArticleRepository;
 use Nowo\BlogKitBundle\Tests\Support\LocaleTestSupport;
 use PHPUnit\Framework\Attributes\Test;
@@ -49,7 +50,6 @@ final class BlogArticleRepositoryTest extends DoctrineTestCase
             image: '/images/post.png',
             linkedinUrl: 'https://linkedin.example/post',
             titleEs: 'Titulo publicado',
-            titleEn: null,
             excerptEs: 'Extracto publicado',
             bodyEs: 'Contenido publicado',
             metaTitleEs: 'Meta publicado',
@@ -101,7 +101,6 @@ final class BlogArticleRepositoryTest extends DoctrineTestCase
             image: '/hero.png',
             linkedinUrl: 'https://linkedin.example/deep-dive',
             titleEs: 'Analisis profundo',
-            titleEn: null,
             excerptEs: 'Resumen profundo',
             bodyEs: 'Cuerpo detallado',
             metaTitleEs: 'Meta profunda',
@@ -279,7 +278,7 @@ final class BlogArticleRepositoryTest extends DoctrineTestCase
         self::assertSame([
             $expectedSecond->getId(),
             $expectedFirst->getId(),
-        ], array_map(static fn ($article) => $article->getId(), $items));
+        ], array_map(static fn (BlogArticle $article): ?int => $article->getId(), $items));
     }
 
     #[Test]
@@ -323,9 +322,9 @@ final class BlogArticleRepositoryTest extends DoctrineTestCase
         $pageTwo = $this->repository->findPublishedPaginated(2, 1, 'es', 'Doctrine ORM', 'php');
 
         self::assertSame(2, $pageOne['total']);
-        self::assertSame([$first->getId()], array_map(static fn ($article) => $article->getId(), $pageOne['items']));
+        self::assertSame([$first->getId()], array_map(static fn (BlogArticle $article): ?int => $article->getId(), $pageOne['items']));
         self::assertSame(2, $pageTwo['total']);
-        self::assertSame([$second->getId()], array_map(static fn ($article) => $article->getId(), $pageTwo['items']));
+        self::assertSame([$second->getId()], array_map(static fn (BlogArticle $article): ?int => $article->getId(), $pageTwo['items']));
     }
 
     #[Test]
@@ -356,7 +355,7 @@ final class BlogArticleRepositoryTest extends DoctrineTestCase
 
         self::assertSame(
             [$first->getId(), $second->getId()],
-            array_map(static fn ($article) => $article->getId(), $items),
+            array_map(static fn (BlogArticle $article): ?int => $article->getId(), $items),
         );
         self::assertSame('creator@example.test', $items[0]->getCreatedBy()?->getUserIdentifier());
         self::assertSame('updater@example.test', $items[0]->getUpdatedBy()?->getUserIdentifier());
@@ -383,7 +382,7 @@ final class BlogArticleRepositoryTest extends DoctrineTestCase
 
         self::assertSame(
             [$first->getId(), $second->getId()],
-            array_map(static fn ($article) => $article->getId(), $result['items']),
+            array_map(static fn (BlogArticle $article): ?int => $article->getId(), $result['items']),
         );
         self::assertSame(2, $result['total']);
         self::assertSame(1, $result['page']);
@@ -426,9 +425,9 @@ final class BlogArticleRepositoryTest extends DoctrineTestCase
             'published' => '0',
         ], 1, 10);
 
-        self::assertSame([$published->getId()], array_map(static fn ($article) => $article->getId(), $publishedResult['items']));
+        self::assertSame([$published->getId()], array_map(static fn (BlogArticle $article): ?int => $article->getId(), $publishedResult['items']));
         self::assertSame(1, $publishedResult['total']);
-        self::assertSame([$draft->getId()], array_map(static fn ($article) => $article->getId(), $draftResult['items']));
+        self::assertSame([$draft->getId()], array_map(static fn (BlogArticle $article): ?int => $article->getId(), $draftResult['items']));
         self::assertSame(1, $draftResult['total']);
     }
 
@@ -452,7 +451,7 @@ final class BlogArticleRepositoryTest extends DoctrineTestCase
 
         self::assertSame(
             [$first->getId(), $second->getId()],
-            array_map(static fn ($article) => $article->getId(), $items),
+            array_map(static fn (BlogArticle $article): ?int => $article->getId(), $items),
         );
     }
 
@@ -484,8 +483,57 @@ final class BlogArticleRepositoryTest extends DoctrineTestCase
             'published' => '0',
         ]);
 
-        self::assertSame([$published->getId()], array_map(static fn ($article) => $article->getId(), $publishedItems));
-        self::assertSame([$draft->getId()], array_map(static fn ($article) => $article->getId(), $draftItems));
+        self::assertSame([$published->getId()], array_map(static fn (BlogArticle $article): ?int => $article->getId(), $publishedItems));
+        self::assertSame([$draft->getId()], array_map(static fn (BlogArticle $article): ?int => $article->getId(), $draftItems));
+    }
+
+    #[Test]
+    public function findFilteredPaginatedRestrictsToCreatedByIncludingUnowned(): void
+    {
+        $owner = $this->createUser('owner-list@example.test');
+        $other = $this->createUser('other-list@example.test');
+        $mine  = $this->createArticle(
+            slug: 'owned-post',
+            published: true,
+            position: 1,
+            publishedAt: new DateTimeImmutable('2026-11-20T00:00:00+00:00'),
+            createdBy: $owner,
+        );
+        $this->createArticle(
+            slug: 'foreign-post',
+            published: true,
+            position: 2,
+            publishedAt: new DateTimeImmutable('2026-11-21T00:00:00+00:00'),
+            createdBy: $other,
+        );
+        $legacy = $this->createArticle(
+            slug: 'legacy-post',
+            published: true,
+            position: 3,
+            publishedAt: new DateTimeImmutable('2026-11-22T00:00:00+00:00'),
+        );
+
+        $result         = $this->repository->findFilteredPaginated([], 1, 10, (int) $owner->getId());
+        $empty          = $this->repository->findFilteredPaginated([], 1, 10, '');
+        $items          = $this->repository->findFiltered([], (int) $owner->getId());
+        $publishedOwned = $this->repository->findFiltered(['published' => '1'], (int) $owner->getId());
+
+        self::assertSame(
+            [$mine->getId(), $legacy->getId()],
+            array_map(static fn (BlogArticle $article): ?int => $article->getId(), $result['items']),
+        );
+        self::assertSame(2, $result['total']);
+        self::assertSame([], $empty['items']);
+        self::assertSame(0, $empty['total']);
+        self::assertSame([], $this->repository->findFiltered([], ''));
+        self::assertSame(
+            [$mine->getId(), $legacy->getId()],
+            array_map(static fn (BlogArticle $article): ?int => $article->getId(), $items),
+        );
+        self::assertSame(
+            [$mine->getId(), $legacy->getId()],
+            array_map(static fn (BlogArticle $article): ?int => $article->getId(), $publishedOwned),
+        );
     }
 
     #[Test]

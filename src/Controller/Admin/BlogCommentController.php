@@ -11,6 +11,7 @@ use Nowo\BlogKitBundle\Form\BlogCommentFilterType;
 use Nowo\BlogKitBundle\Form\StaffBlogCommentReplyType;
 use Nowo\BlogKitBundle\Model\BlogUserInterface;
 use Nowo\BlogKitBundle\Repository\BlogCommentRepository;
+use Nowo\BlogKitBundle\Security\BlogKitAccessDenied;
 use Nowo\BlogKitBundle\Service\BlogCommentManager;
 use Nowo\FormKitBundle\Form\CsrfOnlyFormFactory;
 use Nowo\FormKitBundle\Form\GetFilterFormFactory;
@@ -41,6 +42,7 @@ final class BlogCommentController extends AbstractController
         private readonly BlogCommentManager $blogCommentManager,
         private readonly CsrfOnlyFormFactory $csrfOnlyFormFactory,
         private readonly GetFilterFormFactory $filterFormFactory,
+        private readonly BlogKitAccessDenied $accessDenied,
     ) {
     }
 
@@ -91,7 +93,7 @@ final class BlogCommentController extends AbstractController
         $actionForms = [];
         foreach ($items as $item) {
             $id = $item->getId();
-            if ($id === null) {
+            if ($id === null || !$this->accessDenied->resourceAccess()->canModerateComment($item)) {
                 continue;
             }
             $replyForms[$id] = $this->createForm(StaffBlogCommentReplyType::class, null, [
@@ -129,6 +131,7 @@ final class BlogCommentController extends AbstractController
     #[Route('/admin/blog/comments/{id}/approve', name: 'admin_blog_comment_approve', requirements: ['id' => '\d+'], methods: ['POST'])]
     public function approve(BlogComment $blogComment, Request $request): RedirectResponse
     {
+        $this->accessDenied->denyUnlessCanModerateComment($blogComment);
         $this->requireCsrfAction($request, 'admin_blog_comment_approve', 'approve' . $blogComment->getId(), $blogComment);
         $user = $this->requireUser();
 
@@ -141,6 +144,7 @@ final class BlogCommentController extends AbstractController
     #[Route('/admin/blog/comments/{id}/reject', name: 'admin_blog_comment_reject', requirements: ['id' => '\d+'], methods: ['POST'])]
     public function reject(BlogComment $blogComment, Request $request): RedirectResponse
     {
+        $this->accessDenied->denyUnlessCanModerateComment($blogComment);
         $this->requireCsrfAction($request, 'admin_blog_comment_reject', 'reject' . $blogComment->getId(), $blogComment);
         $user = $this->requireUser();
 
@@ -153,6 +157,7 @@ final class BlogCommentController extends AbstractController
     #[Route('/admin/blog/comments/{id}/reply', name: 'admin_blog_comment_reply', requirements: ['id' => '\d+'], methods: ['POST'])]
     public function reply(BlogComment $blogComment, Request $request): RedirectResponse
     {
+        $this->accessDenied->denyUnlessCanModerateComment($blogComment);
         $user = $this->requireUser();
 
         $form = $this->createForm(StaffBlogCommentReplyType::class, null, [
@@ -183,6 +188,7 @@ final class BlogCommentController extends AbstractController
     #[Route('/admin/blog/comments/{id}/delete', name: 'admin_blog_comment_delete', requirements: ['id' => '\d+'], methods: ['POST'])]
     public function delete(BlogComment $blogComment, Request $request): RedirectResponse
     {
+        $this->accessDenied->denyUnlessCanModerateComment($blogComment);
         $this->requireCsrfAction($request, 'admin_blog_comment_delete', 'delete' . $blogComment->getId(), $blogComment);
 
         $this->blogCommentManager->delete($blogComment);

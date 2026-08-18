@@ -12,13 +12,14 @@ use Nowo\BlogKitBundle\Repository\BlogCommentRepository;
 use Nowo\BlogKitBundle\Service\BlogCommentManager;
 use Nowo\BlogKitBundle\Tests\Support\TestUser;
 use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
 
 final class BlogCommentManagerTest extends TestCase
 {
-    private EntityManagerInterface $entityManager;
-    private BlogCommentRepository $repository;
+    private MockObject $entityManager;
+    private MockObject $repository;
     private BlogCommentManager $manager;
 
     protected function setUp(): void

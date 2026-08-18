@@ -7,6 +7,7 @@ namespace Nowo\BlogKitBundle\Tests\Unit\DependencyInjection;
 use Doctrine\ORM\Event\LoadClassMetadataEventArgs;
 use Doctrine\ORM\Mapping\ClassMetadata;
 use Nowo\BlogKitBundle\DependencyInjection\TablePrefixListener;
+use Nowo\BlogKitBundle\Entity\BlogArticle;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
@@ -41,7 +42,7 @@ final class TablePrefixListenerTest extends TestCase
     public function blogKitEntityTableNameIsPrefixed(): void
     {
         $metadata = $this->createMock(ClassMetadata::class);
-        $metadata->method('getName')->willReturn('Nowo\\BlogKitBundle\\Entity\\BlogArticle');
+        $metadata->method('getName')->willReturn(BlogArticle::class);
         $metadata->method('getTableName')->willReturn('content_blog_article');
         $metadata->expects(self::once())
             ->method('setPrimaryTable')

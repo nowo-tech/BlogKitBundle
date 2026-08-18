@@ -19,12 +19,13 @@ Security considerations for public blog pages, comments, admin CRUD, and CMS HTM
 
 | Risk | Mitigation |
 | --- | --- |
-| Unauthorized editors reach article/tag/settings admin | `access_roles` / `manage_roles` / `configure_roles`, custom `access_checker`, Symfony Security |
+| Unauthorized editors reach article/tag/settings admin | `access_roles` / `manage_roles` / `configure_roles`, custom `access_checker`, object access (`none` / `owner` / host `service`), Symfony Security |
+| IDOR on another editor's publication | `security.object_access.strategy: owner` or a host `BlogKitResourceAccessCheckerInterface`; `BlogKitAccessDenied` on edit/delete/inline |
 | Unauthorized comment moderation | `moderate_roles` and route prefix `admin_blog_comments` |
-| Stored XSS through article HTML | Default Twig auto-escaping; `article.body` uses `\|raw` for trusted editors only |
+| Stored XSS through article HTML | Default Twig auto-escaping; `article.body` uses `\|raw`. Optional `html.sanitize` (`allowlist` / `strip` / host `service`) on persist and render |
 | Stored XSS through comments | Comment bodies are escaped; `\|nl2br` only |
 | CSRF on admin delete/approve/save and public comment POST | Symfony forms and `CsrfOnlyFormFactory` |
-| Comment spam | Comments start pending; host should add rate limiting |
+| Comment spam | Pending moderation; configurable rate-limit strategies; configurable CAPTCHA (`honeypot` default) |
 | Overly broad demo access | `allow_unauthenticated` defaults to `false` |
 | Shared-database table collisions | Optional `doctrine.table_prefix` |
 
@@ -44,6 +45,16 @@ nowo_blog_kit:
         allow_unauthenticated: false
 ```
 
+Object-level publication access (after roles):
+
+```yaml
+nowo_blog_kit:
+    security:
+        object_access:
+            strategy: none      # none | owner | service
+            service: null       # BlogKitResourceAccessCheckerInterface when strategy=service
+```
+
 Firewall the admin prefix in the host app (`path_prefix` `/admin/blog`):
 
 ```yaml
@@ -55,7 +66,7 @@ security:
         - { path: ^/admin/blog, roles: ROLE_EDITOR }
 ```
 
-If your project needs more context-aware rules, implement `BlogKitAccessCheckerInterface` and configure `security.access_checker`.
+If your project needs more context-aware **role** rules, implement `BlogKitAccessCheckerInterface` and configure `security.access_checker`. For per-publication rules, use `security.object_access` (`owner` or a host `BlogKitResourceAccessCheckerInterface`). Controllers deny through `BlogKitAccessDenied`.
 
 Setting `allow_unauthenticated: true` is supported for local demos only.
 
@@ -67,15 +78,13 @@ Admin create/edit/delete, comment approve/reject/reply/delete, settings save, an
 
 - New comments are stored as **pending** until a moderator approves them.
 - The privacy checkbox label can point at `web_ui.privacy_url`.
-- The bundle does not ship rate limiting. Add a host limiter or CAPTCHA on `blog_comment_create` for public internet sites.
+- Rate limiting defaults to `fixed_window` (5 posts / 60s per IP) via `cache.app`. Switch strategy in YAML or admin settings.
+- CAPTCHA defaults to a hidden honeypot. Remote providers (`recaptcha_v2`, `recaptcha_v3`, `hcaptcha`, `turnstile`) need `site_key` / `secret_key` in YAML.
+- Public staff replies require `canModerate()`.
 
 ## Rich text rendering
 
-`public/show.html.twig` renders editor-authored article HTML with `|raw`. That is intentional for CMS-managed rich text, but it means:
-
-- Only trusted editors should update article bodies.
-- Hosts should sanitize content before storage or before rendering if untrusted HTML is possible.
-- Template overrides should keep escaping behavior explicit and reviewed.
+`public/show.html.twig` renders editor-authored article HTML with `|raw`. Enable `html.sanitize.strategy: allowlist` (or `strip` / a host `BlogHtmlSanitizerInterface`) if untrusted authors can edit bodies. `none` is for trusted editors only.
 
 ## Infinite scroll HTML
 
@@ -85,6 +94,8 @@ Admin create/edit/delete, comment approve/reject/reply/delete, settings save, an
 
 - Audit which users receive `ROLE_EDITOR`, `ROLE_MODERATOR`, and `ROLE_ADMIN`.
 - Leave `allow_unauthenticated: false` in production.
+- Pick a comment rate-limit and CAPTCHA strategy for public internet sites. Keep remote CAPTCHA secrets in YAML.
+- Set `html.sanitize.strategy` to `allowlist` if article authors are not fully trusted.
 - Set a real `web_ui.privacy_url`.
 - Use `doctrine.table_prefix` when multiple applications share one schema.
 - Review demo credentials and never copy demo auth settings into production.
@@ -102,7 +113,7 @@ Before tagging a release, confirm:
 | **Input / output** | Comment bodies escaped; article `\|raw` documented as trusted-editor HTML. |
 | **CSRF** | Mutations use Symfony forms. |
 | **Dependencies** | `composer audit` run; issues triaged. |
-| **Permissions / exposure** | Manage / moderate / configure roles or custom `BlogKitAccessCheckerInterface`. |
+| **Permissions / exposure** | Manage / moderate / configure roles, optional `owner` object access, or custom checkers (`BlogKitAccessCheckerInterface` / `BlogKitResourceAccessCheckerInterface`). |
 | **AI security audit (REQ-SEC-004)** | Grade **Pass (conditional)** / risk **Medium** (2026-08-18). See [AI security audit](#ai-security-audit). |
 
 Record confirmation in the release PR or tag notes.
@@ -114,8 +125,8 @@ Record confirmation in the release PR or tag notes.
 | Date | 2026-08-18 |
 | Grade | Pass (conditional) |
 | Risk | Medium |
-| Method | Static review of admin access subscriber, CSRF forms, Twig escaping, article `\|raw`, public comments, infinite-scroll HTML insert, recipe defaults (`allow_unauthenticated: false`) |
-| Open residuals | Article HTML is trusted-editor `\|raw`; public comments need host rate limiting; keep host `access_control` on `/admin/blog` |
+| Method | Static review of admin access subscriber, object access (`BlogKitAccessDenied`), CSRF forms, Twig escaping, article `\|raw`, public comments, infinite-scroll HTML insert, recipe defaults (`allow_unauthenticated: false`) |
+| Open residuals | Public comments still need a host CAPTCHA provider for serious bot farms (honeypot is the default); `allowlist` is optional because trusted-editor `\|raw` remains |
 
 See [CONFIGURATION.md](CONFIGURATION.md) and [USAGE.md](USAGE.md).
 

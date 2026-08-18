@@ -27,8 +27,9 @@
   clear_params: {status: filter},
 }) }}
 
-<div class="nowo-ui-card">
-  <table class="nowo-ui-table {{ ui.table(_css_fw) }}">
+<div class="{{ ui.card(_css_fw) }}">
+  <div class="{{ ui.table_wrap(_css_fw) }}">
+    <table class="{{ ui.table(_css_fw) }}">
     <thead>
       <tr>
         <th scope="col">{{ 'admin.column.date'|trans }}</th>
@@ -36,7 +37,7 @@
         <th scope="col">{{ 'admin.column.author'|trans }}</th>
         <th scope="col">{{ 'admin.column.comment'|trans }}</th>
         <th scope="col">{{ 'admin.column.status'|trans }}</th>
-        <th scope="col"><span class="sr-only">{{ 'admin.column.actions'|trans }}</span></th>
+        <th scope="col"><span class="visually-hidden">{{ 'admin.column.actions'|trans }}</span></th>
       </tr>
     </thead>
     <tbody>
@@ -52,7 +53,7 @@
           <td>{{ item.body|u.truncate(180) }}</td>
           <td>{{ ('admin.status.' ~ item.status.value)|trans }}</td>
           <td>
-            {% if action_forms[item.id] is defined %}
+            {% if nowo_blog_kit_can_moderate_comment(item) and action_forms[item.id] is defined %}
               {% if item.status.value == 'pending' %}
                 {{ include('@NowoBlogKitBundle/admin/_csrf_action_form.html.twig', {
                   form: action_forms[item.id].approve,
@@ -89,6 +90,7 @@
         <tr><td colspan="6">{{ 'admin.comments.empty'|trans }}</td></tr>
       {% endfor %}
     </tbody>
-  </table>
+    </table>
+  </div>
 </div>
 {% endblock %}

@@ -23,9 +23,9 @@
   filters: filters|default({}),
 }) }}
 
-<div class="nowo-ui-card">
-  <div class="nowo-ui-table-wrap">
-    <table class="nowo-ui-table {{ ui.table(_css_fw) }}">
+<div class="{{ ui.card(_css_fw) }}">
+  <div class="{{ ui.table_wrap(_css_fw) }}">
+    <table class="{{ ui.table(_css_fw) }}">
       <thead>
         <tr>
           <th scope="col">{{ 'admin.column.position'|trans }}</th>
@@ -33,7 +33,7 @@
           <th scope="col">{{ 'admin.column.title'|trans }}</th>
           <th scope="col">{{ 'admin.column.status'|trans }}</th>
           {{ include('@NowoBlogKitBundle/admin/_audit_table_heads.html.twig') }}
-          <th scope="col"><span class="sr-only">{{ 'admin.column.actions'|trans }}</span></th>
+          <th scope="col"><span class="visually-hidden">{{ 'admin.column.actions'|trans }}</span></th>
         </tr>
       </thead>
       <tbody>
@@ -51,6 +51,7 @@
             </td>
             {{ include('@NowoBlogKitBundle/admin/_audit_table_cells.html.twig', {item: item}) }}
             <td>
+              {% if nowo_blog_kit_can_manage_article(item) %}
               {{ include('@NowoBlogKitBundle/admin/_row_actions.html.twig', {actions: [
                 {kind: 'edit', href: path('admin_blog_edit', {id: item.id}), label: 'admin.action.edit'|trans},
                 {
@@ -67,6 +68,7 @@
                   title: 'admin.confirm.delete_title'|trans,
                   body: 'admin.confirm.delete_article'|trans,
                 }) }}
+              {% endif %}
               {% endif %}
             </td>
           </tr>

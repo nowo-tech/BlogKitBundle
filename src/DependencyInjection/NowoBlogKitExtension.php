@@ -7,13 +7,29 @@ namespace Nowo\BlogKitBundle\DependencyInjection;
 use Doctrine\ORM\Events;
 use LogicException;
 use Nowo\BlogKitBundle\DependencyInjection\Configuration as BundleConfiguration;
+use Nowo\BlogKitBundle\Enum\BlogObjectAccessStrategy;
+use Nowo\BlogKitBundle\Enum\CommentCaptchaStrategy;
+use Nowo\BlogKitBundle\Enum\CommentRateLimitStrategy;
+use Nowo\BlogKitBundle\Enum\HtmlSanitizeStrategy;
+use Nowo\BlogKitBundle\Form\PublicBlogCommentType;
 use Nowo\BlogKitBundle\Locale\BlogLocales;
 use Nowo\BlogKitBundle\Model\BlogUserInterface;
 use Nowo\BlogKitBundle\Security\AllowAllBlogKitAccessChecker;
+use Nowo\BlogKitBundle\Security\AllowAllBlogKitResourceAccessChecker;
 use Nowo\BlogKitBundle\Security\BlogKitAccessCheckerInterface;
+use Nowo\BlogKitBundle\Security\BlogKitResourceAccessCheckerInterface;
+use Nowo\BlogKitBundle\Security\BlogProtection;
+use Nowo\BlogKitBundle\Security\BlogProtectionConfig;
+use Nowo\BlogKitBundle\Security\Captcha\CaptchaHttpClientInterface;
+use Nowo\BlogKitBundle\Security\Captcha\PublicBlogCommentCaptchaTypeExtension;
+use Nowo\BlogKitBundle\Security\Captcha\StreamCaptchaHttpClient;
 use Nowo\BlogKitBundle\Security\ConfigurableBlogKitAccessChecker;
+use Nowo\BlogKitBundle\Security\OwnerBlogKitResourceAccessChecker;
+use Nowo\BlogKitBundle\Service\BlogSettingsProvider;
+use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\Extension\Extension;
 use Symfony\Component\DependencyInjection\Extension\PrependExtensionInterface;
@@ -136,6 +152,12 @@ final class NowoBlogKitExtension extends Extension implements PrependExtensionIn
             return;
         }
 
+        $container->prependExtensionConfig('nowo_form_kit', [
+            'type_map' => [
+                'entity' => EntityType::class,
+            ],
+        ]);
+
         $hostHasProfile       = false;
         $hostHasFilterProfile = false;
         foreach ($container->getExtensionConfig('nowo_form_kit') as $cfg) {
@@ -203,6 +225,8 @@ final class NowoBlogKitExtension extends Extension implements PrependExtensionIn
         $container->setParameter('nowo_blog_kit.security.configure_roles', $config['security']['configure_roles']);
         $container->setParameter('nowo_blog_kit.security.access_checker', $config['security']['access_checker']);
         $container->setParameter('nowo_blog_kit.security.allow_unauthenticated', $config['security']['allow_unauthenticated']);
+        $container->setParameter('nowo_blog_kit.security.object_access.strategy', (string) $config['security']['object_access']['strategy']);
+        $container->setParameter('nowo_blog_kit.security.object_access.service', $config['security']['object_access']['service']);
         $container->setParameter('nowo_blog_kit.web_ui.layout_template', $config['web_ui']['layout_template']);
         $container->setParameter('nowo_blog_kit.web_ui.public_layout_template', $config['web_ui']['public_layout_template']);
         $container->setParameter('nowo_blog_kit.web_ui.css_framework', $config['web_ui']['css_framework']);
@@ -210,6 +234,11 @@ final class NowoBlogKitExtension extends Extension implements PrependExtensionIn
         $container->setParameter('nowo_blog_kit.web_ui.row_actions_display', $config['web_ui']['row_actions_display']);
         $container->setParameter('nowo_blog_kit.web_ui.page_size', $config['web_ui']['page_size']);
         $container->setParameter('nowo_blog_kit.web_ui.privacy_url', $config['web_ui']['privacy_url']);
+        $container->setParameter('nowo_blog_kit.listing.mode', (string) $config['listing']['mode']);
+        $container->setParameter('nowo_blog_kit.listing.masonry.strategy', (string) $config['listing']['masonry']['strategy']);
+        $container->setParameter('nowo_blog_kit.listing.masonry.columns_mobile', (int) $config['listing']['masonry']['columns_mobile']);
+        $container->setParameter('nowo_blog_kit.listing.masonry.columns_tablet', (int) $config['listing']['masonry']['columns_tablet']);
+        $container->setParameter('nowo_blog_kit.listing.masonry.columns_desktop', (int) $config['listing']['masonry']['columns_desktop']);
 
         $container->getDefinition(BlogLocales::class)
             ->setArgument('$defaultLocale', $config['default_locale'])
@@ -223,6 +252,8 @@ final class NowoBlogKitExtension extends Extension implements PrependExtensionIn
         }
 
         $this->registerAccessChecker($container, $config['security']);
+        $this->registerObjectAccess($container, $config['security']);
+        $this->registerBlogProtection($container, $config);
 
         $tablePrefix = (string) $config['doctrine']['table_prefix'];
         if ($tablePrefix !== '') {
@@ -238,7 +269,15 @@ final class NowoBlogKitExtension extends Extension implements PrependExtensionIn
     }
 
     /**
-     * @param array{access_checker: ?string, access_roles: list<string>, manage_roles: list<string>, moderate_roles: list<string>, configure_roles: list<string>, allow_unauthenticated: bool} $security
+     * @param array{
+     *     access_checker: ?string,
+     *     access_roles: list<string>,
+     *     manage_roles: list<string>,
+     *     moderate_roles: list<string>,
+     *     configure_roles: list<string>,
+     *     allow_unauthenticated: bool,
+     *     object_access: array{strategy: string, service: ?string}
+     * } $security
      */
     private function registerAccessChecker(ContainerBuilder $container, array $security): void
     {
@@ -266,6 +305,118 @@ final class NowoBlogKitExtension extends Extension implements PrependExtensionIn
         $definition->setArgument('$authorizationChecker', new Reference('security.authorization_checker'));
         $container->setDefinition($id, $definition);
         $container->setAlias(BlogKitAccessCheckerInterface::class, $id);
+    }
+
+    /**
+     * @param array{
+     *     allow_unauthenticated: bool,
+     *     object_access: array{strategy: string, service: ?string}
+     * } $security
+     */
+    private function registerObjectAccess(ContainerBuilder $container, array $security): void
+    {
+        $strategy = BlogObjectAccessStrategy::from((string) $security['object_access']['strategy']);
+
+        if ($security['allow_unauthenticated'] || $strategy === BlogObjectAccessStrategy::None) {
+            $id = 'nowo_blog_kit.object_access.allow_all';
+            $container->setDefinition($id, new Definition(AllowAllBlogKitResourceAccessChecker::class));
+            $container->setAlias(BlogKitResourceAccessCheckerInterface::class, $id);
+
+            return;
+        }
+
+        if ($strategy === BlogObjectAccessStrategy::Service) {
+            $custom = $this->optionalServiceId($security['object_access']['service'] ?? null);
+            if ($custom === null) {
+                throw new LogicException('nowo_blog_kit.security.object_access.service is required when strategy is service.');
+            }
+
+            $container->setAlias(BlogKitResourceAccessCheckerInterface::class, $custom);
+
+            return;
+        }
+
+        $id         = 'nowo_blog_kit.object_access.owner';
+        $definition = new Definition(OwnerBlogKitResourceAccessChecker::class);
+        $definition->setArgument('$accessChecker', new Reference(BlogKitAccessCheckerInterface::class));
+        $definition->setArgument(
+            '$tokenStorage',
+            new Reference('security.token_storage', ContainerInterface::NULL_ON_INVALID_REFERENCE),
+        );
+        $container->setDefinition($id, $definition);
+        $container->setAlias(BlogKitResourceAccessCheckerInterface::class, $id);
+    }
+
+    /**
+     * @param array<string, mixed> $config
+     */
+    private function registerBlogProtection(ContainerBuilder $container, array $config): void
+    {
+        /** @var array<string, mixed> $comments */
+        $comments = $config['comments'];
+        /** @var array<string, mixed> $rateLimit */
+        $rateLimit = $comments['rate_limit'];
+        /** @var array<string, mixed> $captcha */
+        $captcha = $comments['captcha'];
+        /** @var array<string, mixed> $html */
+        $html = $config['html']['sanitize'];
+
+        $container->register(StreamCaptchaHttpClient::class)
+            ->setAutowired(false)
+            ->setAutoconfigured(false);
+        $container->setAlias(CaptchaHttpClientInterface::class, StreamCaptchaHttpClient::class);
+
+        $container->register(BlogProtectionConfig::class)
+            ->setAutowired(false)
+            ->setAutoconfigured(false)
+            ->setArguments([
+                CommentRateLimitStrategy::from((string) $rateLimit['strategy']),
+                (int) $rateLimit['limit'],
+                (int) $rateLimit['interval_seconds'],
+                $this->optionalServiceId($rateLimit['service'] ?? null),
+                CommentCaptchaStrategy::from((string) $captcha['strategy']),
+                (string) $captcha['site_key'],
+                (string) $captcha['secret_key'],
+                (float) $captcha['min_score'],
+                (string) $captcha['honeypot_field'],
+                $this->optionalServiceId($captcha['service'] ?? null),
+                HtmlSanitizeStrategy::from((string) $html['strategy']),
+                $this->optionalServiceId($html['service'] ?? null),
+            ]);
+
+        $customRateLimiter = $this->optionalServiceId($rateLimit['service'] ?? null);
+        $customCaptcha     = $this->optionalServiceId($captcha['service'] ?? null);
+        $customSanitizer   = $this->optionalServiceId($html['service'] ?? null);
+
+        $container->register(BlogProtection::class)
+            ->setAutowired(false)
+            ->setAutoconfigured(false)
+            ->setArguments([
+                new Reference(BlogProtectionConfig::class),
+                new Reference(BlogSettingsProvider::class),
+                new Reference(CaptchaHttpClientInterface::class),
+                new Reference('request_stack'),
+                new Reference('cache.app', ContainerInterface::NULL_ON_INVALID_REFERENCE),
+                new Reference('clock', ContainerInterface::NULL_ON_INVALID_REFERENCE),
+                $customRateLimiter !== null ? new Reference($customRateLimiter) : null,
+                $customCaptcha !== null ? new Reference($customCaptcha) : null,
+                $customSanitizer !== null ? new Reference($customSanitizer) : null,
+            ]);
+
+        $container->register(PublicBlogCommentCaptchaTypeExtension::class)
+            ->setAutowired(false)
+            ->setAutoconfigured(false)
+            ->setArguments([new Reference(BlogProtection::class)])
+            ->addTag('form.type_extension', ['extended_type' => PublicBlogCommentType::class]);
+    }
+
+    private function optionalServiceId(mixed $serviceId): ?string
+    {
+        if (!is_string($serviceId) || $serviceId === '') {
+            return null;
+        }
+
+        return $serviceId;
     }
 
     private function isSecurityBundleAvailable(ContainerBuilder $container): bool

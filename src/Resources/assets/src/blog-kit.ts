@@ -5,6 +5,7 @@
  * Stimulus application. Safe to load on every Blog Kit page: missing roots are no-ops.
  */
 
+import { bindCommentCaptcha } from './blog-captcha';
 import { bindFormCollection } from './blog-form-collection';
 import { startBlogInfinite } from './blog-infinite-controller';
 
@@ -16,6 +17,7 @@ import { startBlogInfinite } from './blog-infinite-controller';
 export function startBlogKit(): void {
     bindFormCollection();
     startBlogInfinite();
+    bindCommentCaptcha();
 }
 
 /**

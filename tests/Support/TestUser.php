@@ -16,7 +16,7 @@ final class TestUser implements BlogUserInterface, UserInterface
     /** @var list<string> */
     private array $roles = ['ROLE_ADMIN'];
 
-    public function getId(): int|string|null
+    public function getId(): ?int
     {
         return $this->id;
     }
@@ -57,9 +57,5 @@ final class TestUser implements BlogUserInterface, UserInterface
         $this->roles = $roles;
 
         return $this;
-    }
-
-    public function eraseCredentials(): void
-    {
     }
 }

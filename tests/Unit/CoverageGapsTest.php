@@ -186,14 +186,14 @@ final class CoverageGapsTest extends TestCase
         $kernel  = $this->createMock(HttpKernelInterface::class);
         $request = Request::create('/x');
         $request->attributes->set('_route', 123);
-        $subscriber->onKernelController(new ControllerEvent($kernel, static fn () => null, $request, HttpKernelInterface::MAIN_REQUEST));
+        $subscriber->onKernelController(new ControllerEvent($kernel, static fn (): null => null, $request, HttpKernelInterface::MAIN_REQUEST));
 
         $request->attributes->set('_route', 'blog_index');
-        $subscriber->onKernelController(new ControllerEvent($kernel, static fn () => null, $request, HttpKernelInterface::MAIN_REQUEST));
+        $subscriber->onKernelController(new ControllerEvent($kernel, static fn (): null => null, $request, HttpKernelInterface::MAIN_REQUEST));
 
         $request->attributes->set('_route', 'admin_blog_comments_index');
         $this->expectException(AccessDeniedException::class);
-        $subscriber->onKernelController(new ControllerEvent($kernel, static fn () => null, $request, HttpKernelInterface::MAIN_REQUEST));
+        $subscriber->onKernelController(new ControllerEvent($kernel, static fn (): null => null, $request, HttpKernelInterface::MAIN_REQUEST));
     }
 
     #[Test]
@@ -209,7 +209,7 @@ final class CoverageGapsTest extends TestCase
         $settings = Request::create('/admin/blog/settings');
         $settings->attributes->set('_route', 'admin_blog_settings');
         try {
-            $subscriber->onKernelController(new ControllerEvent($kernel, static fn () => null, $settings, HttpKernelInterface::MAIN_REQUEST));
+            $subscriber->onKernelController(new ControllerEvent($kernel, static fn (): null => null, $settings, HttpKernelInterface::MAIN_REQUEST));
             self::fail('Expected AccessDeniedException for settings');
         } catch (AccessDeniedException) {
         }
@@ -217,7 +217,7 @@ final class CoverageGapsTest extends TestCase
         $manage = Request::create('/admin/blog');
         $manage->attributes->set('_route', 'admin_blog_index');
         $this->expectException(AccessDeniedException::class);
-        $subscriber->onKernelController(new ControllerEvent($kernel, static fn () => null, $manage, HttpKernelInterface::MAIN_REQUEST));
+        $subscriber->onKernelController(new ControllerEvent($kernel, static fn (): null => null, $manage, HttpKernelInterface::MAIN_REQUEST));
     }
 
     #[Test]

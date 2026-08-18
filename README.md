@@ -20,12 +20,13 @@ Blog Kit Bundle gives Symfony applications a reusable blog domain backed by Doct
 
 - Multilingual articles and tags with locale fallback (`es`, `en` by default)
 - Public index and article routes at `/blog` and `/blog/{slug}`
-- Moderated comments with staff replies
+- Moderated comments with staff replies, configurable rate limits, and CAPTCHA strategies
+- Optional article HTML sanitizer (`none`, `strip`, `allowlist`, or a host service)
 - Admin CRUD for articles, tags, comments, and singleton blog settings
 - Paginated or infinite-scroll listing, configurable asides, and card options
 - LinkedIn hashtag formatting command `nowo:blog:sync-hashtags`
 - `BlogArticlePublishedEvent` after an article becomes published
-- Configurable access: `access_roles`, manage / moderate / configure roles, custom checker, or demo-only unauthenticated mode
+- Configurable access: `access_roles`, manage / moderate / configure roles, custom `access_checker`, and object-level publication rules (`security.object_access`: `none` / `owner` / host `service`) via `BlogKitAccessDenied`
 - Host CSS stack via `web_ui.css_framework` (`bootstrap5`, `tailwind`, `foundation`, `custom`), `icon_set`, and `row_actions_display` without forking page templates
 - Twig namespace `NowoBlogKitBundle` with host override precedence
 - Symfony Flex recipe and FrankenPHP demo in `demo/symfony8`
@@ -49,6 +50,8 @@ nowo_blog_kit:
         moderate_roles: [ROLE_MODERATOR]
         configure_roles: [ROLE_ADMIN]
         allow_unauthenticated: false
+        # object_access:
+        #     strategy: owner
     web_ui:
         layout_template: admin/layout.html.twig
         public_layout_template: base.html.twig

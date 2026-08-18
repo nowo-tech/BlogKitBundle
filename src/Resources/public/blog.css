@@ -426,11 +426,13 @@
   --blog-cols-sm: 1;
   --blog-cols-md: 2;
   --blog-cols-lg: 2;
+}
+.blog-masonry--masonry:not(.blog-masonry--cols) {
   column-count: var(--blog-cols-sm);
   column-gap: 1.5rem;
 }
 @supports (grid-template-rows: masonry) {
-  .blog-masonry:not(.blog-masonry--cols) {
+  .blog-masonry--masonry:not(.blog-masonry--cols) {
     display: grid;
     gap: 1.5rem;
     grid-template-columns: repeat(var(--blog-cols-sm), minmax(0, 1fr));
@@ -438,6 +440,17 @@
     column-count: unset;
     column-gap: unset;
   }
+}
+
+.blog-masonry--grid:not(.blog-masonry--cols) {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: repeat(var(--blog-cols-sm), minmax(0, 1fr));
+}
+.blog-masonry--list:not(.blog-masonry--cols) {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
 /* JS masonry (infinite scroll): flex columns, shortest-column placement */
@@ -464,34 +477,42 @@
   display: inline-block;
   width: 100%;
 }
-.blog-masonry--cols .blog-masonry__item {
+.blog-masonry--cols .blog-masonry__item,
+.blog-masonry--grid:not(.blog-masonry--cols) .blog-masonry__item,
+.blog-masonry--list:not(.blog-masonry--cols) .blog-masonry__item {
   display: block;
   margin: 0;
 }
 @supports (grid-template-rows: masonry) {
-  .blog-masonry:not(.blog-masonry--cols) .blog-masonry__item {
+  .blog-masonry--masonry:not(.blog-masonry--cols) .blog-masonry__item {
     display: block;
     margin: 0;
   }
 }
 @media (min-width: 640px) {
-  .blog-masonry:not(.blog-masonry--cols) {
+  .blog-masonry--masonry:not(.blog-masonry--cols) {
     column-count: var(--blog-cols-md);
   }
   @supports (grid-template-rows: masonry) {
-    .blog-masonry:not(.blog-masonry--cols) {
+    .blog-masonry--masonry:not(.blog-masonry--cols) {
       grid-template-columns: repeat(var(--blog-cols-md), minmax(0, 1fr));
     }
   }
+  .blog-masonry--grid:not(.blog-masonry--cols) {
+    grid-template-columns: repeat(var(--blog-cols-md), minmax(0, 1fr));
+  }
 }
 @media (min-width: 960px) {
-  .blog-masonry:not(.blog-masonry--cols) {
+  .blog-masonry--masonry:not(.blog-masonry--cols) {
     column-count: var(--blog-cols-lg);
   }
   @supports (grid-template-rows: masonry) {
-    .blog-masonry:not(.blog-masonry--cols) {
+    .blog-masonry--masonry:not(.blog-masonry--cols) {
       grid-template-columns: repeat(var(--blog-cols-lg), minmax(0, 1fr));
     }
+  }
+  .blog-masonry--grid:not(.blog-masonry--cols) {
+    grid-template-columns: repeat(var(--blog-cols-lg), minmax(0, 1fr));
   }
 }
 
@@ -1051,4 +1072,12 @@
 .blog-comment__reply-form textarea {
   width: 100%;
   margin: 0.5rem 0 0.75rem;
+}
+
+.blog-comment-hp {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
 }

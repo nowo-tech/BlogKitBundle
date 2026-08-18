@@ -46,6 +46,9 @@ Demo: **Symfony 8.x** (`demo/symfony8`). From the bundle root: `make -C demo/sym
 - **Blog Kit Bundle** (`Nowo\BlogKitBundle\NowoBlogKitBundle`) — path-mounted from the repository root.
 - **SQLite** — no database port published on the host (REQ-DEMO-006).
 - **Security** — HTTP Basic for `/admin/blog` (demo credentials `admin` / `admin`).
+- **Admin chrome** — host layout `templates/admin/layout.html.twig` (`web_ui.layout_template`) extending `base.html.twig` (Bootstrap 5, brand nav, flashes, Bootstrap Icons).
+- **FormKit** — `css_framework: bootstrap` (no `bootstrap5` value) with profiles `blog_kit` / `filter`; Twig `form_themes` includes `bootstrap_5_layout.html.twig`.
+- **UiKit** — `css_framework: bootstrap5`, `icon_set: bootstrap-icons`, `row_actions_display: icon`.
 
 Example `config/bundles.php`:
 

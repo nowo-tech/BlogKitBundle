@@ -1306,6 +1306,10 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *         configure_roles?: list<scalar|Param|null>,
  *         access_checker?: scalar|Param|null, // Default: null
  *         allow_unauthenticated?: bool|Param, // Default: false
+ *         object_access?: array{ // Object-level checks after roles (e.g. editors only manage their publications).
+ *             strategy?: "none"|"owner"|"service"|Param, // none (roles only), owner (createdBy), or service (host checker). // Default: "none"
+ *             service?: scalar|Param|null, // Service id implementing BlogKitResourceAccessCheckerInterface when strategy=service. // Default: null
+ *         },
  *     },
  *     web_ui?: array{
  *         layout_template?: scalar|Param|null, // Default: "@NowoBlogKitBundle/admin/layout.html.twig"
@@ -1319,6 +1323,37 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *     doctrine?: array{
  *         table_prefix?: scalar|Param|null, // Default: ""
  *         connection?: scalar|Param|null, // Default: "default"
+ *     },
+ *     comments?: array{
+ *         rate_limit?: array{ // Public comment POST rate limiting. Requires cache.app except strategy none/service.
+ *             strategy?: "none"|"fixed_window"|"per_ip_article"|"sliding_window"|"service"|Param, // Default: "fixed_window"
+ *             limit?: int|Param, // Max submissions per interval. 0 disables the limiter. // Default: 5
+ *             interval_seconds?: int|Param, // Default: 60
+ *             service?: scalar|Param|null, // Service id implementing BlogCommentRateLimiterInterface when strategy=service. // Default: null
+ *         },
+ *         captcha?: array{ // Public comment bot mitigation. Secrets stay in YAML, not BlogSettings.
+ *             strategy?: "none"|"honeypot"|"recaptcha_v2"|"recaptcha_v3"|"hcaptcha"|"turnstile"|"service"|Param, // Default: "honeypot"
+ *             site_key?: scalar|Param|null, // Default: ""
+ *             secret_key?: scalar|Param|null, // Default: ""
+ *             min_score?: float|Param, // Minimum reCAPTCHA v3 score. // Default: 0.5
+ *             honeypot_field?: scalar|Param|null, // Default: "website"
+ *             service?: scalar|Param|null, // Service id implementing BlogCommentCaptchaStrategyInterface when strategy=service. // Default: null
+ *         },
+ *     },
+ *     listing?: array{ // Public /blog index: numbered pagination or infinite scroll.
+ *         mode?: "paginated"|"infinite"|Param, // paginated (numbered pages) or infinite (IntersectionObserver + ?partial=1). // Default: "paginated"
+ *         masonry?: array{ // Public index card layout. Admin inherit / 0 keeps these YAML values.
+ *             strategy?: "masonry"|"grid"|"list"|Param, // masonry (packed columns), grid (uniform rows), or list (single column). // Default: "masonry"
+ *             columns_mobile?: int|Param, // Default: 1
+ *             columns_tablet?: int|Param, // Default: 2
+ *             columns_desktop?: int|Param, // Default: 2
+ *         },
+ *     },
+ *     html?: array{
+ *         sanitize?: array{ // Sanitize article HTML on persist and public render. Default none keeps trusted-editor |raw.
+ *             strategy?: "none"|"strip"|"allowlist"|"service"|Param, // Default: "none"
+ *             service?: scalar|Param|null, // Service id implementing BlogHtmlSanitizerInterface when strategy=service. // Default: null
+ *         },
  *     },
  * }
  * @psalm-type NowoUiKitConfig = array{

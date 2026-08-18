@@ -6,6 +6,7 @@ namespace Nowo\BlogKitBundle\Service;
 
 use Nowo\BlogKitBundle\Repository\BlogArticleRepository;
 use Nowo\BlogKitBundle\Repository\BlogTagRepository;
+use Nowo\BlogKitBundle\Security\BlogProtection;
 use Symfony\Component\HttpFoundation\RequestStack;
 
 use function array_slice;
@@ -24,6 +25,7 @@ final class BlogCatalog
         private readonly BlogHashtagProcessor $blogHashtagProcessor,
         private readonly BlogArticleBodyEnhancer $blogArticleBodyEnhancer,
         private readonly BlogLocalesLocaleResolver $localeResolver,
+        private readonly ?BlogProtection $blogProtection = null,
     ) {
     }
 
@@ -45,6 +47,19 @@ final class BlogCatalog
     public function blogPerPage(): int
     {
         return $this->blogSettingsProvider->perPage();
+    }
+
+    public function blogMasonryStrategy(): string
+    {
+        return $this->blogSettingsProvider->masonryStrategy()->value;
+    }
+
+    /**
+     * @return array{mobile: int, tablet: int, desktop: int}
+     */
+    public function blogMasonryColumns(): array
+    {
+        return $this->blogSettingsProvider->masonryColumns();
     }
 
     /** @return list<array<string, mixed>> */
@@ -180,6 +195,7 @@ final class BlogCatalog
         $body = (string) ($article['body'] ?? '');
 
         if ($body !== '') {
+            $body            = $this->blogProtection?->htmlSanitizer()->sanitize($body) ?? $body;
             $body            = $this->blogHashtagProcessor->localizeHashtagLinks($body);
             $article['body'] = $this->blogArticleBodyEnhancer->enhance($body);
         }

@@ -177,6 +177,9 @@ describe('blog-infinite-controller', () => {
         await vi.waitFor(() => {
             expect(root.querySelectorAll('.blog-masonry__item')).toHaveLength(2);
         });
+        expect(root.querySelector('[data-blog-infinite-target="list"]')?.classList.contains('blog-masonry--cols')).toBe(
+            true,
+        );
         expect(root.querySelector<HTMLElement>('[data-blog-infinite-target="sentinel"]')?.hidden).toBe(
             true,
         );
@@ -299,5 +302,51 @@ describe('blog-infinite-controller', () => {
         expect(fetchMock).not.toHaveBeenCalled();
         stop();
         expect(FakeIntersectionObserver.last?.disconnected).toBe(true);
+    });
+
+    it('appends linearly without packing columns when layout is grid', async () => {
+        setMatchMedia(true, true);
+        installIo();
+        document.body.innerHTML = feedHtml().replace(
+            'data-blog-infinite-cols-desktop-value="2"',
+            'data-blog-infinite-cols-desktop-value="2" data-blog-infinite-layout-value="grid"',
+        );
+        vi.stubGlobal(
+            'fetch',
+            vi.fn().mockResolvedValue({
+                ok: true,
+                text: async () => '<article class="blog-masonry__item">two</article>',
+            }),
+        );
+
+        const root = document.querySelector<HTMLElement>('[data-controller="blog-infinite"]')!;
+        const list = root.querySelector<HTMLElement>('[data-blog-infinite-target="list"]')!;
+        bootBlogInfinite(root);
+
+        expect(list.classList.contains('blog-masonry--cols')).toBe(false);
+        expect(list.querySelectorAll('.blog-masonry__col')).toHaveLength(0);
+
+        FakeIntersectionObserver.last?.trigger(true);
+        await vi.waitFor(() => {
+            expect(root.querySelectorAll('.blog-masonry__item')).toHaveLength(2);
+        });
+        expect(list.querySelectorAll(':scope > .blog-masonry__item')).toHaveLength(2);
+    });
+
+    it('does not rebuild columns on media change when layout is list', () => {
+        const media = setMatchMedia(false, false);
+        installIo();
+        document.body.innerHTML = feedHtml().replace(
+            'data-blog-infinite-cols-desktop-value="2"',
+            'data-blog-infinite-cols-desktop-value="2" data-blog-infinite-layout-value="list"',
+        );
+        const root = document.querySelector<HTMLElement>('[data-controller="blog-infinite"]')!;
+        const list = root.querySelector<HTMLElement>('[data-blog-infinite-target="list"]')!;
+        bootBlogInfinite(root);
+        media.fireChange();
+
+        expect(list.classList.contains('blog-masonry--cols')).toBe(false);
+        expect(list.querySelectorAll('.blog-masonry__col')).toHaveLength(0);
+        expect(list.querySelectorAll('.blog-masonry__item')).toHaveLength(1);
     });
 });

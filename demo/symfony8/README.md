@@ -15,8 +15,8 @@ Default URL: **http://localhost:8105** (override with `PORT` in `.env`).
 ## What to try
 
 1. Open `/` — landing page with links to the public blog and admin.
-2. Open `/blog` — 32 published lorem ipsum articles with 12 distinct tags (paginated), wrapped in the demo layout (`css_framework: bootstrap5`).
-3. Open `/admin/blog` — admin UI (HTTP Basic: `admin` / `admin`).
+2. Open `/blog` — 32 published lorem ipsum articles with 12 distinct tags (infinite scroll, masonry), wrapped in the demo layout (`css_framework: bootstrap5`). Switch `listing.mode` to `paginated` or `listing.masonry.strategy` to `grid` / `list` in `config/packages/nowo_blog_kit.yaml`.
+3. Open `/admin/blog` — admin UI in the demo masthead (HTTP Basic: `admin` / `admin`). Bootstrap 5 + Icons, FormKit `blog_kit` / `filter` profiles, and `bootstrap_5_layout`. Optional `security.object_access.strategy: owner` in `nowo_blog_kit.yaml`.
 
 Demo content is seeded on `make up` (`app:load-demo-blog`). Recreate with:
 

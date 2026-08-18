@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Nowo\BlogKitBundle\Tests\Integration;
 
 use DateTimeImmutable;
+use Nowo\BlogKitBundle\Entity\BlogTag;
 use Nowo\BlogKitBundle\Repository\BlogTagRepository;
 use PHPUnit\Framework\Attributes\Test;
 
@@ -38,7 +39,7 @@ final class BlogTagRepositoryTest extends DoctrineTestCase
 
         self::assertSame(
             [$first->getId(), $second->getId()],
-            array_map(static fn ($tag) => $tag->getId(), $items),
+            array_map(static fn (BlogTag $tag): ?int => $tag->getId(), $items),
         );
     }
 
@@ -52,7 +53,7 @@ final class BlogTagRepositoryTest extends DoctrineTestCase
 
         self::assertSame(
             [$first->getId(), $second->getId()],
-            array_map(static fn ($tag) => $tag->getId(), $items),
+            array_map(static fn (BlogTag $tag): ?int => $tag->getId(), $items),
         );
     }
 
@@ -66,8 +67,8 @@ final class BlogTagRepositoryTest extends DoctrineTestCase
         $bySlug = $this->repository->findFiltered(['slug' => 'perform']);
         $byName = $this->repository->findFiltered(['name' => 'symfony']);
 
-        self::assertSame([$slugMatch->getId()], array_map(static fn ($tag) => $tag->getId(), $bySlug));
-        self::assertSame([$nameMatch->getId()], array_map(static fn ($tag) => $tag->getId(), $byName));
+        self::assertSame([$slugMatch->getId()], array_map(static fn (BlogTag $tag): ?int => $tag->getId(), $bySlug));
+        self::assertSame([$nameMatch->getId()], array_map(static fn (BlogTag $tag): ?int => $tag->getId(), $byName));
     }
 
     #[Test]

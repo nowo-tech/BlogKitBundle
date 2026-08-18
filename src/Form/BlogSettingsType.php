@@ -8,6 +8,10 @@ use Nowo\BlogKitBundle\Entity\BlogSettings;
 use Nowo\BlogKitBundle\Enum\BlogAsidePlacement;
 use Nowo\BlogKitBundle\Enum\BlogHeroImageMode;
 use Nowo\BlogKitBundle\Enum\BlogListingMode;
+use Nowo\BlogKitBundle\Enum\BlogMasonryStrategy;
+use Nowo\BlogKitBundle\Enum\CommentCaptchaStrategy;
+use Nowo\BlogKitBundle\Enum\CommentRateLimitStrategy;
+use Nowo\BlogKitBundle\Enum\HtmlSanitizeStrategy;
 use Override;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
@@ -22,7 +26,7 @@ final class BlogSettingsType extends AbstractBlogFormType
     {
         $this->withBuilder($builder, function (): void {
             $this->addChoiceField('listingMode', [
-                'choices'                   => $this->listingModeChoices(),
+                'choices'                   => BlogListingMode::adminChoices(),
                 'expanded'                  => true,
                 'multiple'                  => false,
                 'choice_translation_domain' => 'NowoBlogKitBundle',
@@ -30,14 +34,20 @@ final class BlogSettingsType extends AbstractBlogFormType
             $this->addIntegerField('perPage', [
                 'constraints' => [new Assert\Range(min: 1, max: 24)],
             ]);
+            $this->addChoiceField('masonryStrategy', [
+                'choices'                   => BlogMasonryStrategy::adminChoices(),
+                'expanded'                  => true,
+                'multiple'                  => false,
+                'choice_translation_domain' => 'NowoBlogKitBundle',
+            ]);
             $this->addIntegerField('masonryColumnsMobile', [
-                'constraints' => [new Assert\Range(min: 1, max: 2)],
+                'constraints' => [new Assert\Range(min: 0, max: 2)],
             ]);
             $this->addIntegerField('masonryColumnsTablet', [
-                'constraints' => [new Assert\Range(min: 1, max: 2)],
+                'constraints' => [new Assert\Range(min: 0, max: 2)],
             ]);
             $this->addIntegerField('masonryColumnsDesktop', [
-                'constraints' => [new Assert\Range(min: 1, max: 3)],
+                'constraints' => [new Assert\Range(min: 0, max: 3)],
             ]);
             $this->addCheckboxField('showCardImage', ['required' => false]);
             $this->addCheckboxField('showCardExcerpt', ['required' => false]);
@@ -74,6 +84,26 @@ final class BlogSettingsType extends AbstractBlogFormType
                 'multiple'                  => false,
                 'choice_translation_domain' => 'NowoBlogKitBundle',
             ]);
+            $this->addChoiceField('commentRateLimitStrategy', [
+                'choices'                   => CommentRateLimitStrategy::adminChoices(),
+                'choice_translation_domain' => 'NowoBlogKitBundle',
+            ]);
+            $this->addIntegerField('commentRateLimitLimit', [
+                'constraints' => [new Assert\Range(min: 0, max: 1000)],
+                'required'    => false,
+            ]);
+            $this->addIntegerField('commentRateLimitIntervalSeconds', [
+                'constraints' => [new Assert\Range(min: 0, max: 86400)],
+                'required'    => false,
+            ]);
+            $this->addChoiceField('commentCaptchaStrategy', [
+                'choices'                   => CommentCaptchaStrategy::adminChoices(),
+                'choice_translation_domain' => 'NowoBlogKitBundle',
+            ]);
+            $this->addChoiceField('htmlSanitizeStrategy', [
+                'choices'                   => HtmlSanitizeStrategy::adminChoices(),
+                'choice_translation_domain' => 'NowoBlogKitBundle',
+            ]);
         });
     }
 
@@ -85,18 +115,6 @@ final class BlogSettingsType extends AbstractBlogFormType
         $resolver->setDefaults([
             'data_class' => BlogSettings::class,
         ]);
-    }
-
-    /** @return array<string, string> */
-    private function listingModeChoices(): array
-    {
-        $choices = [];
-
-        foreach (BlogListingMode::cases() as $mode) {
-            $choices[$mode->labelKey()] = $mode->value;
-        }
-
-        return $choices;
     }
 
     /** @return array<string, string> */

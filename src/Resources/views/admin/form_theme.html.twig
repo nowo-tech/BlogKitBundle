@@ -1,4 +1,7 @@
 {% block _blog_article_resources_widget %}
+  {% trans_default_domain 'NowoBlogKitBundle' %}
+  {% import '@NowoUiKitBundle/macros/ui.html.twig' as ui %}
+  {% set _css_fw = nowo_blog_kit_css_framework|default('bootstrap5') %}
   {% set prototype_html %}
     <div class="admin-collection__item" data-form-collection-target="entry">
       <div class="admin-collection__fields">
@@ -10,7 +13,7 @@
       </div>
       <button
         type="button"
-        class="btn btn--ghost admin-collection__remove"
+        class="{{ ui.btn('secondary', 'sm', _css_fw) }} admin-collection__remove"
         data-action="form-collection#remove"
       >
         {{ 'admin.collection.remove'|trans }}
@@ -37,7 +40,7 @@
           </div>
           <button
             type="button"
-            class="btn btn--ghost admin-collection__remove"
+            class="{{ ui.btn('secondary', 'sm', _css_fw) }} admin-collection__remove"
             data-action="form-collection#remove"
           >
             {{ 'admin.collection.remove'|trans }}
@@ -47,7 +50,7 @@
         <p class="admin-collection__empty text-muted" data-form-collection-target="empty">{{ 'admin.collection.empty_resources'|trans }}</p>
       {% endfor %}
     </div>
-    <button type="button" class="btn btn--ghost" data-action="form-collection#add">
+    <button type="button" class="{{ ui.btn('secondary', 'sm', _css_fw) }}" data-action="form-collection#add">
       {{ 'admin.collection.add_resource'|trans }}
     </button>
   </div>

@@ -33,7 +33,6 @@ use function is_string;
 use function sprintf;
 
 use const CASE_LOWER;
-use const PHP_VERSION_ID;
 
 abstract class DoctrineTestCase extends TestCase
 {
@@ -53,9 +52,7 @@ abstract class DoctrineTestCase extends TestCase
             true,
         );
 
-        if (PHP_VERSION_ID >= 80400) {
-            $configuration->enableNativeLazyObjects(true);
-        }
+        $configuration->enableNativeLazyObjects(true);
 
         // Native SQL and #[ORM\Index] column lists use snake_case.
         $configuration->setNamingStrategy(new UnderscoreNamingStrategy(CASE_LOWER, true));
@@ -245,7 +242,7 @@ abstract class DoctrineTestCase extends TestCase
             $parent->addReply($comment);
         }
 
-        if ($moderatedBy !== null) {
+        if ($moderatedBy instanceof MappedTestUser) {
             $comment->setModeratedAt(new DateTimeImmutable('2026-01-02T00:00:00+00:00'));
         }
 

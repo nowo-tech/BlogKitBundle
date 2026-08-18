@@ -53,6 +53,8 @@ final class BlogPublicController extends AbstractController
         $blogSettings    = $this->blogCatalog->blogSettings();
         $listingMode     = $this->blogCatalog->blogListingMode();
         $perPage         = $this->blogCatalog->blogPerPage();
+        $masonryStrategy = $this->blogCatalog->blogMasonryStrategy();
+        $masonryColumns  = $this->blogCatalog->blogMasonryColumns();
         $blog            = $this->blogCatalog->blogArticlesPage(
             $page,
             $perPage,
@@ -107,6 +109,8 @@ final class BlogPublicController extends AbstractController
             'search_form'       => $searchForm,
             'aside_search_form' => $asideSearchForm,
             'listing_mode'      => $listingMode,
+            'masonry_strategy'  => $masonryStrategy,
+            'masonry_columns'   => $masonryColumns,
             'blog_settings'     => $blogSettings->all(),
             'card_options'      => $cardOptions,
             'tags'              => $this->blogCatalog->blogTags(),

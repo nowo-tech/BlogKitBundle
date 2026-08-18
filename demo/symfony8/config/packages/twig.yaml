@@ -1,2 +1,7 @@
 twig:
     default_path: '%kernel.project_dir%/templates'
+    form_themes:
+        # FormKit static blocks first; Bootstrap 5 must win for checkbox / radio / select.
+        - '@NowoFormKitBundle/form/static_blocks.html.twig'
+        - '@NowoBlogKitBundle/admin/form_theme.html.twig'
+        - bootstrap_5_layout.html.twig

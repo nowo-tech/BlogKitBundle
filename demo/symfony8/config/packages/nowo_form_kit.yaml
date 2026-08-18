@@ -1,8 +1,11 @@
-# FormKit profiles used by BlogKit admin (GET list filters use profile `filter`).
-# `blog_kit` is also prepended by NowoBlogKitExtension; this file keeps `filter` in the host app.
+# FormKit: css_framework is bootstrap|tailwind|foundation|none (no bootstrap5).
+# UiKit / BlogKit use bootstrap5. Pair this with twig.form_themes → bootstrap_5_layout.
+# Profiles `blog_kit` (CRUD) and `filter` (GET lists) skip NowoBlogKitExtension prepends when defined here.
 nowo_form_kit:
     default_profile: default
     css_framework: bootstrap
+    type_map:
+        entity: Symfony\Bridge\Doctrine\Form\Type\EntityType
     profiles:
         default:
             alias: default
@@ -12,6 +15,39 @@ nowo_form_kit:
                     class: form-control
                 row_attr:
                     class: mb-3
+            field_types:
+                checkbox:
+                    attr:
+                        class: form-check-input
+                    row_attr:
+                        class: form-check mb-3
+                choice:
+                    attr:
+                        class: form-select
+        blog_kit:
+            alias: blog_kit
+            translation_domain: NowoBlogKitBundle
+            defaults:
+                attr:
+                    class: nowo-ui-input form-control
+                row_attr:
+                    class: mb-3
+            field_types:
+                checkbox:
+                    attr:
+                        class: form-check-input
+                    row_attr:
+                        class: form-check mb-3
+                choice:
+                    attr:
+                        class: form-select
+                entity:
+                    attr:
+                        class: form-select
+                textarea:
+                    attr:
+                        class: nowo-ui-input form-control
+                        rows: '6'
         filter:
             alias: filter
             translation_domain: NowoBlogKitBundle
@@ -20,3 +56,16 @@ nowo_form_kit:
             defaults:
                 label: false
                 required: false
+                attr:
+                    class: form-control form-control-sm
+                row_attr:
+                    class: mb-0
+            field_types:
+                checkbox:
+                    attr:
+                        class: form-check-input
+                    row_attr:
+                        class: form-check mb-0
+                choice:
+                    attr:
+                        class: form-select form-select-sm

@@ -21,14 +21,15 @@
   filters: filters|default({}),
 }) }}
 
-<div class="nowo-ui-card">
-  <table class="nowo-ui-table {{ ui.table(_css_fw) }}">
+<div class="{{ ui.card(_css_fw) }}">
+  <div class="{{ ui.table_wrap(_css_fw) }}">
+    <table class="{{ ui.table(_css_fw) }}">
     <thead>
       <tr>
         <th scope="col">{{ 'admin.column.slug'|trans }}</th>
         <th scope="col">{{ 'admin.column.name'|trans }}</th>
         <th scope="col">{{ 'admin.column.articles'|trans }}</th>
-        <th scope="col"><span class="sr-only">{{ 'admin.column.actions'|trans }}</span></th>
+        <th scope="col"><span class="visually-hidden">{{ 'admin.column.actions'|trans }}</span></th>
       </tr>
     </thead>
     <tbody>
@@ -38,6 +39,7 @@
           <td>{{ item.name(nowo_blog_kit_default_locale) }}</td>
           <td>{{ article_counts[item.id]|default(0) }}</td>
           <td>
+            {% if nowo_blog_kit_can_manage_tag(item) %}
             {{ include('@NowoBlogKitBundle/admin/_row_actions.html.twig', {actions: [
               {kind: 'edit', href: path('admin_blog_tags_edit', {id: item.id}), label: 'admin.action.edit'|trans},
               {
@@ -55,6 +57,7 @@
                 body: 'admin.confirm.delete_tag'|trans,
               }) }}
             {% endif %}
+            {% endif %}
           </td>
         </tr>
       {% else %}
@@ -63,6 +66,7 @@
         </tr>
       {% endfor %}
     </tbody>
-  </table>
+    </table>
+  </div>
 </div>
 {% endblock %}

@@ -16,6 +16,7 @@ use Nowo\BlogKitBundle\Repository\Concerns\RunsDocumentedSql;
 
 use function count;
 use function is_string;
+use function sprintf;
 
 /**
  * Doctrine repository for blog articles.
@@ -309,10 +310,11 @@ class BlogArticleRepository extends ServiceEntityRepository
 
     /**
      * @param array<string, string> $filters Keys: title, slug, published (1|0)
+     * @param int|string|null $createdById Null = no owner filter. Empty string = empty listing.
      *
      * @return array{items: list<BlogArticle>, total: int, page: int, per_page: int, total_pages: int}
      */
-    public function findFilteredPaginated(array $filters, int $page, int $perPage): array
+    public function findFilteredPaginated(array $filters, int $page, int $perPage, int|string|null $createdById = null): array
     {
         $page    = max(1, $page);
         $perPage = max(1, min(200, $perPage));
@@ -326,6 +328,8 @@ class BlogArticleRepository extends ServiceEntityRepository
             ->addOrderBy('b.slug', 'ASC')
             ->setFirstResult(($page - 1) * $perPage)
             ->setMaxResults($perPage);
+
+        $this->restrictToCreatedBy($queryBuilder, 'b', $createdById);
 
         if (($filters['title'] ?? '') !== '') {
             $queryBuilder
@@ -362,12 +366,13 @@ class BlogArticleRepository extends ServiceEntityRepository
 
     /**
      * @param array<string, string> $filters Keys: title, slug, published (1|0)
+     * @param int|string|null $createdById Null = no owner filter. Empty string = empty listing.
      *
      * @return list<BlogArticle>
      */
-    public function findFiltered(array $filters): array
+    public function findFiltered(array $filters, int|string|null $createdById = null): array
     {
-        if ($filters === []) {
+        if ($filters === [] && $createdById === null) {
             return $this->findAllOrdered();
         }
 
@@ -378,6 +383,8 @@ class BlogArticleRepository extends ServiceEntityRepository
             ->orderBy('b.position', 'ASC')
             ->addOrderBy('b.publishedAt', 'DESC')
             ->addOrderBy('b.slug', 'ASC');
+
+        $this->restrictToCreatedBy($queryBuilder, 'b', $createdById);
 
         if (($filters['title'] ?? '') !== '') {
             $queryBuilder
@@ -399,6 +406,26 @@ class BlogArticleRepository extends ServiceEntityRepository
         }
 
         return $queryBuilder->getQuery()->getResult();
+    }
+
+    /**
+     * @param int|string|null $createdById Null = no filter. Empty string = empty result.
+     */
+    private function restrictToCreatedBy(QueryBuilder $queryBuilder, string $alias, int|string|null $createdById): void
+    {
+        if ($createdById === null) {
+            return;
+        }
+
+        if ($createdById === '') {
+            $queryBuilder->andWhere('1 = 0');
+
+            return;
+        }
+
+        $queryBuilder
+            ->andWhere(sprintf('IDENTITY(%s.createdBy) = :createdById OR %s.createdBy IS NULL', $alias, $alias))
+            ->setParameter('createdById', $createdById);
     }
 
     public function findPublishedBySlug(string $slug): ?BlogArticle
@@ -559,7 +586,7 @@ class BlogArticleRepository extends ServiceEntityRepository
             $articleId             = (int) $row['article_id'];
             $grouped[$articleId][] = [
                 'id'       => (int) $row['id'],
-                'title'    => self::nullableResourceTitle($row['title'] ?? null),
+                'title'    => $this->nullableResourceTitle($row['title'] ?? null),
                 'image'    => (string) $row['image'],
                 'position' => (int) $row['position'],
             ];
@@ -568,7 +595,7 @@ class BlogArticleRepository extends ServiceEntityRepository
         return $grouped;
     }
 
-    private static function nullableResourceTitle(mixed $title): ?string
+    private function nullableResourceTitle(mixed $title): ?string
     {
         if ($title === null || (string) $title === '') {
             return null;

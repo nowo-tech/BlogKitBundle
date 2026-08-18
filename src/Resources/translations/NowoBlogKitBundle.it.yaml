@@ -190,15 +190,23 @@ blog_settings:
     label: Index tags limit
   listing_mode:
     choices:
+      inherit: Use YAML default
       infinite: Infinite scroll
       paginated: Paginated
     label: Listing mode
+  masonry_strategy:
+    choices:
+      inherit: Usa il valore YAML
+      masonry: Masonry
+      grid: Griglia uniforme
+      list: Una colonna
+    label: Disposizione delle schede
   masonry_columns_desktop:
-    label: Masonry columns (desktop)
+    label: Colonne (desktop, 0 = YAML)
   masonry_columns_mobile:
-    label: Masonry columns (mobile)
+    label: Colonne (mobile, 0 = YAML)
   masonry_columns_tablet:
-    label: Masonry columns (tablet)
+    label: Colonne (tablet, 0 = YAML)
   per_page:
     label: Articles per page
   related_limit:
@@ -225,6 +233,38 @@ blog_settings:
     label: Show share actions
   show_source_link:
     label: Show source link
+  comment_rate_limit_strategy:
+    label: Comment rate-limit strategy
+    choices:
+      inherit: Use YAML default
+      none: None
+      fixed_window: Fixed window (per IP)
+      per_ip_article: Per IP and article
+      sliding_window: Sliding window
+      service: Custom service
+  comment_rate_limit_limit:
+    label: Comment rate-limit (0 = YAML)
+  comment_rate_limit_interval_seconds:
+    label: Comment rate-limit interval in seconds (0 = YAML)
+  comment_captcha_strategy:
+    label: Comment CAPTCHA strategy
+    choices:
+      inherit: Use YAML default
+      none: None
+      honeypot: Honeypot
+      recaptcha_v2: reCAPTCHA v2
+      recaptcha_v3: reCAPTCHA v3
+      hcaptcha: hCaptcha
+      turnstile: Cloudflare Turnstile
+      service: Custom service
+  html_sanitize_strategy:
+    label: Article HTML sanitizer
+    choices:
+      inherit: Use YAML default
+      none: None (trusted editors)
+      strip: Strip all tags
+      allowlist: Allowlist
+      service: Custom service
 blog_tag:
   slug:
     label: Slug

@@ -54,11 +54,11 @@ final class AbstractBlogFormTypeTest extends TestCase
             ->with(
                 'summary',
                 TextareaType::class,
-                self::callback(static function (array $options): bool {
+                self::callback(
                     // placeholder:false is consumed by FormOptionsMerger (clears attr.placeholder).
-                    return !isset($options['attr']['placeholder'])
-                        && ($options['attr']['class'] ?? '') === 'nowo-ui-input form-control';
-                }),
+                    static fn (array $options): bool => !isset($options['attr']['placeholder'])
+                    && ($options['attr']['class'] ?? '') === 'nowo-ui-input form-control',
+                ),
             )
             ->willReturnSelf();
 
@@ -87,12 +87,10 @@ final class AbstractBlogFormTypeTest extends TestCase
             ->with(
                 'body',
                 TextareaType::class,
-                self::callback(static function (array $options): bool {
-                    return ($options['attr']['rows'] ?? null) === 12
-                        && !isset($options['config'])
-                        && !isset($options['theme'])
-                        && !isset($options['min_height']);
-                }),
+                self::callback(static fn (array $options): bool => ($options['attr']['rows'] ?? null) === 12
+                    && !isset($options['config'])
+                    && !isset($options['theme'])
+                    && !isset($options['min_height'])),
             )
             ->willReturnSelf();
 

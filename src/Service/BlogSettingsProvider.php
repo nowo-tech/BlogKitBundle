@@ -8,7 +8,9 @@ use Nowo\BlogKitBundle\Entity\BlogSettings;
 use Nowo\BlogKitBundle\Enum\BlogAsidePlacement;
 use Nowo\BlogKitBundle\Enum\BlogHeroImageMode;
 use Nowo\BlogKitBundle\Enum\BlogListingMode;
+use Nowo\BlogKitBundle\Enum\BlogMasonryStrategy;
 use Nowo\BlogKitBundle\Repository\BlogSettingsRepository;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Contracts\Service\ResetInterface;
 
 /**
@@ -21,6 +23,16 @@ final class BlogSettingsProvider implements ResetInterface
 
     public function __construct(
         private readonly BlogSettingsRepository $blogSettingsRepository,
+        #[Autowire('%nowo_blog_kit.listing.mode%')]
+        private readonly string $listingModeDefault = 'paginated',
+        #[Autowire('%nowo_blog_kit.listing.masonry.strategy%')]
+        private readonly string $masonryStrategyDefault = 'masonry',
+        #[Autowire('%nowo_blog_kit.listing.masonry.columns_mobile%')]
+        private readonly int $masonryColumnsMobileDefault = 1,
+        #[Autowire('%nowo_blog_kit.listing.masonry.columns_tablet%')]
+        private readonly int $masonryColumnsTabletDefault = 2,
+        #[Autowire('%nowo_blog_kit.listing.masonry.columns_desktop%')]
+        private readonly int $masonryColumnsDesktopDefault = 2,
     ) {
     }
 
@@ -44,7 +56,48 @@ final class BlogSettingsProvider implements ResetInterface
 
     public function listingMode(): BlogListingMode
     {
-        return BlogListingMode::tryFrom((string) $this->all()['listing_mode']) ?? BlogListingMode::Paginated;
+        $override = (string) ($this->all()['listing_mode'] ?? '');
+        if ($override === BlogListingMode::Inherit || $override === '') {
+            return $this->yamlListingMode();
+        }
+
+        return BlogListingMode::tryFrom($override) ?? $this->yamlListingMode();
+    }
+
+    public function masonryStrategy(): BlogMasonryStrategy
+    {
+        $override = (string) ($this->all()['masonry_strategy'] ?? '');
+        if ($override === BlogMasonryStrategy::Inherit || $override === '') {
+            return $this->yamlMasonryStrategy();
+        }
+
+        return BlogMasonryStrategy::tryFrom($override) ?? $this->yamlMasonryStrategy();
+    }
+
+    /**
+     * @return array{mobile: int, tablet: int, desktop: int}
+     */
+    public function masonryColumns(): array
+    {
+        $settings = $this->all();
+
+        return [
+            'mobile' => $this->resolveMasonryColumn(
+                (int) ($settings['masonry_columns_mobile'] ?? 0),
+                $this->masonryColumnsMobileDefault,
+                2,
+            ),
+            'tablet' => $this->resolveMasonryColumn(
+                (int) ($settings['masonry_columns_tablet'] ?? 0),
+                $this->masonryColumnsTabletDefault,
+                2,
+            ),
+            'desktop' => $this->resolveMasonryColumn(
+                (int) ($settings['masonry_columns_desktop'] ?? 0),
+                $this->masonryColumnsDesktopDefault,
+                3,
+            ),
+        ];
     }
 
     public function perPage(): int
@@ -113,5 +166,24 @@ final class BlogSettingsProvider implements ResetInterface
         }
 
         return $slots;
+    }
+
+    private function yamlListingMode(): BlogListingMode
+    {
+        return BlogListingMode::tryFrom($this->listingModeDefault) ?? BlogListingMode::Paginated;
+    }
+
+    private function yamlMasonryStrategy(): BlogMasonryStrategy
+    {
+        return BlogMasonryStrategy::tryFrom($this->masonryStrategyDefault) ?? BlogMasonryStrategy::Masonry;
+    }
+
+    private function resolveMasonryColumn(int $override, int $yaml, int $max): int
+    {
+        if ($override <= 0) {
+            return max(1, min($max, $yaml));
+        }
+
+        return max(1, min($max, $override));
     }
 }

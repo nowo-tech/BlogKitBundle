@@ -3,11 +3,11 @@
 **Package:** `nowo-tech/blog-kit-bundle`  
 **Namespace:** `Nowo\BlogKitBundle`  
 **Config alias:** `nowo_blog_kit`  
-**Status:** Initial public baseline (v1.0.0)
+**Status:** Baseline aligned with v1.1.0
 
 ## Overview
 
-Blog Kit Bundle provides a reusable Symfony blog domain: multilingual articles and tags, moderated comments, singleton professional settings, a secured admin CRUD UI, and public Twig rendering. Persistence is Doctrine ORM. Access is enforced by roles or a custom checker (REQ-UI-002).
+Blog Kit Bundle provides a reusable Symfony blog domain: multilingual articles and tags, moderated comments (rate-limit and CAPTCHA strategies), optional HTML sanitizer, singleton professional settings, a secured admin CRUD UI, and public Twig rendering. Persistence is Doctrine ORM. Route access is enforced by roles or a custom checker (REQ-UI-002). Per-publication rules use `security.object_access` and `BlogKitAccessDenied` (FR-UI-003), not Symfony voters.
 
 ## User scenarios (`US-*`)
 
@@ -27,31 +27,31 @@ As a visitor, I search and filter by tag. When settings use infinite listing, sc
 
 As a visitor, I submit a comment that waits for moderation.
 
-**Acceptance:** Invalid forms flash an error. Valid comments persist as pending and do not appear until approved.
+**Acceptance:** Invalid forms flash an error. Valid comments persist as pending and do not appear until approved. Public POST is protected by configurable rate-limit and CAPTCHA strategies.
 
 ### US-04 — Manage articles and tags (Priority: P1)
 
 As an editor, I create, edit, publish, and delete multilingual articles and tags in `/admin/blog`.
 
-**Acceptance:** Unauthorized users are denied. Deletes are CSRF-protected.
+**Acceptance:** Unauthorized users are denied. Deletes are CSRF-protected. With `security.object_access.strategy: owner`, editors only mutate publications they created (`createdBy`); `canConfigure()` still sees every row.
 
 ### US-05 — Moderate comments (Priority: P1)
 
 As a moderator, I approve, reject, reply to, and delete comments at `/admin/blog/comments`.
 
-**Acceptance:** `canModerate()` is required. Staff replies can also be posted on the public article.
+**Acceptance:** `canModerate()` is required. Staff replies on the public article also require `canModerate()`.
 
 ### US-06 — Configure listing (Priority: P2)
 
 As an administrator, I edit singleton settings at `/admin/blog/settings`.
 
-**Acceptance:** `canConfigure()` is required. Listing mode, asides, and card options apply to public pages.
+**Acceptance:** `canConfigure()` is required. Listing mode, asides, card options, comment protection strategies, and HTML sanitizer strategy apply to public pages.
 
 ### US-07 — Integrate the host app (Priority: P1)
 
-As an integrator, I set `user_class`, locales, layouts, and security from `nowo_blog_kit`.
+As an integrator, I set `user_class`, locales, layouts, security, listing, comment protection, and sanitizer from `nowo_blog_kit`.
 
-**Acceptance:** Flex recipe or manual YAML boots the bundle. Twig Extra is required.
+**Acceptance:** Flex recipe or manual YAML boots the bundle. Twig Extra is required. Bootstrap hosts load framework CSS in `layout_template` / `public_layout_template` and may register FormKit `form_themes`.
 
 ### US-08 — Run demo and CI (Priority: P3)
 
@@ -92,6 +92,7 @@ As a maintainer, I run the Symfony 8 FrankenPHP demo and smoke checks.
 | FR-CMT-001 | Public comments start pending |
 | FR-CMT-002 | Approved comments (and approved replies) render on the article |
 | FR-CMT-003 | Moderators can approve, reject, reply, and delete |
+| FR-CMT-004 | Configurable comment rate-limit and CAPTCHA strategies (YAML + admin `inherit`) |
 
 ### Settings (`FR-SET-*`)
 
@@ -113,7 +114,10 @@ As a maintainer, I run the Symfony 8 FrankenPHP demo and smoke checks.
 | FR-ADM-001 | Admin CRUD for articles, tags, comments, and settings |
 | FR-UI-001 | Configurable CSS framework and layout templates |
 | FR-UI-002 | Admin routes require Symfony Security or a custom checker unless `allow_unauthenticated` |
+| FR-UI-003 | Object-level publication access via `security.object_access` (`none` / `owner` / host `service`) and `BlogKitAccessDenied` — not Symfony voters |
+| FR-FORM-001 | Prepend FormKit profiles `blog_kit` / `filter` and `type_map.entity` when the host has not defined them |
 | FR-TWIG-001 | Application templates under `templates/bundles/NowoBlogKitBundle/` take precedence |
+| FR-TWIG-005 | Kit Twig must not ship raw `<form>` / `<input>`; render with `form_start` + `form_row` loops |
 
 ### Persistence (`FR-ORM-*`)
 
@@ -128,16 +132,21 @@ As a maintainer, I run the Symfony 8 FrankenPHP demo and smoke checks.
 | FR-I18N-002 | Ship catalogues for en, es, fr, de, it, nl, pt with key parity |
 | FR-I18N-003 | Translation domain is `NowoBlogKitBundle` |
 
+### Security (`FR-SEC-*`)
+
+| ID | Requirement |
+| --- | --- |
+| FR-SEC-005 | Optional article HTML sanitizer (`none` / `strip` / `allowlist` / host `service`) on persist and public render |
+
 ### Demo (`FR-DEMO-*`)
 
 | ID | Requirement |
 | --- | --- |
 | FR-DEMO-001 | FrankenPHP Symfony 8 demo boots and returns HTTP 200 |
+| FR-DEMO-002 | Demo admin chrome is a host `admin/layout.html.twig` with Bootstrap 5, Icons, FormKit profiles, and `bootstrap_5_layout` |
 
 ## Non-goals
 
-- Untrusted-author HTML sanitization of article bodies
-- Built-in comment rate limiting or CAPTCHA
 - Host authentication / user management (UserKit / AuthKit remain host-owned)
 - Visual page builder (see PageLayoutKitBundle)
 

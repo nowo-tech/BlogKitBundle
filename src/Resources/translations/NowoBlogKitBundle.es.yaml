@@ -190,15 +190,23 @@ blog_settings:
     label: Límite de etiquetas en índice
   listing_mode:
     choices:
+      inherit: Usar valor YAML
       infinite: Scroll infinito
       paginated: Paginado
     label: Modo de listado
+  masonry_strategy:
+    choices:
+      inherit: Usar valor YAML
+      masonry: Masonry
+      grid: Rejilla uniforme
+      list: Una columna
+    label: Disposición de tarjetas
   masonry_columns_desktop:
-    label: Columnas masonry (escritorio)
+    label: Columnas (escritorio, 0 = YAML)
   masonry_columns_mobile:
-    label: Columnas masonry (móvil)
+    label: Columnas (móvil, 0 = YAML)
   masonry_columns_tablet:
-    label: Columnas masonry (tablet)
+    label: Columnas (tablet, 0 = YAML)
   per_page:
     label: Artículos por página
   related_limit:
@@ -225,6 +233,38 @@ blog_settings:
     label: Mostrar acciones de compartir
   show_source_link:
     label: Mostrar enlace a origen
+  comment_rate_limit_strategy:
+    label: Estrategia de límite de comentarios
+    choices:
+      inherit: Usar valor YAML
+      none: Ninguna
+      fixed_window: Ventana fija (por IP)
+      per_ip_article: Por IP y artículo
+      sliding_window: Ventana deslizante
+      service: Servicio personalizado
+  comment_rate_limit_limit:
+    label: Límite de comentarios (0 = YAML)
+  comment_rate_limit_interval_seconds:
+    label: Intervalo del límite en segundos (0 = YAML)
+  comment_captcha_strategy:
+    label: Estrategia CAPTCHA de comentarios
+    choices:
+      inherit: Usar valor YAML
+      none: Ninguna
+      honeypot: Honeypot
+      recaptcha_v2: reCAPTCHA v2
+      recaptcha_v3: reCAPTCHA v3
+      hcaptcha: hCaptcha
+      turnstile: Cloudflare Turnstile
+      service: Servicio personalizado
+  html_sanitize_strategy:
+    label: Sanitizador HTML del artículo
+    choices:
+      inherit: Usar valor YAML
+      none: Ninguno (editores de confianza)
+      strip: Quitar todas las etiquetas
+      allowlist: Lista permitida
+      service: Servicio personalizado
 blog_tag:
   slug:
     label: Slug

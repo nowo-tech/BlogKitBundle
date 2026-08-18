@@ -153,6 +153,8 @@ export function bootBlogInfinite(root: HTMLElement): () => void {
         desktop: Number(root.dataset.blogInfiniteColsDesktopValue || '2'),
     };
 
+    const layout = root.dataset.blogInfiniteLayoutValue || 'masonry';
+    const packColumns = layout === 'masonry';
     let observer: IntersectionObserver | null = null;
     let loading = false;
     const columns: HTMLElement[] = [];
@@ -224,14 +226,18 @@ export function bootBlogInfinite(root: HTMLElement): () => void {
         }
     };
 
-    list.classList.add('blog-masonry--cols');
-    mediaQueries.forEach((mq) => mq.addEventListener('change', onMediaChange));
-    rebuildColumns(list, collectItems(list), columns, config);
+    if (packColumns) {
+        list.classList.add('blog-masonry--cols');
+        mediaQueries.forEach((mq) => mq.addEventListener('change', onMediaChange));
+        rebuildColumns(list, collectItems(list), columns, config);
+    }
 
     const disconnect = (): void => {
         observer?.disconnect();
         observer = null;
-        mediaQueries.forEach((mq) => mq.removeEventListener('change', onMediaChange));
+        if (packColumns) {
+            mediaQueries.forEach((mq) => mq.removeEventListener('change', onMediaChange));
+        }
         columns.length = 0;
     };
 

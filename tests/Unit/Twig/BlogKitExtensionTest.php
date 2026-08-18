@@ -4,8 +4,13 @@ declare(strict_types=1);
 
 namespace Nowo\BlogKitBundle\Tests\Unit\Twig;
 
+use Nowo\BlogKitBundle\Entity\BlogArticle;
+use Nowo\BlogKitBundle\Entity\BlogComment;
+use Nowo\BlogKitBundle\Entity\BlogTag;
 use Nowo\BlogKitBundle\Enum\CssFramework;
 use Nowo\BlogKitBundle\Security\BlogKitAccessCheckerInterface;
+use Nowo\BlogKitBundle\Security\BlogKitResourceAccessCheckerInterface;
+use Nowo\BlogKitBundle\Tests\Support\BlogProtectionTestFactory;
 use Nowo\BlogKitBundle\Twig\BlogKitExtension;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
@@ -39,9 +44,58 @@ final class BlogKitExtensionTest extends TestCase
         $extension = $this->createExtension();
         $functions = $extension->getFunctions();
 
-        self::assertCount(1, $functions);
+        self::assertCount(5, $functions);
         self::assertSame('nowo_blog_kit_container_class', $functions[0]->getName());
+        self::assertSame('nowo_blog_kit_captcha', $functions[1]->getName());
+        self::assertSame('nowo_blog_kit_can_manage_article', $functions[2]->getName());
+        self::assertSame('nowo_blog_kit_can_manage_tag', $functions[3]->getName());
+        self::assertSame('nowo_blog_kit_can_moderate_comment', $functions[4]->getName());
         self::assertSame('blog-container', $extension->containerClass());
+        self::assertSame('none', $extension->captchaContext()['strategy']);
+        self::assertTrue($extension->canManageArticle(new BlogArticle()));
+        self::assertTrue($extension->canManageTag(new BlogTag()));
+        self::assertTrue($extension->canModerateComment(new BlogComment()));
+
+        $withProtection = new BlogKitExtension(
+            '@NowoBlogKitBundle/admin/layout.html.twig',
+            '@NowoBlogKitBundle/public/layout.html.twig',
+            'tailwind',
+            'es',
+            ['es', 'en'],
+            '/privacy',
+            $this->createMock(BlogKitAccessCheckerInterface::class),
+            'bootstrap-icons',
+            'icon',
+            BlogProtectionTestFactory::create(),
+        );
+        self::assertSame('honeypot', $withProtection->captchaContext()['strategy']);
+    }
+
+    #[Test]
+    public function objectAccessFunctionsDelegateToResourceChecker(): void
+    {
+        $resourceAccess = $this->createMock(BlogKitResourceAccessCheckerInterface::class);
+        $resourceAccess->method('canManageArticle')->willReturn(false);
+        $resourceAccess->method('canManageTag')->willReturn(false);
+        $resourceAccess->method('canModerateComment')->willReturn(false);
+
+        $extension = new BlogKitExtension(
+            '@NowoBlogKitBundle/admin/layout.html.twig',
+            '@NowoBlogKitBundle/public/layout.html.twig',
+            'tailwind',
+            'es',
+            ['es', 'en'],
+            '/privacy',
+            $this->createMock(BlogKitAccessCheckerInterface::class),
+            'bootstrap-icons',
+            'icon',
+            null,
+            $resourceAccess,
+        );
+
+        self::assertFalse($extension->canManageArticle(new BlogArticle()));
+        self::assertFalse($extension->canManageTag(new BlogTag()));
+        self::assertFalse($extension->canModerateComment(new BlogComment()));
     }
 
     #[Test]

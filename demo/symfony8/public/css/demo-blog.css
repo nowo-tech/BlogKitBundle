@@ -108,7 +108,8 @@
   transition: width 0.25s ease;
 }
 
-.demo-nav a:hover::after {
+.demo-nav a:hover::after,
+.demo-nav a[aria-current="page"]::after {
   width: 100%;
 }
 
@@ -207,8 +208,69 @@
 }
 
 .demo-shell:not(.demo-shell--home) .blog-page-header h1,
-.demo-shell:not(.demo-shell--home) .blog-article__header h1 {
+.demo-shell:not(.demo-shell--home) .blog-article__header h1,
+.demo-shell--admin .nowo-ui-page-header h1,
+.demo-shell--admin .demo-admin > h1 {
   font-family: Fraunces, Georgia, serif;
+}
+
+.demo-admin {
+  width: min(100% - 2rem, 72rem);
+  margin: 0 auto 3rem;
+  padding-top: 1.5rem;
+}
+
+.demo-shell--admin .nowo-ui-filter-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+  align-items: flex-end;
+  flex: 1 1 auto;
+}
+
+.demo-shell--admin .nowo-ui-filter-field .form-control,
+.demo-shell--admin .nowo-ui-filter-field .form-select,
+.demo-shell--admin .admin-list-filters__control {
+  min-height: calc(1.5em + 0.5rem + 2px);
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+}
+
+.demo-shell--admin .nowo-ui-form-actions,
+.demo-shell--admin .nowo-ui-modal__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+.demo-shell--admin .nowo-ui-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.demo-shell--admin .admin-form-multiselect {
+  min-height: 10rem;
+}
+
+.demo-shell--admin .admin-collection {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.demo-shell--admin .admin-collection__item {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.85rem 0 0;
+  border-top: 1px solid var(--nowo-ui-border);
+}
+
+.demo-shell--admin .admin-collection__fields {
+  display: grid;
+  gap: 0.35rem;
 }
 
 .demo-shell .blog-item {

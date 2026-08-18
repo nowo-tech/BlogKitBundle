@@ -104,7 +104,7 @@ final class BlogCommentRepositoryTest extends DoctrineTestCase
 
         self::assertSame(
             [$firstRoot->getId(), $secondRoot->getId()],
-            array_map(static fn ($comment) => $comment->getId(), $items),
+            array_map(static fn (BlogComment $comment): ?int => $comment->getId(), $items),
         );
         $this->entityManager->clear();
         $reloaded = $this->repository->find($firstRoot->getId());
@@ -151,9 +151,9 @@ final class BlogCommentRepositoryTest extends DoctrineTestCase
 
         self::assertSame(
             [$rejected->getId(), $pending->getId(), $approved->getId()],
-            array_map(static fn ($comment) => $comment->getId(), $all),
+            array_map(static fn (BlogComment $comment): ?int => $comment->getId(), $all),
         );
-        self::assertSame([$pending->getId()], array_map(static fn ($comment) => $comment->getId(), $pendingOnly));
+        self::assertSame([$pending->getId()], array_map(static fn (BlogComment $comment): ?int => $comment->getId(), $pendingOnly));
     }
 
     #[Test]
@@ -208,17 +208,17 @@ final class BlogCommentRepositoryTest extends DoctrineTestCase
 
         self::assertSame(
             [$matching->getId(), $sameAuthor->getId()],
-            array_map(static fn ($comment) => $comment->getId(), $byAuthor),
+            array_map(static fn (BlogComment $comment): ?int => $comment->getId(), $byAuthor),
         );
         self::assertSame(
             [$matching->getId(), $sameArticle->getId()],
-            array_map(static fn ($comment) => $comment->getId(), $byArticle),
+            array_map(static fn (BlogComment $comment): ?int => $comment->getId(), $byArticle),
         );
         self::assertSame(
             [$matching->getId(), $sameArticle->getId()],
-            array_map(static fn ($comment) => $comment->getId(), $byBody),
+            array_map(static fn (BlogComment $comment): ?int => $comment->getId(), $byBody),
         );
-        self::assertSame([$matching->getId()], array_map(static fn ($comment) => $comment->getId(), $combined));
+        self::assertSame([$matching->getId()], array_map(static fn (BlogComment $comment): ?int => $comment->getId(), $combined));
     }
 
     #[Test]

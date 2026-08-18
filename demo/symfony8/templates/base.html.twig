@@ -18,8 +18,10 @@
             <a class="demo-wordmark" href="{{ path('demo_home') }}">Nowo</a>
         {% endblock %}
         <nav class="demo-nav" aria-label="Demo">
-            <a href="{{ path('blog_index') }}">Blog</a>
-            <a href="{{ path('admin_blog_index') }}">Admin</a>
+            {% block demo_nav %}
+                <a href="{{ path('blog_index') }}">Blog</a>
+                <a href="{{ path('admin_blog_index') }}">Admin</a>
+            {% endblock %}
         </nav>
     </div>
 </header>

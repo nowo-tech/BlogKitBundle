@@ -11,10 +11,16 @@ use Nowo\BlogKitBundle\DependencyInjection\NowoBlogKitExtension;
 use Nowo\BlogKitBundle\DependencyInjection\TablePrefixListener;
 use Nowo\BlogKitBundle\Model\BlogUserInterface;
 use Nowo\BlogKitBundle\Security\AllowAllBlogKitAccessChecker;
+use Nowo\BlogKitBundle\Security\AllowAllBlogKitResourceAccessChecker;
 use Nowo\BlogKitBundle\Security\BlogKitAccessCheckerInterface;
+use Nowo\BlogKitBundle\Security\BlogKitResourceAccessCheckerInterface;
+use Nowo\BlogKitBundle\Security\BlogProtection;
+use Nowo\BlogKitBundle\Security\Captcha\PublicBlogCommentCaptchaTypeExtension;
 use Nowo\BlogKitBundle\Security\ConfigurableBlogKitAccessChecker;
+use Nowo\BlogKitBundle\Security\OwnerBlogKitResourceAccessChecker;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Bundle\SecurityBundle\SecurityBundle;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Extension\Extension;
@@ -53,11 +59,56 @@ final class NowoBlogKitExtensionTest extends TestCase
         self::assertSame(['ROLE_ADMIN'], $container->getParameter('nowo_blog_kit.security.configure_roles'));
         self::assertNull($container->getParameter('nowo_blog_kit.security.access_checker'));
         self::assertTrue($container->getParameter('nowo_blog_kit.security.allow_unauthenticated'));
+        self::assertSame('none', $container->getParameter('nowo_blog_kit.security.object_access.strategy'));
+        self::assertNull($container->getParameter('nowo_blog_kit.security.object_access.service'));
         self::assertSame('bootstrap5', $container->getParameter('nowo_blog_kit.web_ui.css_framework'));
         self::assertSame('bootstrap-icons', $container->getParameter('nowo_blog_kit.web_ui.icon_set'));
         self::assertSame('icon', $container->getParameter('nowo_blog_kit.web_ui.row_actions_display'));
         self::assertSame(20, $container->getParameter('nowo_blog_kit.web_ui.page_size'));
         self::assertSame('#', $container->getParameter('nowo_blog_kit.web_ui.privacy_url'));
+        self::assertSame('paginated', $container->getParameter('nowo_blog_kit.listing.mode'));
+        self::assertSame('masonry', $container->getParameter('nowo_blog_kit.listing.masonry.strategy'));
+        self::assertSame(1, $container->getParameter('nowo_blog_kit.listing.masonry.columns_mobile'));
+        self::assertSame(2, $container->getParameter('nowo_blog_kit.listing.masonry.columns_tablet'));
+        self::assertSame(2, $container->getParameter('nowo_blog_kit.listing.masonry.columns_desktop'));
+        self::assertTrue($container->hasDefinition(BlogProtection::class));
+        self::assertTrue($container->hasDefinition(PublicBlogCommentCaptchaTypeExtension::class));
+    }
+
+    #[Test]
+    public function loadPublishesListingModeFromConfiguration(): void
+    {
+        $container = new ContainerBuilder();
+
+        (new NowoBlogKitExtension())->load([[
+            'security' => ['allow_unauthenticated' => true],
+            'listing'  => ['mode' => 'infinite'],
+        ]], $container);
+
+        self::assertSame('infinite', $container->getParameter('nowo_blog_kit.listing.mode'));
+    }
+
+    #[Test]
+    public function loadPublishesMasonryFromConfiguration(): void
+    {
+        $container = new ContainerBuilder();
+
+        (new NowoBlogKitExtension())->load([[
+            'security' => ['allow_unauthenticated' => true],
+            'listing'  => [
+                'masonry' => [
+                    'strategy'        => 'grid',
+                    'columns_mobile'  => 2,
+                    'columns_tablet'  => 2,
+                    'columns_desktop' => 3,
+                ],
+            ],
+        ]], $container);
+
+        self::assertSame('grid', $container->getParameter('nowo_blog_kit.listing.masonry.strategy'));
+        self::assertSame(2, $container->getParameter('nowo_blog_kit.listing.masonry.columns_mobile'));
+        self::assertSame(2, $container->getParameter('nowo_blog_kit.listing.masonry.columns_tablet'));
+        self::assertSame(3, $container->getParameter('nowo_blog_kit.listing.masonry.columns_desktop'));
     }
 
     #[Test]
@@ -104,6 +155,10 @@ final class NowoBlogKitExtensionTest extends TestCase
             'nowo_blog_kit.access_checker.allow_all',
             (string) $container->getAlias(BlogKitAccessCheckerInterface::class),
         );
+        self::assertSame(
+            'nowo_blog_kit.object_access.allow_all',
+            (string) $container->getAlias(BlogKitResourceAccessCheckerInterface::class),
+        );
         self::assertFalse($container->hasDefinition('nowo_blog_kit.access_checker.default'));
     }
 
@@ -143,6 +198,153 @@ final class NowoBlogKitExtensionTest extends TestCase
             'nowo_blog_kit.access_checker.default',
             (string) $container->getAlias(BlogKitAccessCheckerInterface::class),
         );
+        self::assertSame(
+            AllowAllBlogKitResourceAccessChecker::class,
+            $container->getDefinition('nowo_blog_kit.object_access.allow_all')->getClass(),
+        );
+        self::assertSame(
+            'nowo_blog_kit.object_access.allow_all',
+            (string) $container->getAlias(BlogKitResourceAccessCheckerInterface::class),
+        );
+    }
+
+    #[Test]
+    public function loadRegistersOwnerObjectAccessWhenConfigured(): void
+    {
+        $container = new ContainerBuilder();
+        $container->registerExtension($this->createExtension('security'));
+
+        (new NowoBlogKitExtension())->load([[
+            'security' => [
+                'object_access' => ['strategy' => 'owner'],
+            ],
+        ]], $container);
+
+        $definition = $container->getDefinition('nowo_blog_kit.object_access.owner');
+
+        self::assertSame(OwnerBlogKitResourceAccessChecker::class, $definition->getClass());
+        self::assertEquals(
+            new Reference(BlogKitAccessCheckerInterface::class),
+            $definition->getArgument('$accessChecker'),
+        );
+        self::assertSame(
+            'nowo_blog_kit.object_access.owner',
+            (string) $container->getAlias(BlogKitResourceAccessCheckerInterface::class),
+        );
+    }
+
+    #[Test]
+    public function loadUsesCustomObjectAccessAliasWhenStrategyIsService(): void
+    {
+        $container = new ContainerBuilder();
+        $container->registerExtension($this->createExtension('security'));
+
+        (new NowoBlogKitExtension())->load([[
+            'security' => [
+                'object_access' => [
+                    'strategy' => 'service',
+                    'service'  => 'app.blog_object_access',
+                ],
+            ],
+        ]], $container);
+
+        self::assertSame(
+            'app.blog_object_access',
+            (string) $container->getAlias(BlogKitResourceAccessCheckerInterface::class),
+        );
+        self::assertFalse($container->hasDefinition('nowo_blog_kit.object_access.owner'));
+    }
+
+    #[Test]
+    public function loadThrowsWhenObjectAccessStrategyIsServiceWithoutServiceId(): void
+    {
+        $container = new ContainerBuilder();
+        $container->registerExtension($this->createExtension('security'));
+
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage('object_access.service is required');
+
+        (new NowoBlogKitExtension())->load([[
+            'security' => [
+                'object_access' => [
+                    'strategy' => 'service',
+                    'service'  => '',
+                ],
+            ],
+        ]], $container);
+    }
+
+    #[Test]
+    public function loadKeepsAllowAllObjectAccessWhenUnauthenticatedEvenIfOwnerIsConfigured(): void
+    {
+        $container = new ContainerBuilder();
+
+        (new NowoBlogKitExtension())->load([[
+            'security' => [
+                'allow_unauthenticated' => true,
+                'object_access'         => ['strategy' => 'owner'],
+            ],
+        ]], $container);
+
+        self::assertSame('owner', $container->getParameter('nowo_blog_kit.security.object_access.strategy'));
+        self::assertSame(
+            'nowo_blog_kit.object_access.allow_all',
+            (string) $container->getAlias(BlogKitResourceAccessCheckerInterface::class),
+        );
+        self::assertFalse($container->hasDefinition('nowo_blog_kit.object_access.owner'));
+    }
+
+    #[Test]
+    public function loadWiresCustomProtectionServicesWhenStrategyIsService(): void
+    {
+        $container = new ContainerBuilder();
+        $container->setParameter('kernel.bundles', ['SecurityBundle' => SecurityBundle::class]);
+
+        (new NowoBlogKitExtension())->load([[
+            'comments' => [
+                'rate_limit' => [
+                    'strategy' => 'service',
+                    'service'  => 'app.blog_rate_limiter',
+                ],
+                'captcha' => [
+                    'strategy' => 'service',
+                    'service'  => 'app.blog_captcha',
+                ],
+            ],
+            'html' => [
+                'sanitize' => [
+                    'strategy' => 'service',
+                    'service'  => 'app.blog_sanitizer',
+                ],
+            ],
+        ]], $container);
+
+        $arguments = $container->getDefinition(BlogProtection::class)->getArguments();
+        self::assertEquals(new Reference('app.blog_rate_limiter'), $arguments[6]);
+        self::assertEquals(new Reference('app.blog_captcha'), $arguments[7]);
+        self::assertEquals(new Reference('app.blog_sanitizer'), $arguments[8]);
+    }
+
+    #[Test]
+    public function loadIgnoresEmptyProtectionServiceIds(): void
+    {
+        $container = new ContainerBuilder();
+        $container->setParameter('kernel.bundles', ['SecurityBundle' => SecurityBundle::class]);
+
+        (new NowoBlogKitExtension())->load([[
+            'comments' => [
+                'rate_limit' => ['service' => ''],
+                'captcha'    => ['service' => ''],
+            ],
+            'html' => [
+                'sanitize' => ['service' => ''],
+            ],
+        ]], $container);
+
+        $arguments = $container->getDefinition(BlogProtection::class)->getArguments();
+        self::assertNull($arguments[6]);
+        self::assertNull($arguments[7]);
+        self::assertNull($arguments[8]);
     }
 
     #[Test]
@@ -184,6 +386,7 @@ final class NowoBlogKitExtensionTest extends TestCase
         self::assertSame('NowoBlogKitBundle', $merged['profiles']['blog_kit']['translation_domain']);
         self::assertSame('filter', $merged['profiles']['filter']['alias']);
         self::assertTrue($merged['profiles']['filter']['auto_placeholder']);
+        self::assertSame(EntityType::class, $merged['type_map']['entity']);
     }
 
     #[Test]
@@ -249,10 +452,12 @@ final class NowoBlogKitExtensionTest extends TestCase
         (new NowoBlogKitExtension())->prepend($container);
 
         $configs = $container->getExtensionConfig('nowo_form_kit');
+        $merged  = array_replace_recursive(...array_reverse($configs));
 
-        self::assertCount(1, $configs);
-        self::assertSame('host_blog_kit', $configs[0]['profiles']['blog_kit']['alias']);
-        self::assertSame('host_filter', $configs[0]['profiles']['filter']['alias']);
+        self::assertSame('host_blog_kit', $merged['profiles']['blog_kit']['alias']);
+        self::assertSame('host_filter', $merged['profiles']['filter']['alias']);
+        self::assertSame(EntityType::class, $merged['type_map']['entity']);
+        self::assertFalse(isset($merged['profiles']['blog_kit']['translation_domain']));
     }
 
     #[Test]

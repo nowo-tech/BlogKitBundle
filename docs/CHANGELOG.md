@@ -8,9 +8,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Table of contents
 
 - [Unreleased](#unreleased)
+- [1.1.0 - 2026-08-18](#110---2026-08-18)
 - [1.0.0 - 2026-08-18](#100---2026-08-18)
 
 ## [Unreleased]
+
+## [1.1.0] - 2026-08-18
+
+Comment protection strategies, object-level publication access, listing YAML defaults, and a Bootstrap-ready FrankenPHP admin chrome.
+
+### Added
+
+- Configurable public-comment **rate-limit strategies**: `none`, `fixed_window` (per IP), `per_ip_article`, `sliding_window`, or a host `service`
+- Configurable comment **CAPTCHA strategies**: `none`, `honeypot` (default), `recaptcha_v2`, `recaptcha_v3`, `hcaptcha`, `turnstile`, or a host `service`
+- Optional article **HTML sanitizer**: `none` (default), `strip`, `allowlist`, or a host `service` — applied on persist and public render
+- Admin settings can override YAML strategies (`inherit` keeps YAML). CAPTCHA secrets stay in YAML only
+- YAML `listing.mode` (`paginated` / `infinite`) with admin `inherit` override for the public index
+- YAML `listing.masonry` (`strategy`: `masonry` / `grid` / `list`, plus column counts) with admin `inherit` / `0` override
+- Object-level admin access for publications: `security.object_access.strategy` `none` / `owner` / host `service`, enforced by `BlogKitAccessDenied` (not Symfony voters)
+- FormKit `type_map.entity` prepend so admin article tags (`EntityType`) resolve without a host type map
+
+### Changed
+
+- Demo FrankenPHP admin uses host `admin/layout.html.twig` (Bootstrap 5 + Icons, UiKit flashes) with FormKit Bootstrap profiles and `twig.form_themes` (`bootstrap_5_layout`)
+- Admin list tables compose UiKit `card` / `table_wrap` macros so Bootstrap `table-responsive` applies without forking pages
+
+### Security
+
+- Default comment protection: 5 posts / 60s per IP plus a honeypot field
+- Public staff replies now require `canModerate()` (not only an authenticated `BlogUserInterface`)
+- Optional `owner` object access so editors cannot mutate another author's publications (configure roles still see all)
 
 ## [1.0.0] - 2026-08-18
 
@@ -44,5 +71,6 @@ Initial public release of **Blog Kit Bundle** (`nowo-tech/blog-kit-bundle`).
 - CSRF-protected admin mutations and public comment forms; deletes go through native confirm dialogs
 - Comment bodies escaped in Twig; article HTML documented as trusted-editor `|raw`
 
-[Unreleased]: https://github.com/nowo-tech/BlogKitBundle/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/nowo-tech/BlogKitBundle/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/nowo-tech/BlogKitBundle/releases/tag/v1.1.0
 [1.0.0]: https://github.com/nowo-tech/BlogKitBundle/releases/tag/v1.0.0
