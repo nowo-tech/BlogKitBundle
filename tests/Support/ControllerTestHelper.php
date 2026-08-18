@@ -209,7 +209,7 @@ final class ControllerTestHelper
     private static function createAuthorizationCheckerStub(): AuthorizationCheckerInterface
     {
         return new class implements AuthorizationCheckerInterface {
-            public function isGranted(mixed $attribute, mixed $subject = null): bool
+            public function isGranted(mixed $attribute, mixed $subject = null, mixed $accessDecision = null): bool
             {
                 return true;
             }
