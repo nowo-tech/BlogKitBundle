@@ -3,12 +3,15 @@ nowo_blog_kit:
     default_locale: es
     locales: [es, en]
     security:
+        access_roles: [ROLE_ADMIN]
         manage_roles: [ROLE_ADMIN]
         moderate_roles: [ROLE_ADMIN]
         configure_roles: [ROLE_ADMIN]
         allow_unauthenticated: false
     web_ui:
+        public_layout_template: base.html.twig
         css_framework: bootstrap5
         icon_set: bootstrap-icons
+        row_actions_display: icon
     doctrine:
         table_prefix: ''

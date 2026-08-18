@@ -4,10 +4,15 @@
 {# REQ-UI-001: stack public assets via parent() when the host sets public_layout_template. #}
 {% block stylesheets %}
     {{ parent() }}
-    <link rel="stylesheet" href="{{ asset('blog.css', 'nowo_blog_kit') }}">
+    {% block nowo_ui_styles %}
+        <link rel="stylesheet" href="{{ asset('css/nowo-ui.css', 'nowo_ui_kit') }}">
+        <link rel="stylesheet" href="{{ asset('blog.css', 'nowo_blog_kit') }}">
+    {% endblock %}
 {% endblock %}
 
 {% block javascripts %}
     {{ parent() }}
-    <script src="{{ asset('blog-kit.js', 'nowo_blog_kit') }}" defer></script>
+    {% block nowo_ui_scripts %}
+        <script src="{{ asset('blog-kit.js', 'nowo_blog_kit') }}" defer></script>
+    {% endblock %}
 {% endblock %}

@@ -36,34 +36,45 @@ final class BlogArticleControllerTest extends TestCase
     #[Test]
     public function indexRendersFilteredPaginatedArticles(): void
     {
-        $request = Request::create('/admin/blog?title=Symfony&page=2', 'GET');
-        $article = $this->createArticle(10, 'symfony-testing');
+        $request    = Request::create('/admin/blog?title=Symfony&page=2', 'GET');
+        $article    = $this->createArticle(10, 'symfony-testing');
+        $unsaved    = $this->createArticle(0, 'unsaved');
+        $idProperty = new ReflectionProperty(BlogArticle::class, 'id');
+        $idProperty->setValue($unsaved, null);
 
         $repository = $this->createMock(BlogArticleRepository::class);
         $repository->expects(self::once())
             ->method('findFilteredPaginated')
             ->with(['title' => 'Symfony'], 2, 12)
             ->willReturn([
-                'items' => [$article],
-                'total' => 1,
+                'items' => [$article, $unsaved],
+                'total' => 2,
                 'page'  => 2,
             ]);
+
+        $deleteForm = $this->createConfiguredMock(FormInterface::class, [
+            'createView' => new FormView(),
+        ]);
 
         $twig = $this->createMock(Environment::class);
         $twig->expects(self::once())
             ->method('render')
             ->with(
                 '@NowoBlogKitBundle/admin/index.html.twig',
-                self::callback(static fn (array $parameters): bool => $parameters['items'] === [$article]
-                    && $parameters['pagination']['total'] === 1
+                self::callback(static fn (array $parameters): bool => $parameters['items'] === [$article, $unsaved]
+                    && $parameters['pagination']['total'] === 2
                     && $parameters['filters'] === ['title' => 'Symfony']
-                    && $parameters['filter_form'] instanceof FormView),
+                    && $parameters['filter_form'] instanceof FormView
+                    && isset($parameters['delete_forms'][10])
+                    && $parameters['delete_forms'][10] instanceof FormView
+                    && !isset($parameters['delete_forms'][0])),
             )
             ->willReturn('index');
 
         $controller = $this->createController(
             request: $request,
             repository: $repository,
+            csrfOnlyFormFactory: $this->createCsrfOnlyFormFactory($deleteForm),
             filterFormFactory: ControllerTestHelper::filterFormFactory(),
             twig: $twig,
             pageSize: 12,

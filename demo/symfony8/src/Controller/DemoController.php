@@ -14,9 +14,7 @@ final class DemoController extends AbstractController
     #[Route('/', name: 'demo_home')]
     public function index(): Response
     {
-        return $this->render('demo/index.html.twig', [
-            'generatedAt' => date('Y-m-d H:i:s'),
-        ]);
+        return $this->render('demo/index.html.twig');
     }
 
     #[Route('/api/ping', name: 'demo_api_ping', methods: ['GET'])]

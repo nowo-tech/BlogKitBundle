@@ -1,15 +1,29 @@
 {% trans_default_domain 'NowoBlogKitBundle' %}
-{{ form_start(form, {attr: {class: 'nowo-ui-form cms-modal-form', id: 'cms-modal-active-form'}}) }}
-  {% if form.translations is defined %}
-    {{ include('@NowoBlogKitBundle/admin/_locale_tabs.html.twig', {
-      translations: form.translations,
-      active_locale: locale|default(active_locale|default(null)),
-      id_prefix: 'cms-locale',
-    }) }}
-  {% endif %}
-  {% for child in form %}
-    {% if not child.rendered %}
-      {{ form_row(child) }}
-    {% endif %}
-  {% endfor %}
-{{ form_end(form) }}
+{% import '@NowoUiKitBundle/macros/ui.html.twig' as ui %}
+{% set _css_fw = nowo_blog_kit_css_framework|default('bootstrap5') %}
+<dialog class="nowo-ui-modal" id="blog-kit-cms-modal" data-nowo-ui-modal open>
+  {{ form_start(form, {attr: {class: 'nowo-ui-form cms-modal-form', id: 'cms-modal-active-form'}}) }}
+    <div class="nowo-ui-modal__header">
+      <h2 class="nowo-ui-modal__title">{{ 'admin.articles.edit'|trans }}</h2>
+      <button type="button" class="{{ ui.btn('secondary', 'sm', _css_fw) }}" data-nowo-ui-modal-close>{{ 'admin.action.cancel'|trans }}</button>
+    </div>
+    <div class="nowo-ui-modal__content">
+      {% if form.translations is defined %}
+        {{ include('@NowoBlogKitBundle/admin/_locale_tabs.html.twig', {
+          translations: form.translations,
+          active_locale: locale|default(active_locale|default(null)),
+          id_prefix: 'cms-locale',
+        }) }}
+      {% endif %}
+      {% for child in form %}
+        {% if not child.rendered %}
+          {{ form_row(child) }}
+        {% endif %}
+      {% endfor %}
+    </div>
+    <div class="nowo-ui-modal__actions">
+      <button type="submit" class="{{ ui.btn('primary', null, _css_fw) }}">{{ 'admin.action.save'|trans }}</button>
+      <button type="button" class="{{ ui.btn('secondary', null, _css_fw) }}" data-nowo-ui-modal-close>{{ 'admin.action.cancel'|trans }}</button>
+    </div>
+  {{ form_end(form) }}
+</dialog>

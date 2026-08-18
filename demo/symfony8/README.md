@@ -14,9 +14,16 @@ Default URL: **http://localhost:8105** (override with `PORT` in `.env`).
 
 ## What to try
 
-1. Open `/` — each reload creates a new HTTP log entry.
-2. Open `/api/ping` — JSON response body is stored per `response_body_by_type.json`.
-3. Open `/admin/http-log` — admin UI (HTTP Basic: `admin` / `admin`).
+1. Open `/` — landing page with links to the public blog and admin.
+2. Open `/blog` — 32 published lorem ipsum articles with 12 distinct tags (paginated), wrapped in the demo layout (`css_framework: bootstrap5`).
+3. Open `/admin/blog` — admin UI (HTTP Basic: `admin` / `admin`).
+
+Demo content is seeded on `make up` (`app:load-demo-blog`). Recreate with:
+
+```bash
+make -C demo/symfony8 shell
+php bin/console app:load-demo-blog --force
+```
 
 ## Commands
 
@@ -28,8 +35,9 @@ make -C demo/symfony8 shell
 
 ## Configuration
 
-- Bundle config: `config/packages/nowo_blog_kit.yaml` (`async: false` for synchronous persistence in the demo).
-- Security: in-memory `ROLE_ADMIN` user; `access_control` protects `/admin/http-log`.
+- Bundle assets: `php bin/console assets:install --symlink --relative` (runs on `make up`) so `/bundles/nowoblogkit/blog.css` is served.
+- Bundle config: `config/packages/nowo_blog_kit.yaml` (locales `es` / `en`).
+- Security: in-memory `ROLE_ADMIN` user; `access_control` protects `/admin`.
 - Database: SQLite at `var/data/demo.db` (no external DB container).
 
 See [DEMO-FRANKENPHP.md](../../docs/DEMO-FRANKENPHP.md) for FrankenPHP classic vs worker mode.

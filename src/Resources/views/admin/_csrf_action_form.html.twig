@@ -5,5 +5,5 @@
       {{ form_row(child) }}
     {% endif %}
   {% endfor %}
-  <button type="submit" class="{{ button_class }}"{% if confirm_message|default(false) %} data-confirm="{{ confirm_message }}"{% endif %}>{{ button_label }}</button>
+  <button type="submit" class="{{ button_class }}">{{ button_label }}</button>
 {{ form_end(form) }}

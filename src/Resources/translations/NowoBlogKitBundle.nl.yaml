@@ -37,6 +37,7 @@ admin:
     pending_count: '%count% in behandeling'
     title: Reacties
   confirm:
+    delete_title: Bevestig verwijderen
     delete_article: 'Delete this article?'
     delete_comment: 'Deze reactie verwijderen?'
     delete_tag: 'Deze tag verwijderen?'

@@ -1,6 +1,7 @@
 {% trans_default_domain 'NowoBlogKitBundle' %}
+{% set _css_fw = nowo_blog_kit_css_framework|default('bootstrap5') %}
 <!DOCTYPE html>
-<html lang="{{ app.request.locale|default('en') }}">
+<html lang="{{ app.request.locale|default('en') }}" class="nowo-ui-html nowo-ui--{{ _css_fw }} nowo-blog nowo-blog--{{ _css_fw }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,7 +11,7 @@
     {% endif %}
     {% block stylesheets %}{% endblock %}
 </head>
-<body>
+<body class="nowo-blog-body">
 {% block body %}{% endblock %}
 {% block javascripts %}{% endblock %}
 </body>

@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Nowo\BlogKitBundle\DependencyInjection;
 
 use Nowo\BlogKitBundle\Enum\CssFramework;
+use Nowo\BlogKitBundle\Enum\IconSet;
+use Nowo\BlogKitBundle\Enum\RowActionsDisplay;
 use Symfony\Component\Config\Definition\Builder\ArrayNodeDefinition;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
@@ -15,17 +17,6 @@ use Symfony\Component\Config\Definition\ConfigurationInterface;
 final class Configuration implements ConfigurationInterface
 {
     public const string ALIAS = 'nowo_blog_kit';
-
-    public const array CSS_FRAMEWORKS = [
-        'bootstrap',
-        'bootstrap4',
-        'bootstrap5',
-        'tabler',
-        'tailwind',
-        'foundation',
-        'custom',
-        'none',
-    ];
 
     public function getConfigTreeBuilder(): TreeBuilder
     {
@@ -47,6 +38,11 @@ final class Configuration implements ConfigurationInterface
                 ->arrayNode('security')
                     ->addDefaultsIfNotSet()
                     ->children()
+                        ->arrayNode('access_roles')
+                            ->scalarPrototype()->end()
+                            ->defaultValue(['ROLE_ADMIN'])
+                            ->info('Grants every admin capability when any listed role is held (REQ-UI-002).')
+                        ->end()
                         ->arrayNode('manage_roles')
                             ->scalarPrototype()->end()
                             ->defaultValue(['ROLE_EDITOR'])
@@ -74,9 +70,16 @@ final class Configuration implements ConfigurationInterface
                         ->end()
                         ->enumNode('css_framework')
                             ->values(CssFramework::values())
-                            ->defaultValue(CssFramework::Tailwind->value)
+                            ->defaultValue(CssFramework::Bootstrap5->value)
                         ->end()
-                        ->scalarNode('icon_set')->defaultValue('bootstrap-icons')->end()
+                        ->enumNode('icon_set')
+                            ->values(IconSet::values())
+                            ->defaultValue(IconSet::BootstrapIcons->value)
+                        ->end()
+                        ->enumNode('row_actions_display')
+                            ->values(RowActionsDisplay::values())
+                            ->defaultValue(RowActionsDisplay::Icon->value)
+                        ->end()
                         ->integerNode('page_size')
                             ->min(1)
                             ->max(200)

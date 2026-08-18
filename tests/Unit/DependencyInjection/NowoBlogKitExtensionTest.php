@@ -47,13 +47,15 @@ final class NowoBlogKitExtensionTest extends TestCase
         self::assertSame(['es', 'en'], $container->getParameter('nowo_blog_kit.locales'));
         self::assertSame('', $container->getParameter('nowo_blog_kit.doctrine.table_prefix'));
         self::assertSame('default', $container->getParameter('nowo_blog_kit.doctrine.connection'));
+        self::assertSame(['ROLE_ADMIN'], $container->getParameter('nowo_blog_kit.security.access_roles'));
         self::assertSame(['ROLE_EDITOR'], $container->getParameter('nowo_blog_kit.security.manage_roles'));
         self::assertSame(['ROLE_MODERATOR'], $container->getParameter('nowo_blog_kit.security.moderate_roles'));
         self::assertSame(['ROLE_ADMIN'], $container->getParameter('nowo_blog_kit.security.configure_roles'));
         self::assertNull($container->getParameter('nowo_blog_kit.security.access_checker'));
         self::assertTrue($container->getParameter('nowo_blog_kit.security.allow_unauthenticated'));
-        self::assertSame('tailwind', $container->getParameter('nowo_blog_kit.web_ui.css_framework'));
+        self::assertSame('bootstrap5', $container->getParameter('nowo_blog_kit.web_ui.css_framework'));
         self::assertSame('bootstrap-icons', $container->getParameter('nowo_blog_kit.web_ui.icon_set'));
+        self::assertSame('icon', $container->getParameter('nowo_blog_kit.web_ui.row_actions_display'));
         self::assertSame(20, $container->getParameter('nowo_blog_kit.web_ui.page_size'));
         self::assertSame('#', $container->getParameter('nowo_blog_kit.web_ui.privacy_url'));
     }
@@ -132,6 +134,7 @@ final class NowoBlogKitExtensionTest extends TestCase
         $definition = $container->getDefinition('nowo_blog_kit.access_checker.default');
 
         self::assertSame(ConfigurableBlogKitAccessChecker::class, $definition->getClass());
+        self::assertSame(['ROLE_ADMIN'], $definition->getArgument('$accessRoles'));
         self::assertSame(['ROLE_EDITOR'], $definition->getArgument('$manageRoles'));
         self::assertSame(['ROLE_MODERATOR'], $definition->getArgument('$moderateRoles'));
         self::assertSame(['ROLE_ADMIN'], $definition->getArgument('$configureRoles'));
@@ -312,6 +315,7 @@ final class NowoBlogKitExtensionTest extends TestCase
 
         self::assertSame('tailwind', $merged['css_framework']);
         self::assertSame('bootstrap-icons', $merged['icon_set']);
+        self::assertSame('icon', $merged['row_actions_display']);
     }
 
     #[Test]
@@ -321,8 +325,9 @@ final class NowoBlogKitExtensionTest extends TestCase
         $container->registerExtension($this->createExtension('nowo_ui_kit'));
         $container->registerExtension(new NowoBlogKitExtension());
         $container->prependExtensionConfig('nowo_ui_kit', [
-            'css_framework' => 'bootstrap5',
-            'icon_set'      => 'fontawesome',
+            'css_framework'       => 'bootstrap5',
+            'icon_set'            => 'fontawesome',
+            'row_actions_display' => 'text',
         ]);
         $container->loadFromExtension('nowo_blog_kit', [
             'web_ui' => [
@@ -338,6 +343,7 @@ final class NowoBlogKitExtensionTest extends TestCase
         self::assertCount(1, $configs);
         self::assertSame('bootstrap5', $configs[0]['css_framework']);
         self::assertSame('fontawesome', $configs[0]['icon_set']);
+        self::assertSame('text', $configs[0]['row_actions_display']);
     }
 
     #[Test]

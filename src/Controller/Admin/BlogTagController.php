@@ -14,6 +14,7 @@ use Nowo\BlogKitBundle\Repository\BlogTagRepository;
 use Nowo\FormKitBundle\Form\CsrfOnlyFormFactory;
 use Nowo\FormKitBundle\Form\GetFilterFormFactory;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\Form\FormView;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -43,13 +44,28 @@ final class BlogTagController extends AbstractController
             'action' => $this->generateUrl('admin_blog_tags_index'),
         ]);
         $filters = $this->resolveAdminListFilters($request, $filterForm, ['slug', 'name']);
+        $items   = $this->blogTagRepository->findFiltered($filters);
+
+        /** @var array<int, FormView> $deleteForms */
+        $deleteForms = [];
+        foreach ($items as $item) {
+            $id = $item->getId();
+            if ($id === null) {
+                continue;
+            }
+            $deleteForms[$id] = $this->csrfOnlyFormFactory->createNamed(
+                $this->generateUrl('admin_blog_tags_delete', ['id' => $id]),
+                'delete' . $id,
+            )->createView();
+        }
 
         return $this->render('@NowoBlogKitBundle/admin/tags/index.html.twig', [
             'page_title'     => 'admin.tags.title',
-            'items'          => $this->blogTagRepository->findFiltered($filters),
+            'items'          => $items,
             'article_counts' => $this->blogTagRepository->countArticlesByTagId(),
             'filters'        => $filters,
             'filter_form'    => $filterForm->createView(),
+            'delete_forms'   => $deleteForms,
         ]);
     }
 

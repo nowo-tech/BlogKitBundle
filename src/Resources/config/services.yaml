@@ -35,6 +35,8 @@ services:
             $defaultLocale: '%nowo_blog_kit.default_locale%'
             $locales: '%nowo_blog_kit.locales%'
             $privacyUrl: '%nowo_blog_kit.web_ui.privacy_url%'
+            $iconSet: '%nowo_blog_kit.web_ui.icon_set%'
+            $rowActionsDisplay: '%nowo_blog_kit.web_ui.row_actions_display%'
         tags: ['twig.extension']
 
     Nowo\BlogKitBundle\EventSubscriber\BlogArticlePublishedDoctrineSubscriber:

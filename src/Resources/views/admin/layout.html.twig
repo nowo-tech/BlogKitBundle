@@ -1,6 +1,6 @@
 {% trans_default_domain 'NowoBlogKitBundle' %}
 {% import '@NowoUiKitBundle/macros/ui.html.twig' as ui %}
-{% set _css_fw = nowo_blog_kit_css_framework|default('tailwind') %}
+{% set _css_fw = nowo_blog_kit_css_framework|default('bootstrap5') %}
 <!DOCTYPE html>
 <html lang="{{ app.request.locale|default('en') }}" class="nowo-ui-html nowo-ui--{{ _css_fw }}">
 <head>
@@ -26,6 +26,7 @@
             {% block nowo_ui_content %}{% endblock %}
         </main>
     </div>
+    {% block nowo_ui_modals %}{% endblock %}
     {% block javascripts %}{% endblock %}
 </body>
 </html>

@@ -1,6 +1,6 @@
 {% trans_default_domain 'NowoBlogKitBundle' %}
 {% import '@NowoUiKitBundle/macros/ui.html.twig' as ui %}
-{% set _css_fw = nowo_blog_kit_css_framework|default('tailwind') %}
+{% set _css_fw = nowo_blog_kit_css_framework|default('bootstrap5') %}
 {% extends '@NowoBlogKitBundle/admin/base.html.twig' %}
 {% block title %}{{ page_title|trans }}{% endblock %}
 {% block admin %}
@@ -55,14 +55,19 @@
                 {kind: 'edit', href: path('admin_blog_edit', {id: item.id}), label: 'admin.action.edit'|trans},
                 {
                   kind: 'delete',
-                  method: 'POST',
-                  href: path('admin_blog_delete', {id: item.id}),
-                  csrf_token: csrf_token('delete' ~ item.id),
-                  csrf_field: 'csrf_only[_token]',
-                  confirm_message: 'admin.confirm.delete_article'|trans,
+                  tag: 'button',
+                  confirm_id: 'blog-delete-article-' ~ item.id,
                   label: 'admin.action.delete'|trans,
                 },
               ]}) }}
+              {% if delete_forms[item.id] is defined %}
+                {{ include('@NowoBlogKitBundle/admin/_delete_confirm.html.twig', {
+                  id: 'blog-delete-article-' ~ item.id,
+                  form: delete_forms[item.id],
+                  title: 'admin.confirm.delete_title'|trans,
+                  body: 'admin.confirm.delete_article'|trans,
+                }) }}
+              {% endif %}
             </td>
           </tr>
         {% else %}

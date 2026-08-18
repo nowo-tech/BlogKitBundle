@@ -28,7 +28,7 @@ Install **Blog Kit Bundle** in a Symfony 7.4 or 8 application with Doctrine ORM,
 | Twig Bundle | ^7.4 or ^8.0 |
 | Security Bundle | ^7.4 or ^8.0 |
 | FormKitBundle | `nowo-tech/form-kit-bundle` ^2.4 |
-| UiKitBundle | `nowo-tech/ui-kit-bundle` ^1.4 |
+| UiKitBundle | `nowo-tech/ui-kit-bundle` ^1.5 |
 | RoutingKitBundle | `nowo-tech/routing-kit-bundle` ^1.4 |
 | AuditKitBundle | `nowo-tech/audit-kit-bundle` ^1.1 |
 | Twig Extra | `twig/extra-bundle` and `twig/string-extra` |
@@ -75,6 +75,7 @@ nowo_blog_kit:
     default_locale: es
     locales: [es, en]
     security:
+        access_roles: [ROLE_ADMIN]
         manage_roles: [ROLE_EDITOR]
         moderate_roles: [ROLE_MODERATOR]
         configure_roles: [ROLE_ADMIN]
@@ -82,7 +83,9 @@ nowo_blog_kit:
     web_ui:
         layout_template: '@NowoBlogKitBundle/admin/layout.html.twig'
         public_layout_template: '@NowoBlogKitBundle/public/layout.html.twig'
-        css_framework: tailwind
+        css_framework: bootstrap5
+        icon_set: bootstrap-icons
+        row_actions_display: icon
     doctrine:
         table_prefix: ''
         connection: default
@@ -160,7 +163,16 @@ Flex usually registers `Twig\Extra\TwigExtraBundle\TwigExtraBundle` automaticall
 
 ## Published assets
 
-Run `php bin/console assets:install` so `blog.css` and `blog-kit.js` are available under `/bundles/nowoblogkit/` via the `nowo_blog_kit` asset package. Rebuild frontend with `make assets` (Vite + pnpm).
+Run `php bin/console assets:install` so `blog.css` and `blog-kit.js` are available under `/bundles/nowoblogkit/` via the `nowo_blog_kit` asset package:
+
+```twig
+<link rel="stylesheet" href="{{ asset('blog.css', 'nowo_blog_kit') }}">
+<script src="{{ asset('blog-kit.js', 'nowo_blog_kit') }}" defer></script>
+```
+
+Rebuild frontend with `make assets` (Vite + pnpm).
+
+The bundle does **not** ship Bootstrap, Tailwind, or Foundation CSS. Set `web_ui.css_framework` to match the host (`bootstrap5`, `tailwind`, `foundation`, `custom`) and load that stack in `public_layout_template`. Public markup stays on semantic `blog-*` classes plus UiKit buttons.
 
 ## Verify
 

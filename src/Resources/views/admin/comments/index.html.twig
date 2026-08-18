@@ -1,6 +1,6 @@
 {% trans_default_domain 'NowoBlogKitBundle' %}
 {% import '@NowoUiKitBundle/macros/ui.html.twig' as ui %}
-{% set _css_fw = nowo_blog_kit_css_framework|default('tailwind') %}
+{% set _css_fw = nowo_blog_kit_css_framework|default('bootstrap5') %}
 {% extends '@NowoBlogKitBundle/admin/base.html.twig' %}
 {% block title %}{{ page_title|trans }}{% endblock %}
 {% block admin %}
@@ -75,11 +75,12 @@
                   <button type="submit" class="{{ ui.btn('secondary', 'sm', _css_fw) }}">{{ 'blog.comments.reply_submit'|trans }}</button>
                 {{ form_end(reply_forms[item.id]) }}
               {% endif %}
-              {{ include('@NowoBlogKitBundle/admin/_csrf_action_form.html.twig', {
+              <button type="button" class="{{ ui.btn('danger', 'sm', _css_fw) }}" {{ ui.confirm_toggle_attrs() }} {{ ui.confirm_target_attr('blog-delete-comment-' ~ item.id) }}>{{ 'admin.action.delete'|trans }}</button>
+              {{ include('@NowoBlogKitBundle/admin/_delete_confirm.html.twig', {
+                id: 'blog-delete-comment-' ~ item.id,
                 form: action_forms[item.id].delete,
-                button_class: ui.btn('danger', 'sm', _css_fw),
-                button_label: 'admin.action.delete'|trans,
-                confirm_message: 'admin.confirm.delete_comment'|trans,
+                title: 'admin.confirm.delete_title'|trans,
+                body: 'admin.confirm.delete_comment'|trans,
               }) }}
             {% endif %}
           </td>

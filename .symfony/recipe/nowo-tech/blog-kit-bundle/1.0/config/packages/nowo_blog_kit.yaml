@@ -3,6 +3,7 @@ nowo_blog_kit:
     default_locale: es
     locales: [es, en]
     security:
+        access_roles: [ROLE_ADMIN]
         manage_roles: [ROLE_EDITOR]
         moderate_roles: [ROLE_MODERATOR]
         configure_roles: [ROLE_ADMIN]
@@ -10,6 +11,8 @@ nowo_blog_kit:
     web_ui:
         layout_template: 'admin/layout.html.twig'
         public_layout_template: 'base.html.twig'
-        css_framework: tailwind
+        css_framework: bootstrap5
+        icon_set: bootstrap-icons
+        row_actions_display: icon
     doctrine:
         table_prefix: ''

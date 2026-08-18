@@ -63,4 +63,25 @@ final class ConfigurableBlogKitAccessCheckerTest extends TestCase
         self::assertTrue($checker->canModerate());
         self::assertFalse($checker->canConfigure());
     }
+
+    #[Test]
+    public function accessRolesGrantEveryCapability(): void
+    {
+        $authorizationChecker = $this->createMock(AuthorizationCheckerInterface::class);
+        $authorizationChecker->method('isGranted')->willReturnCallback(
+            static fn (mixed $attribute): bool => $attribute === 'ROLE_ADMIN',
+        );
+
+        $checker = new ConfigurableBlogKitAccessChecker(
+            $authorizationChecker,
+            ['ROLE_EDITOR'],
+            ['ROLE_MODERATOR'],
+            ['ROLE_SETTINGS'],
+            ['ROLE_ADMIN'],
+        );
+
+        self::assertTrue($checker->canManage());
+        self::assertTrue($checker->canModerate());
+        self::assertTrue($checker->canConfigure());
+    }
 }

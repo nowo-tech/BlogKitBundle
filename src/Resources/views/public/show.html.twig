@@ -5,8 +5,8 @@
 {% block meta_description %}{{ page_description }}{% endblock %}
 
 {% block body %}
-<article class="section">
-  <div class="container">
+<article class="blog-section">
+  <div class="{{ nowo_blog_kit_container_class() }}">
     {% set has_left = aside_left is not empty %}
     {% set has_right = aside_right is not empty %}
     <div class="blog-layout{{ has_left and has_right ? ' blog-layout--both' : (has_left ? ' blog-layout--left' : '') }}">
@@ -34,7 +34,7 @@
           {% endif %}
           <h1>{{ article.title }}</h1>
           {% if article.excerpt %}
-            <p class="page-header__intro">{{ article.excerpt }}</p>
+            <p class="blog-page-header__intro">{{ article.excerpt }}</p>
           {% endif %}
           {% if article.tags is not empty %}
             <ul class="blog-article__tags">

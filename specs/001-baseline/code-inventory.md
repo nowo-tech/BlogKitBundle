@@ -5,7 +5,7 @@
 **Last audited**: 2026-08-18  
 **Coverage summary**: PHPUnit `src/` target 100% (`make test-coverage-100`)
 
-Maps **100%** of production PHP files under `src/` (70 units). Test and demo trees are out of Packagist scope unless promoted in the spec.
+Maps **100%** of production PHP files under `src/` (72 units). Test and demo trees are out of Packagist scope unless promoted in the spec.
 
 ## Bundle entry
 
@@ -62,6 +62,8 @@ Maps **100%** of production PHP files under `src/` (70 units). Test and demo tre
 | Source file | Purpose | Requirement IDs |
 | --- | --- | --- |
 | `Enum/CssFramework.php` | Admin/public CSS stack | FR-UI-001 |
+| `Enum/IconSet.php` | Admin icon rendering set | FR-UI-001 |
+| `Enum/RowActionsDisplay.php` | Row action icon / text / icon_text | FR-UI-001 |
 | `Enum/BlogListingMode.php` | Paginated vs infinite | FR-SET-001, FR-PUB-002 |
 | `Enum/BlogAsidePlacement.php` | Aside left/right/none | FR-SET-001 |
 | `Enum/BlogHeroImageMode.php` | Hero image fit | FR-SET-001 |

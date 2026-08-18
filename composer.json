@@ -36,7 +36,7 @@
         "nowo-tech/audit-kit-bundle": "^1.1",
         "nowo-tech/form-kit-bundle": "^2.4",
         "nowo-tech/routing-kit-bundle": "^1.4",
-        "nowo-tech/ui-kit-bundle": "^1.4",
+        "nowo-tech/ui-kit-bundle": "^1.5",
         "psr/clock": "^1.0",
         "psr/log": "^1 || ^2 || ^3",
         "symfony/clock": "^7.4 || ^8.0",
@@ -100,6 +100,11 @@
             "/demo",
             "/.cursor"
         ]
+    },
+    "extra": {
+        "symfony": {
+            "bundle": "Nowo\\BlogKitBundle\\NowoBlogKitBundle"
+        }
     },
     "scripts": {
         "test": "@php vendor/bin/phpunit --colors=always",

@@ -37,6 +37,7 @@ admin:
     pending_count: '%count% en attente'
     title: Commentaires
   confirm:
+    delete_title: Confirmer la suppression
     delete_article: 'Delete this article?'
     delete_comment: 'Supprimer ce commentaire ?'
     delete_tag: 'Supprimer ce tag ?'

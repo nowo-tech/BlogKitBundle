@@ -35,26 +35,36 @@ final class BlogTagControllerTest extends TestCase
     {
         $request = Request::create('/admin/blog/tags?slug=php', 'GET');
         $tag     = $this->createTag(3, 'php');
+        $unsaved = $this->createTag(0, 'draft');
+        (new ReflectionProperty(BlogTag::class, 'id'))->setValue($unsaved, null);
 
         $repository = $this->createMock(BlogTagRepository::class);
-        $repository->expects(self::once())->method('findFiltered')->with(['slug' => 'php'])->willReturn([$tag]);
+        $repository->expects(self::once())->method('findFiltered')->with(['slug' => 'php'])->willReturn([$tag, $unsaved]);
         $repository->expects(self::once())->method('countArticlesByTagId')->willReturn([3 => 2]);
+
+        $deleteForm = $this->createConfiguredMock(FormInterface::class, [
+            'createView' => new FormView(),
+        ]);
 
         $twig = $this->createMock(Environment::class);
         $twig->expects(self::once())
             ->method('render')
             ->with(
                 '@NowoBlogKitBundle/admin/tags/index.html.twig',
-                self::callback(static fn (array $parameters): bool => $parameters['items'] === [$tag]
+                self::callback(static fn (array $parameters): bool => $parameters['items'] === [$tag, $unsaved]
                     && $parameters['article_counts'] === [3 => 2]
                     && $parameters['filters'] === ['slug' => 'php']
-                    && $parameters['filter_form'] instanceof FormView),
+                    && $parameters['filter_form'] instanceof FormView
+                    && isset($parameters['delete_forms'][3])
+                    && $parameters['delete_forms'][3] instanceof FormView
+                    && !isset($parameters['delete_forms'][0])),
             )
             ->willReturn('index');
 
         $controller = $this->createController(
             request: $request,
             repository: $repository,
+            csrfOnlyFormFactory: $this->createCsrfOnlyFormFactory($deleteForm),
             filterFormFactory: ControllerTestHelper::filterFormFactory(),
             twig: $twig,
         );

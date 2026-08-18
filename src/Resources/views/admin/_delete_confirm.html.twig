@@ -1,0 +1,28 @@
+{#
+  Native <dialog> confirm for destructive POST + CSRF (REQ-UI-001 / REQ-SEC-005).
+  Footer owns the Symfony CSRF form — do not use window.confirm.
+
+  @var id string
+  @var form Symfony\Component\Form\FormView
+  @var title string
+  @var body string
+  @var button_label string|null
+#}
+{% trans_default_domain 'NowoBlogKitBundle' %}
+{% import '@NowoUiKitBundle/macros/ui.html.twig' as ui %}
+{% set _css_fw = nowo_blog_kit_css_framework|default('bootstrap5') %}
+{% set footer %}
+  {{ include('@NowoBlogKitBundle/admin/_csrf_action_form.html.twig', {
+    form: form,
+    button_class: ui.btn('danger', 'sm', _css_fw),
+    button_label: button_label|default('admin.action.delete'|trans),
+  }) }}
+  <button type="button" class="{{ ui.btn('secondary', 'sm', _css_fw) }}" data-nowo-confirm-close>{{ 'admin.action.cancel'|trans }}</button>
+{% endset %}
+{% include '@NowoUiKitBundle/partials/_confirm.html.twig' with {
+  id: id,
+  title: title,
+  body: body,
+  footer: footer,
+  framework: _css_fw,
+} only %}

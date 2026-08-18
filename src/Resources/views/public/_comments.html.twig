@@ -1,9 +1,9 @@
 {% trans_default_domain 'NowoBlogKitBundle' %}
 {% import '@NowoUiKitBundle/macros/ui.html.twig' as ui %}
-{% set _css_fw = nowo_blog_kit_css_framework|default('tailwind') %}
+{% set _css_fw = nowo_blog_kit_css_framework|default('bootstrap5') %}
 
 <section class="blog-comments" id="comments" aria-labelledby="blog-comments-title">
-  <div class="container blog-comments__inner">
+  <div class="blog-comments__inner">
     <h2 id="blog-comments-title" class="blog-comments__title">{{ 'blog.comments.title'|trans }}</h2>
 
     {% if comments is not empty %}

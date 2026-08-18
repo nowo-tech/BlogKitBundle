@@ -17,6 +17,7 @@ use Nowo\FormKitBundle\Form\GetFilterFormFactory;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Form\FormInterface;
+use Symfony\Component\Form\FormView;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -56,12 +57,26 @@ final class BlogArticleController extends AbstractController
         $page   = max(1, $request->query->getInt('page', 1));
         $result = $this->blogArticleRepository->findFilteredPaginated($filters, $page, $this->pageSize);
 
+        /** @var array<int, FormView> $deleteForms */
+        $deleteForms = [];
+        foreach ($result['items'] as $item) {
+            $id = $item->getId();
+            if ($id === null) {
+                continue;
+            }
+            $deleteForms[$id] = $this->csrfOnlyFormFactory->createNamed(
+                $this->generateUrl('admin_blog_delete', ['id' => $id]),
+                'delete' . $id,
+            )->createView();
+        }
+
         return $this->render('@NowoBlogKitBundle/admin/index.html.twig', [
-            'page_title'  => 'admin.articles.title',
-            'items'       => $result['items'],
-            'pagination'  => $result,
-            'filters'     => $filters,
-            'filter_form' => $filterForm->createView(),
+            'page_title'   => 'admin.articles.title',
+            'items'        => $result['items'],
+            'pagination'   => $result,
+            'filters'      => $filters,
+            'filter_form'  => $filterForm->createView(),
+            'delete_forms' => $deleteForms,
         ]);
     }
 

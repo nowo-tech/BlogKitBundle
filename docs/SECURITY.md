@@ -19,7 +19,7 @@ Security considerations for public blog pages, comments, admin CRUD, and CMS HTM
 
 | Risk | Mitigation |
 | --- | --- |
-| Unauthorized editors reach article/tag/settings admin | `manage_roles` / `configure_roles`, custom `access_checker`, Symfony Security |
+| Unauthorized editors reach article/tag/settings admin | `access_roles` / `manage_roles` / `configure_roles`, custom `access_checker`, Symfony Security |
 | Unauthorized comment moderation | `moderate_roles` and route prefix `admin_blog_comments` |
 | Stored XSS through article HTML | Default Twig auto-escaping; `article.body` uses `\|raw` for trusted editors only |
 | Stored XSS through comments | Comment bodies are escaped; `\|nl2br` only |
@@ -37,13 +37,14 @@ Default configuration:
 ```yaml
 nowo_blog_kit:
     security:
+        access_roles: [ROLE_ADMIN]
         manage_roles: [ROLE_EDITOR]
         moderate_roles: [ROLE_MODERATOR]
         configure_roles: [ROLE_ADMIN]
         allow_unauthenticated: false
 ```
 
-Recommended host access control:
+Firewall the admin prefix in the host app (`path_prefix` `/admin/blog`):
 
 ```yaml
 # config/packages/security.yaml

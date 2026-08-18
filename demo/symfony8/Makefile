@@ -70,7 +70,7 @@ cache-clear: ensure-up
 	$(DOCKER_COMPOSE) exec php php bin/console cache:clear
 
 link-bundle: ensure-up
-	$(DOCKER_COMPOSE) exec php sh -c "mkdir -p var/data && rm -rf vendor/nowo-tech/blog-kit-bundle && ln -sf /var/blog-kit-bundle vendor/nowo-tech/blog-kit-bundle && php bin/console doctrine:schema:update --force --no-interaction && php bin/console cache:clear"
+	$(DOCKER_COMPOSE) exec php sh -c "mkdir -p var/data && rm -rf vendor/nowo-tech/blog-kit-bundle && ln -sf /var/blog-kit-bundle vendor/nowo-tech/blog-kit-bundle && php bin/console doctrine:schema:update --force --no-interaction && php bin/console assets:install --symlink --relative --no-interaction && php bin/console cache:clear && php bin/console app:load-demo-blog --no-interaction"
 
 update: ensure-up
 	$(DOCKER_COMPOSE) exec -T -e COMPOSER_MEMORY_LIMIT=-1 php composer update --no-interaction

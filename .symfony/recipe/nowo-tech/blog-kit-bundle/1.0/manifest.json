@@ -5,5 +5,11 @@
     "copy-from-recipe": {
         "config/": "%CONFIG_DIR%/"
     },
-    "aliases": ["nowo-blog-kit", "blog-kit"]
+    "aliases": ["nowo-blog-kit", "blog-kit"],
+    "post-install-output": [
+        "  Run <info>php bin/console assets:install</info> so Blog Kit CSS/JS are published.",
+        "  Load them with the named package <comment>nowo_blog_kit</comment>:",
+        "    <info>{{ asset('blog.css', 'nowo_blog_kit') }}</info>",
+        "    <info>{{ asset('blog-kit.js', 'nowo_blog_kit') }}</info>"
+    ]
 }

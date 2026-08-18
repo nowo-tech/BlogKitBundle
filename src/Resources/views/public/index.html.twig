@@ -1,20 +1,18 @@
 {% trans_default_domain 'NowoBlogKitBundle' %}
-{% import '@NowoUiKitBundle/macros/ui.html.twig' as ui %}
-{% set _css_fw = nowo_blog_kit_css_framework|default('tailwind') %}
 {% extends '@NowoBlogKitBundle/public/base.html.twig' %}
 
 {% block title %}{{ page_title }}{% endblock %}
 {% block meta_description %}{{ page_description }}{% endblock %}
 
 {% block body %}
-<header class="page-header">
-  <div class="container">
+<header class="blog-page-header">
+  <div class="{{ nowo_blog_kit_container_class() }}">
     <h1>{{ 'page.blog.heading'|trans }}</h1>
-    <p class="page-header__intro">{{ 'page.blog.intro'|trans }}</p>
+    <p class="blog-page-header__intro">{{ 'page.blog.intro'|trans }}</p>
   </div>
 </header>
-<section class="section">
-  <div class="container">
+<section class="blog-section">
+  <div class="{{ nowo_blog_kit_container_class() }}">
     <div class="blog-filters">
       {{ include('@NowoBlogKitBundle/public/_search.html.twig', {search_form: search_form, filters: filters}) }}
 
@@ -101,7 +99,7 @@
             {% endif %}
           </div>
         {% else %}
-          <p>
+          <p class="blog-empty">
             {{ (filters.q or filters.tag ? 'page.blog.empty_filtered' : 'page.blog.empty')|trans }}
           </p>
         {% endif %}

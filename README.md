@@ -1,6 +1,6 @@
 # Blog Kit Bundle
 
-[![CI](https://github.com/nowo-tech/BlogKitBundle/actions/workflows/ci.yml/badge.svg)](https://github.com/nowo-tech/BlogKitBundle/actions/workflows/ci.yml) [![Packagist Version](https://img.shields.io/packagist/v/nowo-tech/blog-kit-bundle.svg?style=flat)](https://packagist.org/packages/nowo-tech/blog-kit-bundle) [![Packagist Downloads](https://img.shields.io/packagist/dt/nowo-tech/blog-kit-bundle.svg)](https://packagist.org/packages/nowo-tech/blog-kit-bundle) [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE) [![PHP](https://img.shields.io/badge/PHP-8.4%2B-777BB4?logo=php)](https://php.net) [![Symfony](https://img.shields.io/badge/Symfony-7.4%20%7C%208.0%20%7C%208.1%2B-000000?logo=symfony)](https://symfony.com) [![GitHub stars](https://img.shields.io/github/stars/nowo-tech/BlogKitBundle.svg?style=social&label=Star)](https://github.com/nowo-tech/BlogKitBundle) [![Coverage](https://img.shields.io/badge/Coverage-100%25-brightgreen)](#tests-and-coverage)
+[![CI](https://github.com/nowo-tech/BlogKitBundle/actions/workflows/ci.yml/badge.svg)](https://github.com/nowo-tech/BlogKitBundle/actions/workflows/ci.yml) [![Packagist Version](https://img.shields.io/packagist/v/nowo-tech/blog-kit-bundle.svg?style=flat)](https://packagist.org/packages/nowo-tech/blog-kit-bundle) [![Packagist Downloads](https://img.shields.io/packagist/dt/nowo-tech/blog-kit-bundle.svg)](https://packagist.org/packages/nowo-tech/blog-kit-bundle) [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE) [![PHP](https://img.shields.io/badge/PHP-8.4%2B-777BB4?logo=php)](https://php.net) [![Symfony](https://img.shields.io/badge/Symfony-7.4%20%7C%208.0%20%7C%208.1%2B-000000?logo=symfony)](https://symfony.com) [![GitHub stars](https://img.shields.io/github/stars/nowo-tech/blog-kit-bundle.svg?style=social&label=Star)](https://github.com/nowo-tech/BlogKitBundle) [![Coverage](https://img.shields.io/badge/Coverage-100%25-brightgreen)](#tests-and-coverage)
 
 > ⭐ **Found this useful?** Give it a star on GitHub! It helps us maintain and improve the project.
 
@@ -25,7 +25,8 @@ Blog Kit Bundle gives Symfony applications a reusable blog domain backed by Doct
 - Paginated or infinite-scroll listing, configurable asides, and card options
 - LinkedIn hashtag formatting command `nowo:blog:sync-hashtags`
 - `BlogArticlePublishedEvent` after an article becomes published
-- Configurable access: manage / moderate / configure roles, custom checker, or demo-only unauthenticated mode
+- Configurable access: `access_roles`, manage / moderate / configure roles, custom checker, or demo-only unauthenticated mode
+- Host CSS stack via `web_ui.css_framework` (`bootstrap5`, `tailwind`, `foundation`, `custom`), `icon_set`, and `row_actions_display` without forking page templates
 - Twig namespace `NowoBlogKitBundle` with host override precedence
 - Symfony Flex recipe and FrankenPHP demo in `demo/symfony8`
 
@@ -43,9 +44,17 @@ nowo_blog_kit:
     default_locale: es
     locales: [es, en]
     security:
+        access_roles: [ROLE_ADMIN]
         manage_roles: [ROLE_EDITOR]
         moderate_roles: [ROLE_MODERATOR]
         configure_roles: [ROLE_ADMIN]
+        allow_unauthenticated: false
+    web_ui:
+        layout_template: admin/layout.html.twig
+        public_layout_template: base.html.twig
+        css_framework: bootstrap5
+        icon_set: bootstrap-icons
+        row_actions_display: icon
 ```
 
 ```yaml
@@ -82,7 +91,7 @@ Demo default URL: `http://localhost:8105`.
 - [Code of Conduct](CODE_OF_CONDUCT.md)
 - [Changelog](docs/CHANGELOG.md)
 - [Upgrading](docs/UPGRADING.md)
-- [Release process](docs/RELEASE.md)
+- [Release](docs/RELEASE.md)
 - [Security](docs/SECURITY.md)
 - [Engram](docs/ENGRAM.md)
 - [Spec-driven development](docs/SPEC-DRIVEN-DEVELOPMENT.md)

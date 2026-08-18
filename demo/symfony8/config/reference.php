@@ -1300,6 +1300,7 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *     default_locale?: scalar|Param|null, // Default: "es"
  *     locales?: list<scalar|Param|null>,
  *     security?: array{
+ *         access_roles?: list<scalar|Param|null>,
  *         manage_roles?: list<scalar|Param|null>,
  *         moderate_roles?: list<scalar|Param|null>,
  *         configure_roles?: list<scalar|Param|null>,
@@ -1309,8 +1310,9 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *     web_ui?: array{
  *         layout_template?: scalar|Param|null, // Default: "@NowoBlogKitBundle/admin/layout.html.twig"
  *         public_layout_template?: scalar|Param|null, // Default: "@NowoBlogKitBundle/public/layout.html.twig"
- *         css_framework?: "bootstrap"|"bootstrap4"|"bootstrap5"|"tabler"|"tailwind"|"foundation"|"custom"|"none"|Param, // Default: "tailwind"
- *         icon_set?: scalar|Param|null, // Default: "bootstrap-icons"
+ *         css_framework?: "bootstrap"|"bootstrap4"|"bootstrap5"|"tabler"|"tailwind"|"foundation"|"custom"|"none"|Param, // Default: "bootstrap5"
+ *         icon_set?: "bootstrap-icons"|"tabler-icons"|"ux_icon"|"svg_inline"|"none"|Param, // Default: "bootstrap-icons"
+ *         row_actions_display?: "icon"|"text"|"icon_text"|Param, // Default: "icon"
  *         page_size?: int|Param, // Default: 20
  *         privacy_url?: scalar|Param|null, // Default: "#"
  *     },

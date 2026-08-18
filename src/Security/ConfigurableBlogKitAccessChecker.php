@@ -15,35 +15,43 @@ final readonly class ConfigurableBlogKitAccessChecker implements BlogKitAccessCh
      * @param list<string> $manageRoles
      * @param list<string> $moderateRoles
      * @param list<string> $configureRoles
+     * @param list<string> $accessRoles
      */
     public function __construct(
         private AuthorizationCheckerInterface $authorizationChecker,
         private array $manageRoles,
         private array $moderateRoles,
         private array $configureRoles,
+        private array $accessRoles = [],
     ) {
     }
 
     public function canManage(): bool
     {
-        return $this->grantedAny($this->manageRoles);
+        return $this->grantedAny($this->accessRoles, false)
+            || $this->grantedAny($this->manageRoles, true);
     }
 
     public function canModerate(): bool
     {
-        return $this->grantedAny($this->moderateRoles) || $this->canManage();
+        return $this->grantedAny($this->accessRoles, false)
+            || $this->grantedAny($this->moderateRoles, true)
+            || $this->canManage();
     }
 
     public function canConfigure(): bool
     {
-        return $this->grantedAny($this->configureRoles);
+        return $this->grantedAny($this->accessRoles, false)
+            || $this->grantedAny($this->configureRoles, true);
     }
 
-    /** @param list<string> $roles */
-    private function grantedAny(array $roles): bool
+    /**
+     * @param list<string> $roles
+     */
+    private function grantedAny(array $roles, bool $emptyAllows): bool
     {
         if ($roles === []) {
-            return true;
+            return $emptyAllows;
         }
 
         foreach ($roles as $role) {

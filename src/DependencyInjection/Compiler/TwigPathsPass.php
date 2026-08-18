@@ -14,7 +14,7 @@ use function rtrim;
 
 final class TwigPathsPass implements CompilerPassInterface
 {
-    private const TWIG_NAMESPACE = 'NowoBlogKitBundle';
+    public const string TWIG_NAMESPACE = 'NowoBlogKitBundle';
 
     public function process(ContainerBuilder $container): void
     {

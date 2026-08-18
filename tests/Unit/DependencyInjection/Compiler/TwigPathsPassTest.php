@@ -38,6 +38,7 @@ final class TwigPathsPassTest extends TestCase
         self::assertNotEmpty($calls);
         self::assertSame('addPath', $calls[array_key_last($calls)][0]);
         self::assertSame(dirname(__DIR__, 4) . '/src/Resources/views', $calls[array_key_last($calls)][1][0]);
+        self::assertSame('NowoBlogKitBundle', TwigPathsPass::TWIG_NAMESPACE);
         self::assertSame('NowoBlogKitBundle', $calls[array_key_last($calls)][1][1]);
     }
 

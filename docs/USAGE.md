@@ -12,6 +12,7 @@ How to publish articles, render the public blog, moderate comments, and override
 - [Published event](#published-event)
 - [Custom access logic](#custom-access-logic)
 - [Host meta providers](#host-meta-providers)
+- [Forms (FormKit + child loop)](#forms-formkit--child-loop)
 - [Twig overrides](#twig-overrides)
 - [Translation overrides](#translation-overrides)
 - [Infinite scroll assets](#infinite-scroll-assets)
@@ -42,7 +43,7 @@ Only **published** articles with a non-empty body are visible on `blog_show`.
 | `admin_blog_comments_*` | `/admin/blog/comments` | `canModerate()` |
 | `admin_blog_settings` | `/admin/blog/settings` | `canConfigure()` |
 
-List screens are paginated (`web_ui.page_size`) and use CSRF-protected delete actions.
+List screens are paginated (`web_ui.page_size`). Deletes open a native `<dialog>` confirm with POST + CSRF in the footer.
 
 ## Comments
 
@@ -110,6 +111,22 @@ Optional services:
 - `BlogIndexMetaProviderInterface` — title/description for the public index
 - `BlogBrandNameProviderInterface` — brand suffix for article `<title>`
 
+## Forms (FormKit + child loop)
+
+Admin CRUD, public search, comment POST, and CSRF-only actions (delete / approve / reject) are **Symfony Form Types** (FormKit `FormKitAbstractType` / `CsrfOnlyFormFactory`). Twig renders them with `form_start`, the canonical child loop, and `form_end` (REQ-TWIG-003 / REQ-TWIG-005):
+
+```twig
+{{ form_start(form) }}
+    {% for child in form %}
+        {% if not child.rendered %}
+            {{ form_row(child) }}
+        {% endif %}
+    {% endfor %}
+{{ form_end(form) }}
+```
+
+Do **not** reintroduce raw `<form>` / `<input>` tags in host overrides. Delete confirms use a native `<dialog>` (`@NowoUiKitBundle/partials/_confirm.html.twig`) with the CSRF form in the footer. The inline CMS editor is a native `<dialog>` with header / content / actions (`admin/_modal_form.html.twig`).
+
 ## Twig overrides
 
 Application templates under `templates/bundles/NowoBlogKitBundle/` override the bundle copy for the same relative path (REQ-TWIG-001).
@@ -123,6 +140,8 @@ Common override targets:
 - `templates/bundles/NowoBlogKitBundle/admin/base.html.twig`
 - `templates/bundles/NowoBlogKitBundle/admin/layout.html.twig`
 - `templates/bundles/NowoBlogKitBundle/admin/index.html.twig`
+- `templates/bundles/NowoBlogKitBundle/admin/_delete_confirm.html.twig`
+- `templates/bundles/NowoBlogKitBundle/admin/_modal_form.html.twig`
 
 This precedence is installed by `TwigPathsPass` before the bundle view path is added.
 
@@ -146,7 +165,9 @@ Published files (after `assets:install` / `make assets`):
 - `asset('blog.css', 'nowo_blog_kit')`
 - `asset('blog-kit.js', 'nowo_blog_kit')`
 
-Admin and public pages extend `@NowoBlogKitBundle/admin/base.html.twig` and `@NowoBlogKitBundle/public/base.html.twig`. Those bases call `{{ parent() }}` then load bundle CSS/JS (REQ-UI-001). Point `layout_template` / `public_layout_template` at the host layout; do not copy every page template.
+Admin and public pages extend `@NowoBlogKitBundle/admin/base.html.twig` and `@NowoBlogKitBundle/public/base.html.twig`. Those bases call `{{ parent() }}` then load bundle CSS/JS in nested `nowo_ui_styles` / `nowo_ui_scripts` (REQ-UI-001). Point `layout_template` / `public_layout_template` at the host layout and set `css_framework` to `bootstrap5`, `tailwind`, `foundation`, or `custom`. Set `icon_set` and `row_actions_display` without copying list templates. Do not copy every page template.
+
+`nowo_blog_kit_container_class()` adds the host container class (`container` / `grid-container`) next to the semantic `blog-container` wrapper.
 
 `blog-kit.js` boots:
 

@@ -70,8 +70,9 @@ final class NowoBlogKitExtension extends Extension implements PrependExtensionIn
             return;
         }
 
-        $hostHasCssFramework = false;
-        $hostHasIconSet      = false;
+        $hostHasCssFramework      = false;
+        $hostHasIconSet           = false;
+        $hostHasRowActionsDisplay = false;
         foreach ($container->getExtensionConfig('nowo_ui_kit') as $cfg) {
             if (array_key_exists('css_framework', $cfg)) {
                 $hostHasCssFramework = true;
@@ -79,10 +80,9 @@ final class NowoBlogKitExtension extends Extension implements PrependExtensionIn
             if (array_key_exists('icon_set', $cfg)) {
                 $hostHasIconSet = true;
             }
-        }
-
-        if ($hostHasCssFramework && $hostHasIconSet) {
-            return;
+            if (array_key_exists('row_actions_display', $cfg)) {
+                $hostHasRowActionsDisplay = true;
+            }
         }
 
         $config = $this->processConfiguration(new BundleConfiguration(), $container->getExtensionConfig(BundleConfiguration::ALIAS));
@@ -91,10 +91,17 @@ final class NowoBlogKitExtension extends Extension implements PrependExtensionIn
         $defaults = [];
 
         if (!$hostHasCssFramework) {
-            $defaults['css_framework'] = (string) ($webUi['css_framework'] ?? 'tailwind');
+            $defaults['css_framework'] = (string) ($webUi['css_framework'] ?? 'bootstrap5');
         }
         if (!$hostHasIconSet) {
             $defaults['icon_set'] = (string) ($webUi['icon_set'] ?? 'bootstrap-icons');
+        }
+        if (!$hostHasRowActionsDisplay) {
+            $defaults['row_actions_display'] = (string) ($webUi['row_actions_display'] ?? 'icon');
+        }
+
+        if ($defaults === []) {
+            return;
         }
 
         $container->prependExtensionConfig('nowo_ui_kit', $defaults);
@@ -190,6 +197,7 @@ final class NowoBlogKitExtension extends Extension implements PrependExtensionIn
         $container->setParameter('nowo_blog_kit.locales', $config['locales']);
         $container->setParameter('nowo_blog_kit.doctrine.table_prefix', $config['doctrine']['table_prefix']);
         $container->setParameter('nowo_blog_kit.doctrine.connection', $config['doctrine']['connection']);
+        $container->setParameter('nowo_blog_kit.security.access_roles', $config['security']['access_roles']);
         $container->setParameter('nowo_blog_kit.security.manage_roles', $config['security']['manage_roles']);
         $container->setParameter('nowo_blog_kit.security.moderate_roles', $config['security']['moderate_roles']);
         $container->setParameter('nowo_blog_kit.security.configure_roles', $config['security']['configure_roles']);
@@ -199,6 +207,7 @@ final class NowoBlogKitExtension extends Extension implements PrependExtensionIn
         $container->setParameter('nowo_blog_kit.web_ui.public_layout_template', $config['web_ui']['public_layout_template']);
         $container->setParameter('nowo_blog_kit.web_ui.css_framework', $config['web_ui']['css_framework']);
         $container->setParameter('nowo_blog_kit.web_ui.icon_set', $config['web_ui']['icon_set']);
+        $container->setParameter('nowo_blog_kit.web_ui.row_actions_display', $config['web_ui']['row_actions_display']);
         $container->setParameter('nowo_blog_kit.web_ui.page_size', $config['web_ui']['page_size']);
         $container->setParameter('nowo_blog_kit.web_ui.privacy_url', $config['web_ui']['privacy_url']);
 
@@ -229,7 +238,7 @@ final class NowoBlogKitExtension extends Extension implements PrependExtensionIn
     }
 
     /**
-     * @param array{access_checker: ?string, manage_roles: list<string>, moderate_roles: list<string>, configure_roles: list<string>, allow_unauthenticated: bool} $security
+     * @param array{access_checker: ?string, access_roles: list<string>, manage_roles: list<string>, moderate_roles: list<string>, configure_roles: list<string>, allow_unauthenticated: bool} $security
      */
     private function registerAccessChecker(ContainerBuilder $container, array $security): void
     {
@@ -250,6 +259,7 @@ final class NowoBlogKitExtension extends Extension implements PrependExtensionIn
 
         $id         = 'nowo_blog_kit.access_checker.default';
         $definition = new Definition(ConfigurableBlogKitAccessChecker::class);
+        $definition->setArgument('$accessRoles', $security['access_roles']);
         $definition->setArgument('$manageRoles', $security['manage_roles']);
         $definition->setArgument('$moderateRoles', $security['moderate_roles']);
         $definition->setArgument('$configureRoles', $security['configure_roles']);

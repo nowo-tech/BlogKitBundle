@@ -1,7 +1,9 @@
 {% trans_default_domain 'NowoBlogKitBundle' %}
+{% import '@NowoUiKitBundle/macros/ui.html.twig' as ui %}
+{% set _css_fw = nowo_blog_kit_css_framework|default('bootstrap5') %}
 {% set opts = card_options|default({show_image: true, show_excerpt: true, show_tags: true}) %}
 {% for article in articles %}
-  <article class="card blog-item blog-masonry__item">
+  <article class="blog-item blog-masonry__item">
     {% if opts.show_image and article.image %}
       <a href="{{ path('blog_show', {slug: article.slug}) }}" class="blog-item__image-link">
         <img src="{{ article.image }}" alt="" class="blog-item__image" loading="lazy">
@@ -28,7 +30,7 @@
           {% endfor %}
         </ul>
       {% endif %}
-      <a href="{{ path('blog_show', {slug: article.slug}) }}" class="btn btn--secondary btn--sm">{{ 'page.blog.read_more'|trans }}</a>
+      <a href="{{ path('blog_show', {slug: article.slug}) }}" class="{{ ui.btn('secondary', 'sm', _css_fw) }}">{{ 'page.blog.read_more'|trans }}</a>
     </div>
   </article>
 {% endfor %}
