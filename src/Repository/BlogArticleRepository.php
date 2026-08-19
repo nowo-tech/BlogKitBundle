@@ -13,7 +13,9 @@ use Nowo\BlogKitBundle\Entity\BlogArticle;
 use Nowo\BlogKitBundle\Locale\BlogLocales;
 use Nowo\BlogKitBundle\Repository\Concerns\JoinsTranslationsAndAuditUsers;
 use Nowo\BlogKitBundle\Repository\Concerns\RunsDocumentedSql;
+use Symfony\Contracts\Service\ResetInterface;
 
+use function array_key_exists;
 use function count;
 use function is_string;
 use function sprintf;
@@ -23,16 +25,24 @@ use function sprintf;
  *
  * @extends ServiceEntityRepository<BlogArticle>
  */
-class BlogArticleRepository extends ServiceEntityRepository
+class BlogArticleRepository extends ServiceEntityRepository implements ResetInterface
 {
     use JoinsTranslationsAndAuditUsers;
     use RunsDocumentedSql;
+
+    /** @var array<string, list<array{slug: string, name: string}>> */
+    private array $tagsByArticleCache = [];
 
     public function __construct(
         ManagerRegistry $registry,
         private readonly BlogLocales $blogLocales,
     ) {
         parent::__construct($registry, BlogArticle::class);
+    }
+
+    public function reset(): void
+    {
+        $this->tagsByArticleCache = [];
     }
 
     /**
@@ -721,6 +731,25 @@ class BlogArticleRepository extends ServiceEntityRepository
             return [];
         }
 
+        $grouped = [];
+        $missing = [];
+
+        foreach ($articleIds as $articleId) {
+            $cacheKey = $locale . ':' . $articleId;
+
+            if (array_key_exists($cacheKey, $this->tagsByArticleCache)) {
+                $grouped[$articleId] = $this->tagsByArticleCache[$cacheKey];
+
+                continue;
+            }
+
+            $missing[] = $articleId;
+        }
+
+        if ($missing === []) {
+            return $grouped;
+        }
+
         $fallback          = $this->blogLocales->getDefault();
         $namedPlaceholders = [];
         $params            = [
@@ -728,7 +757,7 @@ class BlogArticleRepository extends ServiceEntityRepository
             'fallback' => $fallback,
         ];
 
-        foreach ($articleIds as $index => $articleId) {
+        foreach ($missing as $index => $articleId) {
             $key                 = 'articleId' . $index;
             $namedPlaceholders[] = ':' . $key;
             $params[$key]        = $articleId;
@@ -755,14 +784,26 @@ class BlogArticleRepository extends ServiceEntityRepository
 
         $rows = $this->fetchAllDocumentedSql($sql, $params);
 
-        $grouped = [];
+        foreach ($missing as $articleId) {
+            $this->tagsByArticleCache[$locale . ':' . $articleId] = [];
+        }
 
         foreach ($rows as $row) {
-            $articleId             = (int) $row['article_id'];
-            $grouped[$articleId][] = [
+            $articleId = (int) $row['article_id'];
+            $tag       = [
                 'slug' => (string) $row['slug'],
                 'name' => (string) $row['name'],
             ];
+            $cacheKey = $locale . ':' . $articleId;
+
+            $this->tagsByArticleCache[$cacheKey][] = $tag;
+            $grouped[$articleId][]                 = $tag;
+        }
+
+        foreach ($missing as $articleId) {
+            if (!isset($grouped[$articleId])) {
+                $grouped[$articleId] = [];
+            }
         }
 
         return $grouped;

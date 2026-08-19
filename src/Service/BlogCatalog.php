@@ -139,11 +139,13 @@ final class BlogCatalog
         $latestLimit ??= $this->blogSettingsProvider->indexLatestLimit();
         $tagsLimit = $this->blogSettingsProvider->indexAsideTagsLimit();
 
-        $relatedTags = $this->blogArticleRepository->fetchTagSummariesMatchingFilters(
-            $locale,
-            $search !== '' ? $search : null,
-            $tagSlug !== '' ? $tagSlug : null,
-        );
+        $relatedTags = ($search === '' && $tagSlug === '')
+            ? $this->blogTagRepository->findPublishedTagSummaries($locale)
+            : $this->blogArticleRepository->fetchTagSummariesMatchingFilters(
+                $locale,
+                $search !== '' ? $search : null,
+                $tagSlug !== '' ? $tagSlug : null,
+            );
 
         return [
             'latest' => $this->blogArticleRepository->fetchLatestMatchingFilters(
