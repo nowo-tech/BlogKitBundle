@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Table of contents
 
 - [Unreleased](#unreleased)
+- [1.1.6 - 2026-08-19](#116---2026-08-19)
 - [1.1.5 - 2026-08-19](#115---2026-08-19)
 - [1.1.3 - 2026-08-19](#113---2026-08-19)
 - [1.1.2 - 2026-08-19](#112---2026-08-19)
@@ -16,6 +17,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [1.0.0 - 2026-08-18](#100---2026-08-18)
 
 ## [Unreleased]
+
+## [1.1.6] - 2026-08-19
+
+Restore **100%** PHP line coverage after the v1.1.5 query-memoization changes.
+
+### Fixed
+
+- **`BlogCatalog`:** cover sidebar tag resolution when no search/tag filters are active (published tag summaries path).
 
 ## [1.1.5] - 2026-08-19
 

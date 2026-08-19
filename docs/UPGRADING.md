@@ -5,6 +5,8 @@ This document describes how to upgrade **Blog Kit Bundle** between released vers
 ## Table of contents
 
 - [Unreleased](#unreleased)
+- [1.1.6](#116)
+- [1.1.5](#115)
 - [1.1.3](#113)
 - [1.1.2](#112)
 - [1.1.1](#111)
@@ -15,6 +17,22 @@ This document describes how to upgrade **Blog Kit Bundle** between released vers
 ## Unreleased
 
 No upgrade notes yet.
+
+## 1.1.6
+
+Patch release restoring CI coverage gate. **No integrator upgrade steps.**
+
+```bash
+composer update nowo-tech/blog-kit-bundle
+```
+
+## 1.1.5
+
+Patch release reducing duplicate Doctrine queries on public blog pages. **No integrator upgrade steps.**
+
+```bash
+composer update nowo-tech/blog-kit-bundle
+```
 
 ## 1.1.3
 
