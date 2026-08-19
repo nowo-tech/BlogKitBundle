@@ -5,6 +5,7 @@ This document describes how to upgrade **Blog Kit Bundle** between released vers
 ## Table of contents
 
 - [Unreleased](#unreleased)
+- [1.1.3](#113)
 - [1.1.2](#112)
 - [1.1.1](#111)
 - [1.1.0](#110)

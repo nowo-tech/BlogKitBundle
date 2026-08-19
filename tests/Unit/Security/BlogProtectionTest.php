@@ -45,6 +45,7 @@ final class BlogProtectionTest extends TestCase
         self::assertSame(CommentRateLimitStrategy::FixedWindow, $protection->resolveRateLimitStrategy());
         self::assertSame(CommentCaptchaStrategy::Honeypot, $protection->resolveCaptchaStrategy());
         self::assertSame(HtmlSanitizeStrategy::None, $protection->resolveHtmlSanitizeStrategy());
+        self::assertInstanceOf(CacheBlogCommentRateLimiter::class, $protection->rateLimiter());
     }
 
     #[Test]
