@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Table of contents
 
 - [Unreleased](#unreleased)
+- [1.1.5 - 2026-08-19](#115---2026-08-19)
 - [1.1.3 - 2026-08-19](#113---2026-08-19)
 - [1.1.2 - 2026-08-19](#112---2026-08-19)
 - [1.1.1 - 2026-08-19](#111---2026-08-19)
@@ -15,6 +16,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [1.0.0 - 2026-08-18](#100---2026-08-18)
 
 ## [Unreleased]
+
+## [1.1.5] - 2026-08-19
+
+Reduce duplicate Doctrine queries on public blog index and detail pages.
+
+### Fixed
+
+- **`BlogArticleRepository`:** memoize tags-by-article lookups per request (`ResetInterface`) so paginated lists and sidebars reuse cached tag rows instead of re-querying overlapping article ids.
+- **`BlogTagRepository`:** memoize `findPublishedTagSummaries()` per locale per request.
+- **`BlogCatalog`:** sidebar without search/tag filters reuses published tag summaries instead of a heavier filtered SQL query.
 
 ## [1.1.3] - 2026-08-19
 

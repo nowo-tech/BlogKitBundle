@@ -8,19 +8,28 @@ use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 use Nowo\BlogKitBundle\Entity\BlogTag;
 use Nowo\BlogKitBundle\Repository\Concerns\JoinsTranslationsAndAuditUsers;
+use Symfony\Contracts\Service\ResetInterface;
 
 /**
  * Doctrine repository for blog tags.
  *
  * @extends ServiceEntityRepository<BlogTag>
  */
-class BlogTagRepository extends ServiceEntityRepository
+class BlogTagRepository extends ServiceEntityRepository implements ResetInterface
 {
     use JoinsTranslationsAndAuditUsers;
+
+    /** @var array<string, list<array{slug: string, name: string, count: int}>> */
+    private array $publishedTagSummariesCache = [];
 
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, BlogTag::class);
+    }
+
+    public function reset(): void
+    {
+        $this->publishedTagSummariesCache = [];
     }
 
     public function findBySlug(string $slug): ?BlogTag
@@ -101,6 +110,10 @@ class BlogTagRepository extends ServiceEntityRepository
      */
     public function findPublishedTagSummaries(string $locale): array
     {
+        if (isset($this->publishedTagSummariesCache[$locale])) {
+            return $this->publishedTagSummariesCache[$locale];
+        }
+
         /** @var list<array{slug: string, name: string, count: int|string}> $rows */
         $rows = $this->createQueryBuilder('t')
             ->select('t.slug AS slug', 'tt.name AS name', 'COUNT(DISTINCT a.id) AS count')
@@ -115,7 +128,7 @@ class BlogTagRepository extends ServiceEntityRepository
             ->getQuery()
             ->getArrayResult();
 
-        return array_map(
+        return $this->publishedTagSummariesCache[$locale] = array_map(
             static fn (array $row): array => [
                 'slug'  => (string) $row['slug'],
                 'name'  => (string) $row['name'],
