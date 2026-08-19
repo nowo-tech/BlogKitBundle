@@ -102,6 +102,37 @@ final class BlogArticleRepositoryTest extends DoctrineTestCase
     }
 
     #[Test]
+    public function fetchPublishedPaginatedDataReusesPartialTagCacheAcrossRequests(): void
+    {
+        $tag = $this->createTag('php', 'PHP ES');
+        $this->createArticle(
+            slug: 'page-one',
+            published: true,
+            position: 1,
+            publishedAt: new DateTimeImmutable('2026-05-01T00:00:00+00:00'),
+            tags: [$tag],
+            titleEs: 'Page one',
+        );
+        $this->createArticle(
+            slug: 'page-two',
+            published: true,
+            position: 2,
+            publishedAt: new DateTimeImmutable('2026-05-02T00:00:00+00:00'),
+            tags: [$tag],
+            titleEs: 'Page two',
+        );
+
+        $firstPage = $this->repository->fetchPublishedPaginatedData(1, 1, 'es');
+        self::assertCount(1, $firstPage['items']);
+
+        $bothItems = $this->repository->fetchPublishedPaginatedData(1, 2, 'es');
+        self::assertCount(2, $bothItems['items']);
+
+        $cachedFirstPage = $this->repository->fetchPublishedPaginatedData(1, 1, 'es');
+        self::assertSame($firstPage['items'], $cachedFirstPage['items']);
+    }
+
+    #[Test]
     public function fetchPublishedDetailBySlugReturnsNullWhenSlugIsMissing(): void
     {
         self::assertNull($this->repository->fetchPublishedDetailBySlug('missing-slug', 'es'));
