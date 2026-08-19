@@ -133,6 +133,23 @@ final class BlogArticleRepositoryTest extends DoctrineTestCase
     }
 
     #[Test]
+    public function fetchPublishedListDataReturnsEmptyTagsForArticlesWithoutTags(): void
+    {
+        $this->createArticle(
+            slug: 'untagged-post',
+            published: true,
+            position: 1,
+            publishedAt: new DateTimeImmutable('2026-06-01T00:00:00+00:00'),
+            titleEs: 'Sin tags',
+        );
+
+        $rows = $this->repository->fetchPublishedListData('es');
+
+        self::assertCount(1, $rows);
+        self::assertSame([], $rows[0]['tags']);
+    }
+
+    #[Test]
     public function fetchPublishedDetailBySlugReturnsNullWhenSlugIsMissing(): void
     {
         self::assertNull($this->repository->fetchPublishedDetailBySlug('missing-slug', 'es'));
