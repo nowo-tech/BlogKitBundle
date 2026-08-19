@@ -38,3 +38,9 @@ nowo_blog_kit:
             strategy: none
     doctrine:
         table_prefix: ''
+
+when@prod:
+    nowo_blog_kit:
+        html:
+            sanitize:
+                strategy: allowlist
