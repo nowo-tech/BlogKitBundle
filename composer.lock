@@ -1016,16 +1016,16 @@
         },
         {
             "name": "nowo-tech/form-kit-bundle",
-            "version": "v2.4.2",
+            "version": "v2.4.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/nowo-tech/FormKitBundle.git",
-                "reference": "b54ec2e884be01f71f8f92ca4085480cfc2c22c8"
+                "reference": "3e6de3f9465ffed997c229b6f4b5b247f1d3096c"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/nowo-tech/FormKitBundle/zipball/b54ec2e884be01f71f8f92ca4085480cfc2c22c8",
-                "reference": "b54ec2e884be01f71f8f92ca4085480cfc2c22c8",
+                "url": "https://api.github.com/repos/nowo-tech/FormKitBundle/zipball/3e6de3f9465ffed997c229b6f4b5b247f1d3096c",
+                "reference": "3e6de3f9465ffed997c229b6f4b5b247f1d3096c",
                 "shasum": ""
             },
             "require": {
@@ -1109,7 +1109,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-08-18T09:34:49+00:00"
+            "time": "2026-08-19T15:34:20+00:00"
         },
         {
             "name": "nowo-tech/routing-kit-bundle",
