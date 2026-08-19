@@ -24,6 +24,34 @@ final class RepositoryTestSupport
                 return $this->singleton;
             }
 
+            public function findSingleton(): BlogSettings
+            {
+                return $this->singleton;
+            }
+
+            public function reset(): void
+            {
+            }
+        };
+    }
+
+    public static function missingBlogSettingsRepository(): BlogSettingsRepository
+    {
+        return new class extends BlogSettingsRepository {
+            public function __construct()
+            {
+            }
+
+            public function getSingleton(): BlogSettings
+            {
+                return new BlogSettings();
+            }
+
+            public function findSingleton(): ?BlogSettings
+            {
+                return null;
+            }
+
             public function reset(): void
             {
             }

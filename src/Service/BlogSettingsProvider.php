@@ -46,6 +46,11 @@ final class BlogSettingsProvider implements ResetInterface
         return $this->blogSettingsRepository->getSingleton();
     }
 
+    public function findSettings(): ?BlogSettings
+    {
+        return $this->blogSettingsRepository->findSingleton();
+    }
+
     /**
      * @return array<string, mixed>
      */

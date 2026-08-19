@@ -19,6 +19,25 @@ final class BlogSettingsRepositoryTest extends DoctrineTestCase
     }
 
     #[Test]
+    public function findSingletonReturnsNullWhenNoRowExists(): void
+    {
+        self::assertNull($this->repository->findSingleton());
+        self::assertNull($this->repository->findSingleton());
+    }
+
+    #[Test]
+    public function findSingletonReturnsExistingPersistedSettingsWithoutCreatingAnotherRow(): void
+    {
+        $existing        = $this->createSettings();
+        $freshRepository = new BlogSettingsRepository($this->registry);
+
+        $settings = $freshRepository->findSingleton();
+
+        self::assertSame($existing->getId(), $settings?->getId());
+        self::assertSame(1, $freshRepository->count([]));
+    }
+
+    #[Test]
     public function getSingletonCreatesAndCachesTheSettingsEntity(): void
     {
         $first  = $this->repository->getSingleton();
