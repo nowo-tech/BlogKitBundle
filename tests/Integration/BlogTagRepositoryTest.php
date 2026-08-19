@@ -136,4 +136,26 @@ final class BlogTagRepositoryTest extends DoctrineTestCase
             ['slug' => 'symfony', 'name' => 'Symfony ES', 'count' => 1],
         ], $summaries);
     }
+
+    #[Test]
+    public function findPublishedTagSummariesMemoizesResultsPerLocaleUntilReset(): void
+    {
+        $tag = $this->createTag('php', 'PHP ES');
+        $this->createArticle(
+            slug: 'published-one',
+            published: true,
+            position: 1,
+            publishedAt: new DateTimeImmutable('2026-03-01T00:00:00+00:00'),
+            tags: [$tag],
+        );
+
+        $first  = $this->repository->findPublishedTagSummaries('es');
+        $cached = $this->repository->findPublishedTagSummaries('es');
+
+        self::assertSame($first, $cached);
+
+        $this->repository->reset();
+
+        self::assertSame($first, $this->repository->findPublishedTagSummaries('es'));
+    }
 }

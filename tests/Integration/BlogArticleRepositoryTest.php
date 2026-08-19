@@ -79,6 +79,29 @@ final class BlogArticleRepositoryTest extends DoctrineTestCase
     }
 
     #[Test]
+    public function fetchPublishedListDataReusesMemoizedTagRowsOnSubsequentCalls(): void
+    {
+        $tag = $this->createTag('php', 'PHP ES');
+        $this->createArticle(
+            slug: 'published-post',
+            published: true,
+            position: 1,
+            publishedAt: new DateTimeImmutable('2026-02-10T00:00:00+00:00'),
+            tags: [$tag],
+            titleEs: 'Titulo publicado',
+        );
+
+        $first  = $this->repository->fetchPublishedListData('es');
+        $second = $this->repository->fetchPublishedListData('es');
+
+        self::assertSame($first, $second);
+
+        $this->repository->reset();
+
+        self::assertSame($first, $this->repository->fetchPublishedListData('es'));
+    }
+
+    #[Test]
     public function fetchPublishedDetailBySlugReturnsNullWhenSlugIsMissing(): void
     {
         self::assertNull($this->repository->fetchPublishedDetailBySlug('missing-slug', 'es'));
