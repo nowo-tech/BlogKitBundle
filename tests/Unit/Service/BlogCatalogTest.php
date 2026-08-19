@@ -133,6 +133,44 @@ final class BlogCatalogTest extends TestCase
     }
 
     #[Test]
+    public function itBuildsSidebarFromPublishedTagSummariesWhenNoFiltersAreActive(): void
+    {
+        $relatedTags = [
+            ['slug' => 'php', 'name' => 'PHP', 'count' => 8],
+            ['slug' => 'symfony', 'name' => 'Symfony', 'count' => 6],
+        ];
+        $latest = [['slug' => 'hello-world']];
+
+        $provider = $this->createMock(BlogSettingsProvider::class);
+        $provider->expects(self::once())->method('indexLatestLimit')->willReturn(3);
+        $provider->expects(self::once())->method('indexAsideTagsLimit')->willReturn(1);
+
+        $tagRepository = $this->createMock(BlogTagRepository::class);
+        $tagRepository->expects(self::once())
+            ->method('findPublishedTagSummaries')
+            ->with('es')
+            ->willReturn($relatedTags);
+
+        $articleRepository = $this->createMock(BlogArticleRepository::class);
+        $articleRepository->expects(self::never())->method('fetchTagSummariesMatchingFilters');
+        $articleRepository->expects(self::once())
+            ->method('fetchLatestMatchingFilters')
+            ->with('es', null, null, 3)
+            ->willReturn($latest);
+
+        $catalog = $this->createCatalog(
+            blogArticleRepository: $articleRepository,
+            blogTagRepository: $tagRepository,
+            blogSettingsProvider: $provider,
+        );
+
+        $sidebar = $catalog->blogSidebar();
+
+        self::assertSame($latest, $sidebar['latest']);
+        self::assertSame(array_slice($relatedTags, 0, 1), $sidebar['related_tags']);
+    }
+
+    #[Test]
     public function itKeepsAllSidebarTagsWhenConfiguredLimitIsZero(): void
     {
         $relatedTags = [
