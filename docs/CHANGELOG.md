@@ -16,6 +16,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.3] - 2026-08-19
+
+Restore 100% PHP coverage for `BlogProtection` when no settings row exists yet.
+
+### Fixed
+
+- Test coverage for YAML fallback rate-limit limits when the settings singleton is absent
+
 ## [1.1.2] - 2026-08-19
 
 Patch release fixing demo seeding on fresh databases (CI demo smoke).
@@ -91,7 +99,8 @@ Initial public release of **Blog Kit Bundle** (`nowo-tech/blog-kit-bundle`).
 - CSRF-protected admin mutations and public comment forms; deletes go through native confirm dialogs
 - Comment bodies escaped in Twig; article HTML documented as trusted-editor `|raw`
 
-[Unreleased]: https://github.com/nowo-tech/BlogKitBundle/compare/v1.1.2...HEAD
+[Unreleased]: https://github.com/nowo-tech/BlogKitBundle/compare/v1.1.3...HEAD
+[1.1.3]: https://github.com/nowo-tech/BlogKitBundle/releases/tag/v1.1.3
 [1.1.2]: https://github.com/nowo-tech/BlogKitBundle/releases/tag/v1.1.2
 [1.1.1]: https://github.com/nowo-tech/BlogKitBundle/releases/tag/v1.1.1
 [1.1.0]: https://github.com/nowo-tech/BlogKitBundle/releases/tag/v1.1.0

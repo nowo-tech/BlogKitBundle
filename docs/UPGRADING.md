@@ -16,6 +16,14 @@ This document describes how to upgrade **Blog Kit Bundle** between released vers
 
 No upgrade notes yet.
 
+## 1.1.3
+
+Patch release with no schema, configuration, or API changes. Upgrade with:
+
+```bash
+composer update nowo-tech/blog-kit-bundle
+```
+
 ## 1.1.2
 
 Patch release with no schema, configuration, or API changes. Upgrade with:
