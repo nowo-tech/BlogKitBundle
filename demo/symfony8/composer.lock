@@ -1020,7 +1020,7 @@
             "dist": {
                 "type": "path",
                 "url": "/var/blog-kit-bundle",
-                "reference": "ba01bf7e152b16b50ad434fd511f98e58ae6a3ca"
+                "reference": "a9680dc703a62a4b904ca971998357e9675c3f08"
             },
             "require": {
                 "doctrine/doctrine-bundle": "^2.10 || ^3.0",

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Nowo\BlogKitBundle\Security;
 
+use Nowo\BlogKitBundle\Entity\BlogSettings;
 use Nowo\BlogKitBundle\Enum\CommentCaptchaStrategy;
 use Nowo\BlogKitBundle\Enum\CommentRateLimitStrategy;
 use Nowo\BlogKitBundle\Enum\HtmlSanitizeStrategy;
@@ -105,7 +106,12 @@ final readonly class BlogProtection
 
     public function resolveRateLimitStrategy(): CommentRateLimitStrategy
     {
-        $override = $this->settingsProvider->settings()->getCommentRateLimitStrategy();
+        $settings = $this->settingsProvider->findSettings();
+        if (!$settings instanceof BlogSettings) {
+            return $this->config->rateLimitStrategy;
+        }
+
+        $override = $settings->getCommentRateLimitStrategy();
         if ($override === CommentRateLimitStrategy::Inherit || $override === '') {
             return $this->config->rateLimitStrategy;
         }
@@ -115,7 +121,12 @@ final readonly class BlogProtection
 
     public function resolveCaptchaStrategy(): CommentCaptchaStrategy
     {
-        $override = $this->settingsProvider->settings()->getCommentCaptchaStrategy();
+        $settings = $this->settingsProvider->findSettings();
+        if (!$settings instanceof BlogSettings) {
+            return $this->config->captchaStrategy;
+        }
+
+        $override = $settings->getCommentCaptchaStrategy();
         if ($override === CommentCaptchaStrategy::Inherit || $override === '') {
             return $this->config->captchaStrategy;
         }
@@ -125,7 +136,12 @@ final readonly class BlogProtection
 
     public function resolveHtmlSanitizeStrategy(): HtmlSanitizeStrategy
     {
-        $override = $this->settingsProvider->settings()->getHtmlSanitizeStrategy();
+        $settings = $this->settingsProvider->findSettings();
+        if (!$settings instanceof BlogSettings) {
+            return $this->config->htmlSanitizeStrategy;
+        }
+
+        $override = $settings->getHtmlSanitizeStrategy();
         if ($override === HtmlSanitizeStrategy::Inherit || $override === '') {
             return $this->config->htmlSanitizeStrategy;
         }
@@ -135,14 +151,24 @@ final readonly class BlogProtection
 
     private function resolveRateLimit(): int
     {
-        $override = $this->settingsProvider->settings()->getCommentRateLimitLimit();
+        $settings = $this->settingsProvider->findSettings();
+        if (!$settings instanceof BlogSettings) {
+            return $this->config->rateLimit;
+        }
+
+        $override = $settings->getCommentRateLimitLimit();
 
         return $override > 0 ? $override : $this->config->rateLimit;
     }
 
     private function resolveRateLimitInterval(): int
     {
-        $override = $this->settingsProvider->settings()->getCommentRateLimitIntervalSeconds();
+        $settings = $this->settingsProvider->findSettings();
+        if (!$settings instanceof BlogSettings) {
+            return $this->config->rateLimitIntervalSeconds;
+        }
+
+        $override = $settings->getCommentRateLimitIntervalSeconds();
 
         return $override > 0 ? $override : $this->config->rateLimitIntervalSeconds;
     }

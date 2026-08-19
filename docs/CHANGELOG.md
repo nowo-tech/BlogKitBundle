@@ -8,11 +8,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Table of contents
 
 - [Unreleased](#unreleased)
+- [1.1.2 - 2026-08-19](#112---2026-08-19)
 - [1.1.1 - 2026-08-19](#111---2026-08-19)
 - [1.1.0 - 2026-08-18](#110---2026-08-18)
 - [1.0.0 - 2026-08-18](#100---2026-08-18)
 
 ## [Unreleased]
+
+## [1.1.2] - 2026-08-19
+
+Patch release fixing demo seeding on fresh databases (CI demo smoke).
+
+### Fixed
+
+- `BlogProtection` resolves comment/HTML strategies from YAML when no settings row exists yet, avoiding a nested Doctrine flush while seeding demo articles (`app:load-demo-blog`) with `html.sanitize.strategy: allowlist`
 
 ## [1.1.1] - 2026-08-19
 
@@ -81,7 +90,8 @@ Initial public release of **Blog Kit Bundle** (`nowo-tech/blog-kit-bundle`).
 - CSRF-protected admin mutations and public comment forms; deletes go through native confirm dialogs
 - Comment bodies escaped in Twig; article HTML documented as trusted-editor `|raw`
 
-[Unreleased]: https://github.com/nowo-tech/BlogKitBundle/compare/v1.1.1...HEAD
+[Unreleased]: https://github.com/nowo-tech/BlogKitBundle/compare/v1.1.2...HEAD
+[1.1.2]: https://github.com/nowo-tech/BlogKitBundle/releases/tag/v1.1.2
 [1.1.1]: https://github.com/nowo-tech/BlogKitBundle/releases/tag/v1.1.1
 [1.1.0]: https://github.com/nowo-tech/BlogKitBundle/releases/tag/v1.1.0
 [1.0.0]: https://github.com/nowo-tech/BlogKitBundle/releases/tag/v1.0.0

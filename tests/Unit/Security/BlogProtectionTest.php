@@ -22,11 +22,31 @@ use Nowo\BlogKitBundle\Tests\Support\RepositoryTestSupport;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use ReflectionProperty;
+use Symfony\Component\Cache\Adapter\ArrayAdapter;
+use Symfony\Component\Clock\MockClock;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 
 final class BlogProtectionTest extends TestCase
 {
+    #[Test]
+    public function missingSettingsRowUsesYamlDefaults(): void
+    {
+        $provider   = new BlogSettingsProvider(RepositoryTestSupport::missingBlogSettingsRepository());
+        $protection = new BlogProtection(
+            BlogProtectionTestFactory::config(),
+            $provider,
+            new StreamCaptchaHttpClient(static fn (): string => '{"success":true}'),
+            new RequestStack(),
+            new ArrayAdapter(),
+            new MockClock(),
+        );
+
+        self::assertSame(CommentRateLimitStrategy::FixedWindow, $protection->resolveRateLimitStrategy());
+        self::assertSame(CommentCaptchaStrategy::Honeypot, $protection->resolveCaptchaStrategy());
+        self::assertSame(HtmlSanitizeStrategy::None, $protection->resolveHtmlSanitizeStrategy());
+    }
+
     #[Test]
     public function inheritUsesYamlDefaults(): void
     {

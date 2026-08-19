@@ -28,14 +28,10 @@ final class BlogSettingsRepository extends ServiceEntityRepository implements Re
 
     public function getSingleton(): BlogSettings
     {
-        if ($this->blogSettings instanceof BlogSettings) {
-            return $this->blogSettings;
-        }
-
-        $settings = $this->findOneBy([]);
+        $settings = $this->findSingleton();
 
         if ($settings instanceof BlogSettings) {
-            return $this->blogSettings = $settings;
+            return $settings;
         }
 
         $settings = new BlogSettings();
@@ -43,5 +39,20 @@ final class BlogSettingsRepository extends ServiceEntityRepository implements Re
         $this->getEntityManager()->flush();
 
         return $this->blogSettings = $settings;
+    }
+
+    public function findSingleton(): ?BlogSettings
+    {
+        if ($this->blogSettings instanceof BlogSettings) {
+            return $this->blogSettings;
+        }
+
+        $settings = $this->findOneBy([]);
+
+        if ($settings instanceof BlogSettings) {
+            $this->blogSettings = $settings;
+        }
+
+        return $settings;
     }
 }
