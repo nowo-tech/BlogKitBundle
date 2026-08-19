@@ -8,10 +8,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Table of contents
 
 - [Unreleased](#unreleased)
+- [1.1.1 - 2026-08-19](#111---2026-08-19)
 - [1.1.0 - 2026-08-18](#110---2026-08-18)
 - [1.0.0 - 2026-08-18](#100---2026-08-18)
 
 ## [Unreleased]
+
+## [1.1.1] - 2026-08-19
+
+Patch release restoring Symfony 7.4 CI matrix compatibility and hardening demo smoke on GitHub Actions.
+
+### Fixed
+
+- Test support user implements `UserInterface::eraseCredentials()` so PHPUnit runs on Symfony 7.4 (the method was removed from the interface in Symfony 8)
+- Demo smoke retries longer and falls back to in-container HTTP checks when host port mapping is slow on CI runners
 
 ## [1.1.0] - 2026-08-18
 
@@ -71,6 +81,7 @@ Initial public release of **Blog Kit Bundle** (`nowo-tech/blog-kit-bundle`).
 - CSRF-protected admin mutations and public comment forms; deletes go through native confirm dialogs
 - Comment bodies escaped in Twig; article HTML documented as trusted-editor `|raw`
 
-[Unreleased]: https://github.com/nowo-tech/BlogKitBundle/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/nowo-tech/BlogKitBundle/compare/v1.1.1...HEAD
+[1.1.1]: https://github.com/nowo-tech/BlogKitBundle/releases/tag/v1.1.1
 [1.1.0]: https://github.com/nowo-tech/BlogKitBundle/releases/tag/v1.1.0
 [1.0.0]: https://github.com/nowo-tech/BlogKitBundle/releases/tag/v1.0.0

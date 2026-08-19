@@ -12,15 +12,15 @@ After creating the release commit and tag, run `make check-no-cursor-coauthor` a
 
 Before tagging a release, confirm dependency audit is clean, no secrets are committed, and `docs/SECURITY.md` / `.github/SECURITY.md` remain accurate. Follow the 12.4.1 table in [SECURITY.md](SECURITY.md).
 
-## Example for v1.1.0
+## Example for v1.1.1
 
 ```bash
 git add -A
 git status   # review
 make release-check
-git commit -m "Release 1.1.0: comment protection, object access, and demo admin chrome."
+git commit -m "Release 1.1.1: Symfony 7.4 CI compatibility and demo smoke hardening."
 make check-no-cursor-coauthor
-git tag -a v1.1.0 -m "Release 1.1.0"
+git tag -a v1.1.1 -m "Release 1.1.1"
 git push origin main
-git push origin v1.1.0
+git push origin v1.1.1
 ```

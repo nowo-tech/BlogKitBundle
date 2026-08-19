@@ -149,12 +149,15 @@ demo-smoke:
 	@PORT=$$(grep "^PORT=" demo/symfony8/.env 2>/dev/null | cut -d= -f2 | tr -d '\r'); \
 	[ -z "$$PORT" ] && PORT=$$(grep "^PORT=" demo/symfony8/.env.example 2>/dev/null | cut -d= -f2 | tr -d '\r'); \
 	[ -z "$$PORT" ] && PORT=8105; \
-	echo "Smoke GET http://localhost:$$PORT/"; \
+	echo "Smoke GET http://localhost:$$PORT/ (fallback: in-container curl)"; \
 	code=000; \
-	for i in 1 2 3 4 5 6 7 8 9 10; do \
-		code=$$(curl -fsS -o /dev/null -w "%{http_code}" "http://localhost:$$PORT/" || true); \
+	for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do \
+		code=$$(curl -fsS -o /dev/null -w "%{http_code}" "http://127.0.0.1:$$PORT/" 2>/dev/null || true); \
+		if [ "$$code" != "200" ]; then \
+			code=$$(cd demo/symfony8 && docker compose exec -T php curl -fsS -o /dev/null -w "%{http_code}" "http://127.0.0.1/" 2>/dev/null || true); \
+		fi; \
 		[ "$$code" = "200" ] && break; \
-		sleep 3; \
+		sleep 5; \
 	done; \
 	if [ "$$code" != "200" ]; then echo "demo-smoke failed: HTTP $$code"; (cd demo/symfony8 && docker compose logs --tail 80 php) || true; exit 1; fi; \
 	echo "demo-smoke OK (HTTP 200)"
