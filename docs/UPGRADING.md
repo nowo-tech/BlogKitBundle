@@ -4,6 +4,8 @@ This document describes how to upgrade **Blog Kit Bundle** between released vers
 
 ## Table of contents
 
+
+- [From 1.1.6 to 1.1.7](#from-116-to-117)
 - [Unreleased](#unreleased)
 - [1.1.6](#116)
 - [1.1.5](#115)
@@ -13,6 +15,22 @@ This document describes how to upgrade **Blog Kit Bundle** between released vers
 - [1.1.0](#110)
 - [1.0.0](#100)
 - [Future releases](#future-releases)
+
+## From 1.1.6 to 1.1.7
+
+No breaking changes. **No application upgrade steps.**
+
+```bash
+composer update nowo-tech/blog-kit-bundle
+```
+
+## From 1.1.6 to 1.1.7
+
+No breaking changes. **No application upgrade steps.**
+
+```bash
+composer update nowo-tech/blog-kit-bundle
+```
 
 ## Unreleased
 

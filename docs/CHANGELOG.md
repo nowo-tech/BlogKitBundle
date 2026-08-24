@@ -18,6 +18,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+
+## [1.1.7] - 2026-08-24
+
+### Changed
+
+- **Demos:** MySQL env policy in FrankenPHP stack (REQ-DEMO-011).
+- **Docs:** PHP-FIG PSR evaluation (REQ-CS-007).
+- **Style:** PHP CS Fixer alignment.
+
+### Notes
+
+- **No API or configuration changes** for integrators unless noted above.
+
+[1.1.7]: https://github.com/nowo-tech/BlogKitBundle/releases/tag/v1.1.7
+
 ## [1.1.6] - 2026-08-19
 
 Restore **100%** PHP line coverage after the v1.1.5 query-memoization changes.
