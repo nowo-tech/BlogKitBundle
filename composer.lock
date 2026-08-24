@@ -931,16 +931,16 @@
         },
         {
             "name": "nowo-tech/audit-kit-bundle",
-            "version": "v1.1.14",
+            "version": "v1.1.15",
             "source": {
                 "type": "git",
                 "url": "https://github.com/nowo-tech/AuditKitBundle.git",
-                "reference": "7fabf0f3189ca94c3014a3652a4c30541e0f83f8"
+                "reference": "10ce4b5ad5f5adbdd6a3908c8c3812ea5a1ce306"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/nowo-tech/AuditKitBundle/zipball/7fabf0f3189ca94c3014a3652a4c30541e0f83f8",
-                "reference": "7fabf0f3189ca94c3014a3652a4c30541e0f83f8",
+                "url": "https://api.github.com/repos/nowo-tech/AuditKitBundle/zipball/10ce4b5ad5f5adbdd6a3908c8c3812ea5a1ce306",
+                "reference": "10ce4b5ad5f5adbdd6a3908c8c3812ea5a1ce306",
                 "shasum": ""
             },
             "require": {
@@ -1012,7 +1012,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-08-19T16:50:41+00:00"
+            "time": "2026-08-24T16:02:47+00:00"
         },
         {
             "name": "nowo-tech/form-kit-bundle",
