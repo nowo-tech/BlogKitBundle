@@ -104,6 +104,10 @@ final class BlogFormTypesTest extends TestCase
         self::assertTrue($form->has('listingMode'));
         self::assertTrue($form->has('masonryStrategy'));
         self::assertTrue($form->has('heroImageMode'));
+        self::assertFalse($form->get('listingMode')->getConfig()->getOption('expanded'));
+        self::assertFalse($form->get('masonryStrategy')->getConfig()->getOption('expanded'));
+        self::assertFalse($form->get('heroImageMode')->getConfig()->getOption('expanded'));
+        self::assertNull($options[BlogSettingsType::OPTION_SECTION] ?? null);
         self::assertSame('infinite', $settings->getListingMode());
         self::assertSame(12, $settings->getPerPage());
         self::assertSame('grid', $settings->getMasonryStrategy());
@@ -119,6 +123,33 @@ final class BlogFormTypesTest extends TestCase
         $perPageConstraints = $form->get('perPage')->getConfig()->getOption('constraints');
         self::assertCount(1, $perPageConstraints);
         self::assertInstanceOf(Range::class, $perPageConstraints[0]);
+    }
+
+    #[Test]
+    public function itBuildsBlogSettingsTypeForSingleSection(): void
+    {
+        foreach (BlogSettingsType::SECTIONS as $section) {
+            $type = FormKitTestSupport::createType(BlogSettingsType::class);
+            $form = $this->createForm($type, new BlogSettings(), [], [
+                BlogSettingsType::OPTION_SECTION => $section,
+            ]);
+
+            self::assertSame($section, $form->getConfig()->getOption(BlogSettingsType::OPTION_SECTION));
+
+            match ($section) {
+                BlogSettingsType::SECTION_LISTING     => self::assertTrue($form->has('listingMode') && !$form->has('masonryStrategy')),
+                BlogSettingsType::SECTION_CARDS       => self::assertTrue($form->has('masonryStrategy') && !$form->has('listingMode')),
+                BlogSettingsType::SECTION_INDEX_ASIDE => self::assertTrue($form->has('indexAsideSearch') && !$form->has('listingMode')),
+                BlogSettingsType::SECTION_ARTICLE     => self::assertTrue($form->has('heroImageMode') && !$form->has('listingMode')),
+                BlogSettingsType::SECTION_COMMENTS    => self::assertTrue($form->has('htmlSanitizeStrategy') && !$form->has('listingMode')),
+            };
+        }
+
+        $type = FormKitTestSupport::createType(BlogSettingsType::class);
+        $form = $this->createForm($type, new BlogSettings(), [], [
+            BlogSettingsType::OPTION_SECTION => BlogSettingsType::SECTION_CARDS,
+        ]);
+        self::assertFalse($form->get('masonryStrategy')->getConfig()->getOption('expanded'));
     }
 
     #[Test]

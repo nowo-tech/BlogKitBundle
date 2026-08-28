@@ -1,0 +1,44 @@
+{# Blog admin area: Articles | Tags | Comments | Settings — path tabs. #}
+{% trans_default_domain 'NowoBlogKitBundle' %}
+{% set route = app.request.attributes.get('_route')|default('') %}
+{% if route starts with 'admin_blog_settings' %}
+  {% set active = 'settings' %}
+{% elseif route starts with 'admin_blog_comments' %}
+  {% set active = 'comments' %}
+{% elseif route starts with 'admin_blog_tags' %}
+  {% set active = 'tags' %}
+{% else %}
+  {% set active = 'articles' %}
+{% endif %}
+{% set tabs = [
+  {
+    id: 'articles',
+    href: path('admin_blog_index'),
+    label: 'admin.articles.title'|trans,
+  },
+  {
+    id: 'tags',
+    href: path('admin_blog_tags_index'),
+    label: 'admin.tags.title'|trans,
+  },
+] %}
+{% if nowo_blog_kit_can_moderate %}
+  {% set tabs = tabs|merge([{
+    id: 'comments',
+    href: path('admin_blog_comments_index'),
+    label: 'admin.comments.title'|trans,
+  }]) %}
+{% endif %}
+{% if nowo_blog_kit_can_configure %}
+  {% set tabs = tabs|merge([{
+    id: 'settings',
+    href: path('admin_blog_settings'),
+    label: 'admin.settings.title'|trans,
+  }]) %}
+{% endif %}
+{{ include('@NowoBlogKitBundle/admin/_nav_tabs.html.twig', {
+  aria_label: 'admin.area_nav.label'|trans,
+  nav_class: 'blog-area-tabs',
+  active: active,
+  tabs: tabs,
+}) }}

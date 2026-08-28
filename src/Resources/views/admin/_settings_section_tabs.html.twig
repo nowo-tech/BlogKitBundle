@@ -1,0 +1,23 @@
+{% trans_default_domain 'NowoBlogKitBundle' %}
+{% set edit_section = edit_section|default('listing') %}
+{% set sections = [
+  {id: 'listing', route: 'admin_blog_settings_listing', label: 'admin.settings.sections.listing'},
+  {id: 'cards', route: 'admin_blog_settings_cards', label: 'admin.settings.sections.cards'},
+  {id: 'index-aside', route: 'admin_blog_settings_index_aside', label: 'admin.settings.sections.index_aside'},
+  {id: 'article', route: 'admin_blog_settings_article', label: 'admin.settings.sections.article'},
+  {id: 'comments', route: 'admin_blog_settings_comments', label: 'admin.settings.sections.comments'},
+] %}
+{% set tabs = [] %}
+{% for section in sections %}
+  {% set tabs = tabs|merge([{
+    id: section.id,
+    href: path(section.route),
+    label: section.label|trans,
+  }]) %}
+{% endfor %}
+{{ include('@NowoBlogKitBundle/admin/_nav_tabs.html.twig', {
+  aria_label: 'admin.settings.section_tabs_label'|trans,
+  nav_class: 'blog-settings-tabs',
+  active: edit_section,
+  tabs: tabs,
+}) }}

@@ -99,6 +99,20 @@ final class BlogKitAdminAccessSubscriberTest extends TestCase
         self::assertTrue(true);
     }
 
+    #[Test]
+    public function sectionedSettingsRouteRequiresConfigureAccess(): void
+    {
+        $checker = $this->createMock(BlogKitAccessCheckerInterface::class);
+        $checker->method('canConfigure')->willReturn(false);
+
+        $subscriber = new BlogKitAdminAccessSubscriber($checker);
+
+        $this->expectException(AccessDeniedException::class);
+        $this->expectExceptionMessage('settings');
+
+        $subscriber->onKernelController($this->createControllerEvent('admin_blog_settings_listing'));
+    }
+
     private function createControllerEvent(string $route): ControllerEvent
     {
         $request = Request::create('/');

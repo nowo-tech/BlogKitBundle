@@ -1,0 +1,23 @@
+{# Shared admin path tabs.
+   Expects:
+     - tabs: list of { id: string, label: string, href: string }
+     - active: id of the selected tab
+     - aria_label: accessible name for the tablist
+   Optional:
+     - nav_class: extra classes on <nav>
+#}
+{% set nav_class = nav_class|default('') %}
+<nav class="nowo-blog-kit-admin-tabs{{ nav_class ? ' ' ~ nav_class : '' }}" aria-label="{{ aria_label }}">
+  <div class="nowo-blog-kit-admin-tabs__list" role="tablist">
+    {% for tab in tabs %}
+      {% set is_active = tab.id == active %}
+      <a
+        href="{{ tab.href }}"
+        class="nowo-blog-kit-admin-tabs__tab{{ is_active ? ' is-active' : '' }}"
+        role="tab"
+        aria-selected="{{ is_active ? 'true' : 'false' }}"
+        {% if is_active %}aria-current="page"{% endif %}
+      >{{ tab.label }}</a>
+    {% endfor %}
+  </div>
+</nav>

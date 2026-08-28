@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Table of contents
 
 - [Unreleased](#unreleased)
+- [1.2.0 - 2026-08-28](#120---2026-08-28)
 - [1.1.6 - 2026-08-19](#116---2026-08-19)
 - [1.1.5 - 2026-08-19](#115---2026-08-19)
 - [1.1.3 - 2026-08-19](#113---2026-08-19)
@@ -18,6 +19,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+
+## [1.2.0] - 2026-08-28
+
+### Changed
+
+- **Admin blog settings:** split into section routes (`/admin/blog/settings/{listing|cards|index-aside|article|comments}`); `/admin/blog/settings` redirects to listing.
+- **`BlogSettingsType`:** optional `section` form option; `listingMode`, `masonryStrategy`, and `heroImageMode` render as `<select>` (`expanded: false`).
+- **`BlogKitAdminAccessSubscriber`:** authorize all `admin_blog_settings*` routes via `canConfigure`.
+- **Templates:** portable area nav, section tabs, and sectioned settings UI (`_area_nav`, `_settings_section_tabs`, `_nav_tabs`).
+
+### Fixed
+
+- **Demo (symfony8):** install `pdo_mysql` so Compose MySQL `DATABASE_URL` works (REQ-DEMO-011).
+
+### Notes
+
+- Hosts that overrode settings with a custom controller/form for section tabs can remove those overrides and use the bundle routes/form.
+- Override Twig templates if you need host-specific admin chrome; form fields come from `BlogSettingsType`.
+
+[1.2.0]: https://github.com/nowo-tech/BlogKitBundle/releases/tag/v1.2.0
 
 ## [1.1.7] - 2026-08-24
 

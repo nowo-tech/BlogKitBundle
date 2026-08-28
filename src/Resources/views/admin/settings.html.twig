@@ -2,19 +2,77 @@
 {% import '@NowoUiKitBundle/macros/ui.html.twig' as ui %}
 {% set _css_fw = nowo_blog_kit_css_framework|default('bootstrap5') %}
 {% extends '@NowoBlogKitBundle/admin/base.html.twig' %}
+
 {% block title %}{{ page_title|trans }}{% endblock %}
+
+{% set edit_section = edit_section|default('listing') %}
+
 {% block admin %}
-<h1>{{ page_title|trans }}</h1>
-<p>{{ 'admin.settings.lead'|trans }}</p>
-{{ form_start(form, {attr: {class: 'nowo-ui-form'}}) }}
-  {% for child in form %}
-    {% if not child.rendered %}
-      {{ form_row(child) }}
-    {% endif %}
-  {% endfor %}
-  <div class="nowo-ui-form-actions">
-    <button type="submit" class="{{ ui.btn('primary', null, _css_fw) }}">{{ 'admin.action.save'|trans }}</button>
-    <a href="{{ path('admin_blog_index') }}" class="{{ ui.btn('secondary', null, _css_fw) }}">{{ 'admin.action.cancel'|trans }}</a>
+<div class="{{ ui.page_header(_css_fw) }}">
+  <div>
+    <h1>{{ page_title|trans }}</h1>
+    <p>{{ 'admin.settings.lead'|trans }}</p>
   </div>
-{{ form_end(form) }}
+</div>
+
+{{ include('@NowoBlogKitBundle/admin/_area_nav.html.twig') }}
+{{ include('@NowoBlogKitBundle/admin/_settings_section_tabs.html.twig', { edit_section: edit_section }) }}
+
+<div class="{{ ui.card(_css_fw) }}">
+  {{ form_start(form, {attr: {class: 'nowo-ui-form'}}) }}
+    {% if edit_section == 'listing' %}
+      <h2>{{ 'admin.settings.sections.listing'|trans }}</h2>
+      <p>{{ 'admin.settings.sections.listing_lead'|trans }}</p>
+      {{ form_row(form.listingMode) }}
+      {{ form_row(form.perPage) }}
+      {{ form_row(form.indexTagsLimit) }}
+    {% elseif edit_section == 'cards' %}
+      <h2>{{ 'admin.settings.sections.cards'|trans }}</h2>
+      <p>{{ 'admin.settings.sections.cards_lead'|trans }}</p>
+      {{ form_row(form.masonryStrategy) }}
+      {{ form_row(form.masonryColumnsMobile) }}
+      {{ form_row(form.masonryColumnsTablet) }}
+      {{ form_row(form.masonryColumnsDesktop) }}
+      {{ form_row(form.showCardImage) }}
+      {{ form_row(form.showCardExcerpt) }}
+      {{ form_row(form.showCardTags) }}
+    {% elseif edit_section == 'index-aside' %}
+      <h2>{{ 'admin.settings.sections.index_aside'|trans }}</h2>
+      <p>{{ 'admin.settings.sections.index_aside_lead'|trans }}</p>
+      {{ form_row(form.indexAsideSearch) }}
+      {{ form_row(form.indexAsideLatest) }}
+      {{ form_row(form.indexAsideTags) }}
+      {{ form_row(form.indexLatestLimit) }}
+      {{ form_row(form.indexAsideTagsLimit) }}
+    {% elseif edit_section == 'article' %}
+      <h2>{{ 'admin.settings.sections.article'|trans }}</h2>
+      <p>{{ 'admin.settings.sections.article_lead'|trans }}</p>
+      <h3>{{ 'admin.settings.sections.article_aside'|trans }}</h3>
+      {{ form_row(form.showAsideSearch) }}
+      {{ form_row(form.showAsideRelated) }}
+      {{ form_row(form.showAsideArticleTags) }}
+      {{ form_row(form.showAsideResources) }}
+      {{ form_row(form.relatedLimit) }}
+      {{ form_row(form.resourcesIncludeLinkedin) }}
+      <h3>{{ 'admin.settings.sections.article_display'|trans }}</h3>
+      {{ form_row(form.showShare) }}
+      {{ form_row(form.showComments) }}
+      {{ form_row(form.showSourceLink) }}
+      {{ form_row(form.heroImageMode) }}
+    {% elseif edit_section == 'comments' %}
+      <h2>{{ 'admin.settings.sections.comments'|trans }}</h2>
+      <p>{{ 'admin.settings.sections.comments_lead'|trans }}</p>
+      {{ form_row(form.commentRateLimitStrategy) }}
+      {{ form_row(form.commentRateLimitLimit) }}
+      {{ form_row(form.commentRateLimitIntervalSeconds) }}
+      {{ form_row(form.commentCaptchaStrategy) }}
+      {{ form_row(form.htmlSanitizeStrategy) }}
+    {% endif %}
+
+    <div class="nowo-ui-form-actions">
+      <button type="submit" class="{{ ui.btn('primary', null, _css_fw) }}">{{ 'admin.action.save'|trans }}</button>
+      <a href="{{ path('admin_blog_index') }}" class="{{ ui.btn('secondary', null, _css_fw) }}">{{ 'admin.action.cancel'|trans }}</a>
+    </div>
+  {{ form_end(form, {render_rest: false}) }}
+</div>
 {% endblock %}

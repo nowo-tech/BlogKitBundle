@@ -8,6 +8,8 @@ admin:
     edit: Bearbeiten
     reject: Ablehnen
     save: Speichern
+  area_nav:
+    label: Blog-Bereiche
   articles:
     edit: Edit article
     empty: No articles yet.
@@ -77,6 +79,20 @@ admin:
   settings:
     lead: 'Configure listing, cards, asides and article extras.'
     title: Blog-Einstellungen
+    section_tabs_label: Einstellungsbereiche
+    sections:
+      listing: Liste
+      listing_lead: Steuert die Artikelübersicht und wie viele Einträge pro Seite geladen werden.
+      cards: Karten
+      cards_lead: Definiert das Rasterlayout und welche Infos jede Karte zeigt.
+      index_aside: Index-Seitenleiste
+      index_aside_lead: Konfiguriert Seitenleistenblöcke der Blog-Startseite (Suche, Neueste, Tags).
+      article: Artikel
+      article_lead: Passt Seitenleiste und sichtbare Elemente der Artikeldetailansicht an.
+      article_aside: Seitenleistenblöcke
+      article_display: Inhalt und Darstellung
+      comments: Kommentare und HTML
+      comments_lead: Anti-Spam, Beitragslimits und HTML-Bereinigung der Artikel.
   status:
     all: Alle
     approved: Freigegeben
@@ -183,10 +199,13 @@ blog_settings:
   index_aside_tags:
     label: 'Index aside: tags'
   index_aside_tags_limit:
+    help: Maximum number of tags in the index sidebar block.
     label: Aside tags limit
   index_latest_limit:
+    help: Number of articles in the index «latest posts» block.
     label: Latest articles limit
   index_tags_limit:
+    help: Maximum number of tags shown on each listing card.
     label: Index tags limit
   listing_mode:
     choices:
@@ -202,14 +221,19 @@ blog_settings:
       list: Eine Spalte
     label: Kartenlayout
   masonry_columns_desktop:
-    label: Spalten (Desktop, 0 = YAML)
+    help: Leave 0 to use the default configuration value.
+    label: Desktop columns
   masonry_columns_mobile:
-    label: Spalten (Mobil, 0 = YAML)
+    help: Leave 0 to use the default configuration value.
+    label: Mobile columns
   masonry_columns_tablet:
-    label: Spalten (Tablet, 0 = YAML)
+    help: Leave 0 to use the default configuration value.
+    label: Tablet columns
   per_page:
+    help: Number of articles visible on each page when listing mode is paginated.
     label: Articles per page
   related_limit:
+    help: Maximum number of related articles in the article sidebar.
     label: Related articles limit
   resources_include_linkedin:
     label: Include LinkedIn in resources
@@ -234,6 +258,7 @@ blog_settings:
   show_source_link:
     label: Show source link
   comment_rate_limit_strategy:
+    help: How often comments may be posted per IP or article.
     label: Comment rate-limit strategy
     choices:
       inherit: Use YAML default
@@ -243,10 +268,13 @@ blog_settings:
       sliding_window: Sliding window
       service: Custom service
   comment_rate_limit_limit:
-    label: Comment rate-limit (0 = YAML)
+    help: Leave 0 to use the default configuration value.
+    label: Comment limit
   comment_rate_limit_interval_seconds:
-    label: Comment rate-limit interval in seconds (0 = YAML)
+    help: Leave 0 to use the default configuration value.
+    label: Limit interval (seconds)
   comment_captcha_strategy:
+    help: Anti-bot verification method for the public comment form.
     label: Comment CAPTCHA strategy
     choices:
       inherit: Use YAML default
@@ -258,6 +286,7 @@ blog_settings:
       turnstile: Cloudflare Turnstile
       service: Custom service
   html_sanitize_strategy:
+    help: Sanitization level applied to published article HTML.
     label: Article HTML sanitizer
     choices:
       inherit: Use YAML default

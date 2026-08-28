@@ -5,6 +5,7 @@ This document describes how to upgrade **Blog Kit Bundle** between released vers
 ## Table of contents
 
 
+- [From 1.1.7 to 1.2.0](#from-117-to-120)
 - [From 1.1.6 to 1.1.7](#from-116-to-117)
 - [Unreleased](#unreleased)
 - [1.1.6](#116)
@@ -16,13 +17,23 @@ This document describes how to upgrade **Blog Kit Bundle** between released vers
 - [1.0.0](#100)
 - [Future releases](#future-releases)
 
-## From 1.1.6 to 1.1.7
+## From 1.1.7 to 1.2.0
 
-No breaking changes. **No application upgrade steps.**
+### Breaking / behaviour changes
+
+- **`admin_blog_settings` (GET)** redirects to `admin_blog_settings_listing`. There is no longer a single-page POST on `/admin/blog/settings`.
+- New routes: `admin_blog_settings_listing`, `_cards`, `_index_aside`, `_article`, `_comments`.
+- **`BlogSettingsType`:** `listingMode`, `masonryStrategy`, and `heroImageMode` are selects (not radio groups). Pass `section` (`listing`|`cards`|`index-aside`|`article`|`comments`) to build one tab; omit for the full form (BC for tests/API).
+
+### Upgrade steps
 
 ```bash
 composer update nowo-tech/blog-kit-bundle
 ```
+
+1. Remove host overrides that duplicated sectioned settings (`HostBlogSettingsController`, custom section form) if present.
+2. Clear router/Twig cache and smoke-test `/admin/blog/settings`.
+3. If you styled radio lists for listing/masonry choices, switch CSS to select widgets.
 
 ## From 1.1.6 to 1.1.7
 

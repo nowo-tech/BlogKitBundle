@@ -8,6 +8,8 @@ admin:
     edit: Editar
     reject: Rechazar
     save: Guardar
+  area_nav:
+    label: Secciones del blog
   articles:
     edit: Editar artículo
     empty: Todavía no hay artículos.
@@ -77,6 +79,20 @@ admin:
   settings:
     lead: 'Configura listado, tarjetas, laterales y extras del artículo.'
     title: Ajustes del blog
+    section_tabs_label: Secciones de ajustes
+    sections:
+      listing: Listado
+      listing_lead: Controla cómo se muestra el índice de artículos y cuántos elementos se cargan por página.
+      cards: Tarjetas
+      cards_lead: Define la disposición de la rejilla y qué información muestra cada tarjeta del listado.
+      index_aside: Lateral del índice
+      index_aside_lead: Configura los bloques laterales de la página principal del blog (búsqueda, últimos artículos y etiquetas).
+      article: Artículo
+      article_lead: Ajusta el lateral y los elementos visibles en la vista de detalle de un artículo.
+      article_aside: Bloques laterales
+      article_display: Contenido y presentación
+      comments: Comentarios y HTML
+      comments_lead: Protección antispam, límite de publicación y limpieza del HTML de los artículos.
   status:
     all: Todos
     approved: Aprobado
@@ -183,10 +199,13 @@ blog_settings:
   index_aside_tags:
     label: 'Lateral índice: etiquetas'
   index_aside_tags_limit:
+    help: Número máximo de etiquetas en el bloque lateral del índice.
     label: Límite de etiquetas laterales
   index_latest_limit:
+    help: Número de artículos en el bloque «últimas publicaciones» del índice.
     label: Límite de últimos artículos
   index_tags_limit:
+    help: Número máximo de etiquetas mostradas en cada tarjeta del listado.
     label: Límite de etiquetas en índice
   listing_mode:
     choices:
@@ -202,14 +221,19 @@ blog_settings:
       list: Una columna
     label: Disposición de tarjetas
   masonry_columns_desktop:
-    label: Columnas (escritorio, 0 = YAML)
+    help: Deja 0 para usar el valor por defecto de configuración.
+    label: Columnas escritorio
   masonry_columns_mobile:
-    label: Columnas (móvil, 0 = YAML)
+    help: Deja 0 para usar el valor por defecto de configuración.
+    label: Columnas móvil
   masonry_columns_tablet:
-    label: Columnas (tablet, 0 = YAML)
+    help: Deja 0 para usar el valor por defecto de configuración.
+    label: Columnas tablet
   per_page:
+    help: Número de artículos visibles en cada página cuando el modo es paginado.
     label: Artículos por página
   related_limit:
+    help: Cantidad máxima de artículos relacionados en el lateral del artículo.
     label: Límite de relacionados
   resources_include_linkedin:
     label: Incluir LinkedIn en recursos
@@ -234,6 +258,7 @@ blog_settings:
   show_source_link:
     label: Mostrar enlace a origen
   comment_rate_limit_strategy:
+    help: Define cómo se limita la frecuencia de comentarios por IP o artículo.
     label: Estrategia de límite de comentarios
     choices:
       inherit: Usar valor YAML
@@ -243,10 +268,13 @@ blog_settings:
       sliding_window: Ventana deslizante
       service: Servicio personalizado
   comment_rate_limit_limit:
-    label: Límite de comentarios (0 = YAML)
+    help: Deja 0 para usar el valor por defecto de configuración.
+    label: Límite de comentarios
   comment_rate_limit_interval_seconds:
-    label: Intervalo del límite en segundos (0 = YAML)
+    help: Deja 0 para usar el valor por defecto de configuración.
+    label: Intervalo del límite (segundos)
   comment_captcha_strategy:
+    help: Método de verificación antibot para el formulario público de comentarios.
     label: Estrategia CAPTCHA de comentarios
     choices:
       inherit: Usar valor YAML
@@ -258,6 +286,7 @@ blog_settings:
       turnstile: Cloudflare Turnstile
       service: Servicio personalizado
   html_sanitize_strategy:
+    help: Nivel de limpieza aplicado al contenido HTML de los artículos publicados.
     label: Sanitizador HTML del artículo
     choices:
       inherit: Usar valor YAML

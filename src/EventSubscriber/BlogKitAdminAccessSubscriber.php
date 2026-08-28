@@ -44,7 +44,7 @@ final readonly class BlogKitAdminAccessSubscriber implements EventSubscriberInte
             return;
         }
 
-        if ($route === 'admin_blog_settings') {
+        if (str_starts_with($route, 'admin_blog_settings')) {
             if (!$this->accessChecker->canConfigure()) {
                 throw new AccessDeniedException('Blog settings require an authorized user.');
             }
