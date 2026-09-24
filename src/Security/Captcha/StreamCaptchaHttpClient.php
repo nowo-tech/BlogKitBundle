@@ -12,9 +12,13 @@ use function is_string;
  */
 final readonly class StreamCaptchaHttpClient implements CaptchaHttpClientInterface
 {
-    /** @param (callable(string, array<string, string>): (false|string))|null $transport */
+    /**
+     * @param (callable(string, array<string, string>): (false|string))|null $transport
+     * @param float $timeout Stream read timeout in seconds (DNS resolution is not covered)
+     */
     public function __construct(
         private mixed $transport = null,
+        private float $timeout = 5.0,
     ) {
     }
 
@@ -43,7 +47,7 @@ final readonly class StreamCaptchaHttpClient implements CaptchaHttpClientInterfa
                 'method'  => 'POST',
                 'header'  => "Content-Type: application/x-www-form-urlencoded\r\n",
                 'content' => http_build_query($fields),
-                'timeout' => 5,
+                'timeout' => $this->timeout,
             ],
         ]);
 

@@ -8,11 +8,11 @@
   <div><h1>{{ page_title|trans }}</h1></div>
   <div class="{{ ui.toolbar(_css_fw) }}">
     <a href="{{ path('admin_blog_new') }}" class="{{ ui.btn('primary', null, _css_fw) }}">{{ 'admin.articles.new'|trans }}</a>
-    {% if nowo_blog_kit_can_configure %}
+    {% if nowo_blog_kit_can_configure() %}
       <a href="{{ path('admin_blog_settings') }}" class="{{ ui.btn('secondary', null, _css_fw) }}">{{ 'admin.settings.title'|trans }}</a>
     {% endif %}
     <a href="{{ path('admin_blog_tags_index') }}" class="{{ ui.btn('secondary', null, _css_fw) }}">{{ 'admin.tags.title'|trans }}</a>
-    {% if nowo_blog_kit_can_moderate %}
+    {% if nowo_blog_kit_can_moderate() %}
       <a href="{{ path('admin_blog_comments_index') }}" class="{{ ui.btn('secondary', null, _css_fw) }}">{{ 'admin.comments.title'|trans }}</a>
     {% endif %}
   </div>

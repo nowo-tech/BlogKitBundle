@@ -15,6 +15,8 @@ use Nowo\BlogKitBundle\Twig\BlogKitExtension;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use Twig\Environment;
+use Twig\Loader\ArrayLoader;
 
 final class BlogKitExtensionTest extends TestCase
 {
@@ -44,12 +46,18 @@ final class BlogKitExtensionTest extends TestCase
         $extension = $this->createExtension();
         $functions = $extension->getFunctions();
 
-        self::assertCount(5, $functions);
+        self::assertCount(8, $functions);
         self::assertSame('nowo_blog_kit_container_class', $functions[0]->getName());
         self::assertSame('nowo_blog_kit_captcha', $functions[1]->getName());
         self::assertSame('nowo_blog_kit_can_manage_article', $functions[2]->getName());
         self::assertSame('nowo_blog_kit_can_manage_tag', $functions[3]->getName());
         self::assertSame('nowo_blog_kit_can_moderate_comment', $functions[4]->getName());
+        self::assertSame('nowo_blog_kit_can_manage', $functions[5]->getName());
+        self::assertSame('nowo_blog_kit_can_moderate', $functions[6]->getName());
+        self::assertSame('nowo_blog_kit_can_configure', $functions[7]->getName());
+        self::assertTrue($extension->canManage());
+        self::assertFalse($extension->canModerate());
+        self::assertTrue($extension->canConfigure());
         self::assertSame('blog-container', $extension->containerClass());
         self::assertSame('none', $extension->captchaContext()['strategy']);
         self::assertTrue($extension->canManageArticle(new BlogArticle()));
@@ -69,6 +77,43 @@ final class BlogKitExtensionTest extends TestCase
             BlogProtectionTestFactory::create(),
         );
         self::assertSame('honeypot', $withProtection->captchaContext()['strategy']);
+    }
+
+    #[Test]
+    public function accessFunctionsAreEvaluatedPerRenderOnTheSameTwigEnvironment(): void
+    {
+        $currentUser   = 'admin';
+        $accessChecker = $this->createMock(BlogKitAccessCheckerInterface::class);
+        $accessChecker->method('canManage')->willReturnCallback(static function () use (&$currentUser): bool {
+            return $currentUser === 'admin';
+        });
+        $accessChecker->method('canModerate')->willReturnCallback(static function () use (&$currentUser): bool {
+            return $currentUser === 'moderator';
+        });
+        $accessChecker->method('canConfigure')->willReturnCallback(static function () use (&$currentUser): bool {
+            return $currentUser === 'admin';
+        });
+
+        $twig = new Environment(new ArrayLoader([
+            'flags' => '{{ nowo_blog_kit_can_manage() ? "M" : "-" }}'
+                . '{{ nowo_blog_kit_can_moderate() ? "O" : "-" }}'
+                . '{{ nowo_blog_kit_can_configure() ? "C" : "-" }}',
+        ]));
+        $twig->addExtension(new BlogKitExtension(
+            '@NowoBlogKitBundle/admin/layout.html.twig',
+            '@NowoBlogKitBundle/public/layout.html.twig',
+            'tailwind',
+            'es',
+            ['es', 'en'],
+            '/privacy',
+            $accessChecker,
+        ));
+
+        self::assertSame('M-C', $twig->render('flags'), 'Request 1: administrator.');
+
+        $currentUser = 'moderator';
+
+        self::assertSame('-O-', $twig->render('flags'), 'Request 2: moderator, no Twig reset in between.');
     }
 
     #[Test]

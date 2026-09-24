@@ -9,13 +9,17 @@ use Doctrine\ORM\Event\PostFlushEventArgs;
 use Nowo\BlogKitBundle\Entity\BlogArticle;
 use Nowo\BlogKitBundle\Event\BlogArticlePublishedEvent;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
+use Symfony\Contracts\Service\ResetInterface;
 
 use function is_array;
 
 /**
  * Detects newly published articles and dispatches {@see BlogArticlePublishedEvent}.
+ *
+ * The buffer only lives between `onFlush` and `postFlush` of one flush: a failed flush never
+ * reaches `postFlush`, so the buffer is dropped at the start of the next top-level flush.
  */
-final class BlogArticlePublishedDoctrineSubscriber
+final class BlogArticlePublishedDoctrineSubscriber implements ResetInterface
 {
     /** @var list<BlogArticle> */
     private array $pending = [];
@@ -27,11 +31,19 @@ final class BlogArticlePublishedDoctrineSubscriber
     ) {
     }
 
+    public function reset(): void
+    {
+        $this->pending  = [];
+        $this->flushing = false;
+    }
+
     public function onFlush(OnFlushEventArgs $onFlushEventArgs): void
     {
         if ($this->flushing) {
             return;
         }
+
+        $this->pending = [];
 
         $unitOfWork = $onFlushEventArgs->getObjectManager()->getUnitOfWork();
 

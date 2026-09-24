@@ -3,7 +3,7 @@
 **Package:** `nowo-tech/blog-kit-bundle`  
 **Namespace:** `Nowo\BlogKitBundle`  
 **Config alias:** `nowo_blog_kit`  
-**Status:** Baseline aligned with v1.1.0
+**Status:** Baseline aligned with v1.3.0
 
 ## Overview
 
@@ -145,6 +145,16 @@ As a maintainer, I run the Symfony 8 FrankenPHP demo and smoke checks.
 | FR-DEMO-001 | FrankenPHP Symfony 8 demo boots and returns HTTP 200 |
 | FR-DEMO-002 | Demo admin chrome is a host `admin/layout.html.twig` with Bootstrap 5, Icons, FormKit profiles, and `bootstrap_5_layout` |
 
+### FrankenPHP worker (`FR-WORKER-*`)
+
+| ID | Requirement |
+| --- | --- |
+| FR-WORKER-001 | Bundle-owned memos (settings, settings provider, article/tag caches, publish-event buffer) are cleared at the start of every main HTTP request even when `services_resetter` does not run (`BlogKitWorkerStateSubscriber`) |
+| FR-WORKER-002 | Per-user admin access flags are Twig functions evaluated per call; the legacy `nowo_blog_kit_can_*` globals remain for BC but are deprecated |
+| FR-WORKER-003 | A failed Doctrine flush never leaks pending `BlogArticlePublishedEvent` into a later flush or request |
+| FR-WORKER-004 | A closed blog EntityManager is recovered on the next main request; clearing an open identity map stays host-owned |
+| FR-WORKER-005 | Default captcha HTTP client timeout is configurable (`comments.captcha.timeout_seconds`) |
+
 ## Non-goals
 
 - Host authentication / user management (UserKit / AuthKit remain host-owned)
@@ -153,4 +163,5 @@ As a maintainer, I run the Symfony 8 FrankenPHP demo and smoke checks.
 ## See also
 
 - [`code-inventory.md`](code-inventory.md)
+- [`docs/FRANKENPHP-WORKER-AUDIT.md`](../../docs/FRANKENPHP-WORKER-AUDIT.md)
 - [`docs/SPEC-DRIVEN-DEVELOPMENT.md`](../../docs/SPEC-DRIVEN-DEVELOPMENT.md)

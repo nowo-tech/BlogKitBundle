@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Table of contents
 
 - [Unreleased](#unreleased)
+- [1.3.0 - 2026-09-24](#130---2026-09-24)
 - [1.2.0 - 2026-08-28](#120---2026-08-28)
 - [1.1.6 - 2026-08-19](#116---2026-08-19)
 - [1.1.5 - 2026-08-19](#115---2026-08-19)
@@ -19,6 +20,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-09-24
+
+FrankenPHP worker mode with kernel **not** reset between requests (scenario B / `reset_kernel=false`): bundle-owned state is request-scoped without relying on `services_resetter`. Full write-up: [`docs/FRANKENPHP-WORKER-AUDIT.md`](FRANKENPHP-WORKER-AUDIT.md).
+
+### Added
+
+- **`BlogKitWorkerStateSubscriber`:** clears the bundle memos (settings, settings provider, tag caches, publish-event buffer) at the start of every main request and resets the blog entity manager when a previous request closed it.
+- **Twig functions** `nowo_blog_kit_can_manage()`, `nowo_blog_kit_can_moderate()`, `nowo_blog_kit_can_configure()` evaluated per call.
+- **`comments.captcha.timeout_seconds`** (default `5.0`) for the default `StreamCaptchaHttpClient`.
+
+### Changed
+
+- **Admin templates** use the new access functions instead of the per-user Twig globals.
+- **`BlogSettingsRepository::findSingleton()`** refreshes the settings row from the database (`HINT_REFRESH`) when loading it, so a long-lived identity map cannot serve stale comment protection settings.
+
+### Deprecated
+
+- Twig globals `nowo_blog_kit_can_manage`, `nowo_blog_kit_can_moderate`, `nowo_blog_kit_can_configure` (frozen per Twig environment in worker mode without reset).
+
+### Fixed
+
+- **`BlogArticlePublishedDoctrineSubscriber`:** a failed flush no longer leaks its pending articles into the next flush (buffer cleared per top-level flush; implements `ResetInterface`).
+
+[1.3.0]: https://github.com/nowo-tech/BlogKitBundle/releases/tag/v1.3.0
 
 ## [1.2.0] - 2026-08-28
 

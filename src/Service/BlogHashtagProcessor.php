@@ -215,9 +215,7 @@ final readonly class BlogHashtagProcessor
                 continue;
             }
 
-            if (!isset($definitions[$slug])) {
-                $definitions[$slug] = $name;
-            }
+            $definitions[$slug] ??= $name;
         }
 
         return $definitions;

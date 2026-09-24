@@ -5,9 +5,9 @@ This document describes how to upgrade **Blog Kit Bundle** between released vers
 ## Table of contents
 
 
+- [From 1.2.0 to 1.3.0](#from-120-to-130)
 - [From 1.1.7 to 1.2.0](#from-117-to-120)
 - [From 1.1.6 to 1.1.7](#from-116-to-117)
-- [Unreleased](#unreleased)
 - [1.1.6](#116)
 - [1.1.5](#115)
 - [1.1.3](#113)
@@ -16,6 +16,19 @@ This document describes how to upgrade **Blog Kit Bundle** between released vers
 - [1.1.0](#110)
 - [1.0.0](#100)
 - [Future releases](#future-releases)
+
+## From 1.2.0 to 1.3.0
+
+No breaking changes.
+
+```bash
+composer update nowo-tech/blog-kit-bundle
+```
+
+1. **Twig globals `nowo_blog_kit_can_manage`, `nowo_blog_kit_can_moderate`, `nowo_blog_kit_can_configure` are deprecated.** In template overrides, replace `{% if nowo_blog_kit_can_moderate %}` with `{% if nowo_blog_kit_can_moderate() %}` (same for `_manage` / `_configure`). The globals keep the first user's value for the lifetime of a FrankenPHP/RoadRunner worker when `services_resetter` does not run.
+2. **Optional:** tune `nowo_blog_kit.comments.captcha.timeout_seconds` (default `5.0`, previous hard-coded value).
+3. Host listeners of `BlogArticlePublishedEvent` no longer receive events for articles whose flush failed earlier in the same worker.
+4. Under FrankenPHP worker with kernel not reset between requests, clear the Doctrine identity map between requests in the host app if you need stale-entity safety beyond the bundle's closed-manager recovery (see [`FRANKENPHP-WORKER-AUDIT.md`](FRANKENPHP-WORKER-AUDIT.md)).
 
 ## From 1.1.7 to 1.2.0
 
@@ -42,10 +55,6 @@ No breaking changes. **No application upgrade steps.**
 ```bash
 composer update nowo-tech/blog-kit-bundle
 ```
-
-## Unreleased
-
-No upgrade notes yet.
 
 ## 1.1.6
 

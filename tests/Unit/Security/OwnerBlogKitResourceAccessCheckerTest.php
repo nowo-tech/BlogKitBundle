@@ -120,7 +120,7 @@ final class OwnerBlogKitResourceAccessCheckerTest extends TestCase
         $token->method('getUser')->willReturn($user);
 
         $storage = $this->createMock(TokenStorageInterface::class);
-        $storage->method('getToken')->willReturn(!$user instanceof UserInterface ? null : $token);
+        $storage->method('getToken')->willReturn($user instanceof UserInterface ? $token : null);
 
         return $storage;
     }

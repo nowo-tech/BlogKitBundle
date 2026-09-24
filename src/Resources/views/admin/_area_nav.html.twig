@@ -22,14 +22,14 @@
     label: 'admin.tags.title'|trans,
   },
 ] %}
-{% if nowo_blog_kit_can_moderate %}
+{% if nowo_blog_kit_can_moderate() %}
   {% set tabs = tabs|merge([{
     id: 'comments',
     href: path('admin_blog_comments_index'),
     label: 'admin.comments.title'|trans,
   }]) %}
 {% endif %}
-{% if nowo_blog_kit_can_configure %}
+{% if nowo_blog_kit_can_configure() %}
   {% set tabs = tabs|merge([{
     id: 'settings',
     href: path('admin_blog_settings'),

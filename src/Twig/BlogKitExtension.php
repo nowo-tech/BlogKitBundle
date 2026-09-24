@@ -49,7 +49,25 @@ final class BlogKitExtension extends AbstractExtension implements GlobalsInterfa
             new TwigFunction('nowo_blog_kit_can_manage_article', $this->canManageArticle(...)),
             new TwigFunction('nowo_blog_kit_can_manage_tag', $this->canManageTag(...)),
             new TwigFunction('nowo_blog_kit_can_moderate_comment', $this->canModerateComment(...)),
+            new TwigFunction('nowo_blog_kit_can_manage', $this->canManage(...)),
+            new TwigFunction('nowo_blog_kit_can_moderate', $this->canModerate(...)),
+            new TwigFunction('nowo_blog_kit_can_configure', $this->canConfigure(...)),
         ];
+    }
+
+    public function canManage(): bool
+    {
+        return $this->accessChecker->canManage();
+    }
+
+    public function canModerate(): bool
+    {
+        return $this->accessChecker->canModerate();
+    }
+
+    public function canConfigure(): bool
+    {
+        return $this->accessChecker->canConfigure();
     }
 
     /**
@@ -103,6 +121,11 @@ final class BlogKitExtension extends AbstractExtension implements GlobalsInterfa
         return $this->resourceAccess?->canModerateComment($comment) ?? true;
     }
 
+    /**
+     * The `nowo_blog_kit_can_*` globals are deprecated: Twig resolves globals once per environment,
+     * so in long-running workers without `services_resetter` they keep the first user's flags.
+     * Use the `nowo_blog_kit_can_manage()` / `_moderate()` / `_configure()` functions instead.
+     */
     public function getGlobals(): array
     {
         return [

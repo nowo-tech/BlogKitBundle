@@ -95,6 +95,50 @@ final class BlogArticlePublishedDoctrineSubscriberTest extends TestCase
         $subscriber->postFlush($this->createMock(PostFlushEventArgs::class));
     }
 
+    #[Test]
+    public function failedFlushDoesNotLeakPendingArticlesIntoTheNextFlush(): void
+    {
+        $rolledBack = (new BlogArticle())->setPublished(true);
+        $published  = (new BlogArticle())->setPublished(true);
+        $dispatched = [];
+        $dispatcher = $this->createMock(EventDispatcherInterface::class);
+        $dispatcher->method('dispatch')->willReturnCallback(
+            static function (object $event) use (&$dispatched): object {
+                self::assertInstanceOf(BlogArticlePublishedEvent::class, $event);
+                $dispatched[] = $event->getArticle();
+
+                return $event;
+            },
+        );
+
+        $subscriber = new BlogArticlePublishedDoctrineSubscriber($dispatcher);
+
+        $subscriber->onFlush($this->createOnFlushEventArgs([$rolledBack]));
+
+        $subscriber->onFlush($this->createOnFlushEventArgs([$published]));
+        $subscriber->postFlush($this->createMock(PostFlushEventArgs::class));
+
+        self::assertSame([$published], $dispatched);
+    }
+
+    #[Test]
+    public function resetClearsPendingArticlesAndFlushingFlag(): void
+    {
+        $article    = (new BlogArticle())->setPublished(true);
+        $dispatcher = $this->createMock(EventDispatcherInterface::class);
+        $dispatcher->expects(self::once())->method('dispatch')->willReturnArgument(0);
+
+        $subscriber = new BlogArticlePublishedDoctrineSubscriber($dispatcher);
+        $subscriber->onFlush($this->createOnFlushEventArgs([$article]));
+        $this->setPrivateProperty($subscriber, 'flushing', true);
+
+        $subscriber->reset();
+        $subscriber->postFlush($this->createMock(PostFlushEventArgs::class));
+
+        $subscriber->onFlush($this->createOnFlushEventArgs([$article]));
+        $subscriber->postFlush($this->createMock(PostFlushEventArgs::class));
+    }
+
     /**
      * @param list<object> $insertions
      * @param list<object> $updates

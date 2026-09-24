@@ -47,7 +47,7 @@ abstract class DoctrineTestCase extends TestCase
         $configuration = ORMSetup::createAttributeMetadataConfiguration(
             [
                 dirname(__DIR__, 2) . '/src/Entity',
-                dirname(__DIR__) . '/Support',
+                __DIR__ . '/../Support',
             ],
             true,
         );

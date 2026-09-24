@@ -61,6 +61,7 @@ nowo_blog_kit:
             secret_key: ''
             min_score: 0.5
             honeypot_field: website
+            timeout_seconds: 5.0
             service: null
     html:
         sanitize:
@@ -149,6 +150,7 @@ Requires Symfony `cache.app`. Without a cache pool, limiting is skipped.
 | `secret_key` | `''` | Server-side verification key. |
 | `min_score` | `0.5` | Minimum reCAPTCHA v3 score. |
 | `honeypot_field` | `website` | Hidden field name for the honeypot strategy. |
+| `timeout_seconds` | `5.0` | Timeout (0.1–60 s) of the remote verification call made by the default `StreamCaptchaHttpClient`. DNS resolution is not covered; alias `CaptchaHttpClientInterface` to a Symfony HttpClient implementation for full control. |
 | `service` | `null` | Service id implementing `BlogCommentCaptchaStrategyInterface` when `strategy: service`. |
 
 Remote providers need `site_key` and `secret_key`. Missing keys fail closed (form invalid).
@@ -191,9 +193,11 @@ The bundle Twig extension publishes:
 | `nowo_blog_kit_privacy_url` | Privacy policy URL for the comment form |
 | `nowo_blog_kit_icon_set` | Selected icon set |
 | `nowo_blog_kit_row_actions_display` | Selected row-action display mode |
-| `nowo_blog_kit_can_manage` | Whether the current user may manage articles and tags |
-| `nowo_blog_kit_can_moderate` | Whether the current user may moderate comments |
-| `nowo_blog_kit_can_configure` | Whether the current user may edit blog settings |
+| `nowo_blog_kit_can_manage` | **Deprecated**, use `nowo_blog_kit_can_manage()`. Whether the current user may manage articles and tags |
+| `nowo_blog_kit_can_moderate` | **Deprecated**, use `nowo_blog_kit_can_moderate()`. Whether the current user may moderate comments |
+| `nowo_blog_kit_can_configure` | **Deprecated**, use `nowo_blog_kit_can_configure()`. Whether the current user may edit blog settings |
+
+Twig resolves globals once per environment. In long-running workers (FrankenPHP / RoadRunner) without `services_resetter`, the `nowo_blog_kit_can_*` globals keep the flags of the first user rendered by the worker; the functions below are evaluated on every call.
 
 Twig function:
 
@@ -204,6 +208,9 @@ Twig function:
 | `nowo_blog_kit_can_manage_article(article)` | Object-level publication access (after roles). |
 | `nowo_blog_kit_can_manage_tag(tag)` | Object-level tag access. |
 | `nowo_blog_kit_can_moderate_comment(comment)` | Object-level comment moderation access. |
+| `nowo_blog_kit_can_manage()` | Whether the current user may manage articles and tags (evaluated per call). |
+| `nowo_blog_kit_can_moderate()` | Whether the current user may moderate comments (evaluated per call). |
+| `nowo_blog_kit_can_configure()` | Whether the current user may edit blog settings (evaluated per call). |
 
 ## FormKit profiles
 

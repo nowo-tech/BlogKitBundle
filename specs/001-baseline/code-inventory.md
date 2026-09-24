@@ -2,10 +2,10 @@
 
 **Baseline spec**: [`spec.md`](spec.md)  
 **Package**: `nowo-tech/blog-kit-bundle`  
-**Last audited**: 2026-08-18  
+**Last audited**: 2026-09-24  
 **Coverage summary**: PHPUnit `src/` target 100% (`make test-coverage-100`)
 
-Maps **100%** of production PHP files under `src/` (99 units). Test and demo trees are out of Packagist scope unless promoted in the spec.
+Maps **100%** of production PHP files under `src/` (100 units). Test and demo trees are out of Packagist scope unless promoted in the spec.
 
 ## Bundle entry
 
@@ -53,7 +53,7 @@ Maps **100%** of production PHP files under `src/` (99 units). Test and demo tre
 | `Repository/BlogTagRepository.php` | Tag queries | FR-ORM-001, FR-TAG-001 |
 | `Repository/BlogTagTranslationRepository.php` | Tag translation queries | FR-ORM-001 |
 | `Repository/BlogCommentRepository.php` | Comment queries | FR-ORM-001, FR-CMT-002 |
-| `Repository/BlogSettingsRepository.php` | Settings singleton | FR-ORM-001, FR-SET-001 |
+| `Repository/BlogSettingsRepository.php` | Settings singleton (`HINT_REFRESH` on load) | FR-ORM-001, FR-SET-001, FR-WORKER-001 |
 | `Repository/Concerns/JoinsTranslationsAndAuditUsers.php` | Shared joins | FR-ORM-001 |
 | `Repository/Concerns/RunsDocumentedSql.php` | Documented SQL helper | FR-ORM-001 |
 
@@ -83,7 +83,7 @@ Maps **100%** of production PHP files under `src/` (99 units). Test and demo tre
 | Source file | Purpose | Requirement IDs |
 | --- | --- | --- |
 | `Service/BlogCatalog.php` | Public catalogue facade | FR-ART-003, FR-PUB-001 |
-| `Service/BlogSettingsProvider.php` | Settings access | FR-SET-001 |
+| `Service/BlogSettingsProvider.php` | Settings access (request-scoped memo) | FR-SET-001, FR-WORKER-001 |
 | `Service/BlogCommentManager.php` | Comment lifecycle | FR-CMT-001, FR-CMT-002, FR-CMT-003 |
 | `Service/BlogHashtagProcessor.php` | Hashtag parse/format | FR-TAG-002 |
 | `Service/BlogTagRegistry.php` | Tag lookup/create | FR-TAG-001 |
@@ -96,7 +96,8 @@ Maps **100%** of production PHP files under `src/` (99 units). Test and demo tre
 | Source file | Purpose | Requirement IDs |
 | --- | --- | --- |
 | `Event/BlogArticlePublishedEvent.php` | Published domain event | FR-ART-002 |
-| `EventSubscriber/BlogArticlePublishedDoctrineSubscriber.php` | onFlush/postFlush dispatch | FR-ART-002 |
+| `EventSubscriber/BlogArticlePublishedDoctrineSubscriber.php` | onFlush/postFlush dispatch; buffer cleared per flush / `ResetInterface` | FR-ART-002, FR-WORKER-003 |
+| `EventSubscriber/BlogKitWorkerStateSubscriber.php` | Clears bundle memos and recovers a closed EM on each main request | FR-WORKER-001, FR-WORKER-004 |
 | `EventSubscriber/BlogKitAdminAccessSubscriber.php` | Admin route guard | FR-UI-002 |
 | `EventSubscriber/BlogArticleHtmlSanitizeSubscriber.php` | Sanitize article HTML on persist | FR-SEC-005 |
 | `Command/SyncBlogHashtagsCommand.php` | CLI hashtag sync | FR-TAG-002 |
@@ -143,7 +144,7 @@ Maps **100%** of production PHP files under `src/` (99 units). Test and demo tre
 | `Security/Captcha/HoneypotCommentCaptchaStrategy.php` | Honeypot field | FR-CMT-004 |
 | `Security/Captcha/RemoteCommentCaptchaStrategy.php` | reCAPTCHA / hCaptcha / Turnstile | FR-CMT-004 |
 | `Security/Captcha/CaptchaHttpClientInterface.php` | CAPTCHA HTTP contract | FR-CMT-004 |
-| `Security/Captcha/StreamCaptchaHttpClient.php` | Default CAPTCHA HTTP client | FR-CMT-004 |
+| `Security/Captcha/StreamCaptchaHttpClient.php` | Default CAPTCHA HTTP client (configurable timeout) | FR-CMT-004, FR-WORKER-005 |
 | `Security/Captcha/PublicBlogCommentCaptchaTypeExtension.php` | Public form CAPTCHA wiring | FR-CMT-004 |
 | `Security/Html/BlogHtmlSanitizerInterface.php` | HTML sanitizer contract | FR-SEC-005 |
 | `Security/Html/NullBlogHtmlSanitizer.php` | `none` sanitizer | FR-SEC-005 |
@@ -154,7 +155,7 @@ Maps **100%** of production PHP files under `src/` (99 units). Test and demo tre
 
 | Source file | Purpose | Requirement IDs |
 | --- | --- | --- |
-| `Twig/BlogKitExtension.php` | Layout, access globals, object-access helpers, and CAPTCHA context | FR-UI-001, FR-UI-002, FR-UI-003, FR-CMT-004 |
+| `Twig/BlogKitExtension.php` | Layout globals, per-call access functions (legacy access globals deprecated), object-access helpers, CAPTCHA context | FR-UI-001, FR-UI-002, FR-UI-003, FR-CMT-004, FR-WORKER-002 |
 
 ## Non-PHP production assets (documented)
 

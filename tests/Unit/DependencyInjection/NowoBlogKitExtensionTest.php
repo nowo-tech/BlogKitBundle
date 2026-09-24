@@ -16,6 +16,7 @@ use Nowo\BlogKitBundle\Security\BlogKitAccessCheckerInterface;
 use Nowo\BlogKitBundle\Security\BlogKitResourceAccessCheckerInterface;
 use Nowo\BlogKitBundle\Security\BlogProtection;
 use Nowo\BlogKitBundle\Security\Captcha\PublicBlogCommentCaptchaTypeExtension;
+use Nowo\BlogKitBundle\Security\Captcha\StreamCaptchaHttpClient;
 use Nowo\BlogKitBundle\Security\ConfigurableBlogKitAccessChecker;
 use Nowo\BlogKitBundle\Security\OwnerBlogKitResourceAccessChecker;
 use PHPUnit\Framework\Attributes\Test;
@@ -73,6 +74,20 @@ final class NowoBlogKitExtensionTest extends TestCase
         self::assertSame(2, $container->getParameter('nowo_blog_kit.listing.masonry.columns_desktop'));
         self::assertTrue($container->hasDefinition(BlogProtection::class));
         self::assertTrue($container->hasDefinition(PublicBlogCommentCaptchaTypeExtension::class));
+        self::assertSame([null, 5.0], $container->getDefinition(StreamCaptchaHttpClient::class)->getArguments());
+    }
+
+    #[Test]
+    public function loadPassesConfiguredCaptchaTimeoutToTheDefaultHttpClient(): void
+    {
+        $container = new ContainerBuilder();
+
+        (new NowoBlogKitExtension())->load([[
+            'security' => ['allow_unauthenticated' => true],
+            'comments' => ['captcha' => ['timeout_seconds' => 2.5]],
+        ]], $container);
+
+        self::assertSame(2.5, $container->getDefinition(StreamCaptchaHttpClient::class)->getArgument(1));
     }
 
     #[Test]

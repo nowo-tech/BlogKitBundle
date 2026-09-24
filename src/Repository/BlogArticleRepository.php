@@ -801,9 +801,7 @@ class BlogArticleRepository extends ServiceEntityRepository implements ResetInte
         }
 
         foreach ($missing as $articleId) {
-            if (!isset($grouped[$articleId])) {
-                $grouped[$articleId] = [];
-            }
+            $grouped[$articleId] ??= [];
         }
 
         return $grouped;

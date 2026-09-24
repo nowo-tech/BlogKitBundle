@@ -10,7 +10,7 @@
 
 ![FrankenPHP Friendly Worker Mode](docs/images/frankenphp-friendly.png)
 
-This bundle is **FrankenPHP worker mode friendly**.
+This bundle is **FrankenPHP worker mode friendly**, including the strict case where the kernel is **not** reset between requests (`reset_kernel=false` / no `services_resetter`). See [FrankenPHP worker audit](docs/FRANKENPHP-WORKER-AUDIT.md).
 
 ## What is this?
 
@@ -105,6 +105,7 @@ Demo default URL: `http://localhost:8105`.
 
 - [GitHub Actions CI requirements](docs/GITHUB_CI.md)
 - [Demo with FrankenPHP](docs/DEMO-FRANKENPHP.md)
+- [FrankenPHP worker audit](docs/FRANKENPHP-WORKER-AUDIT.md)
 
 ## Tests and coverage
 
