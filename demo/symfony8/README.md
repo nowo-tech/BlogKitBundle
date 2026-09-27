@@ -29,6 +29,8 @@ php bin/console app:load-demo-blog --force
 
 ```bash
 make -C demo/symfony8 test
+make -C demo/symfony8 test-e2e
+make -C demo/symfony8 demo-screenshots   # REQ-DEMO-013 → docs/images/demo/*.png
 make -C demo/symfony8 down
 make -C demo/symfony8 shell
 ```

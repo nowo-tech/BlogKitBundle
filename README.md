@@ -12,6 +12,23 @@
 
 This bundle is **FrankenPHP worker mode friendly**, including the strict case where the kernel is **not** reset between requests (`reset_kernel=false` / no `services_resetter`). See [FrankenPHP worker audit](docs/FRANKENPHP-WORKER-AUDIT.md).
 
+<table>
+  <tr>
+    <td align="center" width="33%">
+      <img src="docs/images/demo/overview.png" alt="Demo masthead and public blog index with article cards" />
+      <br /><sub>Public blog index</sub>
+    </td>
+    <td align="center" width="33%">
+      <img src="docs/images/demo/article.png" alt="Demo masthead and published article detail" />
+      <br /><sub>Article detail</sub>
+    </td>
+    <td align="center" width="33%">
+      <img src="docs/images/demo/admin.png" alt="Demo masthead and admin articles CRUD" />
+      <br /><sub>Admin articles</sub>
+    </td>
+  </tr>
+</table>
+
 ## What is this?
 
 Blog Kit Bundle gives Symfony applications a reusable blog domain backed by Doctrine. Editors manage articles, tags, and settings in a secured admin UI. Visitors browse a public index and article pages, search and filter by tag, and submit comments that wait for moderation. Hosts can hook `BlogArticlePublishedEvent` (for example Web Push) and sync trailing LinkedIn hashtags into tags.
@@ -81,6 +98,7 @@ make test
 make phpstan
 make igor
 make -C demo/symfony8 up
+make -C demo/symfony8 demo-screenshots   # refreshes docs/images/demo/*.png
 make demo-smoke
 ```
 

@@ -2,8 +2,19 @@
 
 How to publish articles, render the public blog, moderate comments, and override templates.
 
+## Screenshots
+
+Demo gallery (masthead + blog UI) in the [README](../README.md). Regenerate with:
+
+```bash
+make -C demo/symfony8 demo-screenshots
+```
+
+(REQ-DEMO-013 — Playwright under `demo/symfony8/e2e/`.)
+
 ## Table of contents
 
+- [Screenshots](#screenshots)
 - [Public pages](#public-pages)
 - [Admin screens](#admin-screens)
 - [Comments](#comments)

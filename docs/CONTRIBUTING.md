@@ -103,6 +103,7 @@ Run the Symfony 8 FrankenPHP demo on `http://localhost:8105`:
 
 ```bash
 make -C demo/symfony8 up
+make -C demo/symfony8 demo-screenshots   # Playwright e2e screenshots (REQ-DEMO-013)
 make demo-smoke
 ```
 
@@ -112,6 +113,7 @@ The demo is useful for checking:
 - Admin article / tag / comment / settings screens
 - Security wiring
 - Bundle boot on Symfony 8
+- README gallery PNGs under `docs/images/demo/`
 
 ## Questions
 
