@@ -8,6 +8,7 @@ use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 use Nowo\BlogKitBundle\Entity\BlogTag;
 use Nowo\BlogKitBundle\Repository\Concerns\JoinsTranslationsAndAuditUsers;
+use SortDirection;
 use Symfony\Contracts\Service\ResetInterface;
 
 /**
@@ -41,7 +42,7 @@ class BlogTagRepository extends ServiceEntityRepository implements ResetInterfac
     public function findAllOrdered(): array
     {
         $queryBuilder = $this->createQueryBuilder('t')
-            ->orderBy('t.slug', 'ASC');
+            ->orderBy('t.slug', SortDirection::Ascending);
 
         $this->joinTranslations($queryBuilder, 't', 'tt');
 
@@ -61,7 +62,7 @@ class BlogTagRepository extends ServiceEntityRepository implements ResetInterfac
 
         $queryBuilder = $this->createQueryBuilder('t')
             ->leftJoin('t.translations', 'tt')->addSelect('tt')
-            ->orderBy('t.slug', 'ASC');
+            ->orderBy('t.slug', SortDirection::Ascending);
 
         if (($filters['slug'] ?? '') !== '') {
             $queryBuilder
@@ -124,7 +125,7 @@ class BlogTagRepository extends ServiceEntityRepository implements ResetInterfac
             ->setParameter('published', true)
             ->groupBy('t.id', 't.slug', 'tt.name')
             ->having('COUNT(DISTINCT a.id) > 0')
-            ->orderBy('tt.name', 'ASC')
+            ->orderBy('tt.name', SortDirection::Ascending)
             ->getQuery()
             ->getArrayResult();
 

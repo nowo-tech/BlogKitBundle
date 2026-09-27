@@ -11,6 +11,7 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Nowo\BlogKitBundle\Model\BlogUserInterface;
 use Nowo\BlogKitBundle\Repository\BlogCommentRepository;
+use SortDirection;
 
 #[ORM\Entity(repositoryClass: BlogCommentRepository::class)]
 #[ORM\Table(name: 'content_blog_comment')]
@@ -39,7 +40,7 @@ class BlogComment
 
     /** @var Collection<int, BlogComment> */
     #[ORM\OneToMany(targetEntity: self::class, mappedBy: 'blogComment', cascade: ['remove'], orphanRemoval: true)]
-    #[ORM\OrderBy(['createdAt' => 'ASC'])]
+    #[ORM\OrderBy(['createdAt' => SortDirection::Ascending])]
     private Collection $replies;
 
     #[ORM\Column(length: 120)]

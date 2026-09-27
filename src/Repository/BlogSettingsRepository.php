@@ -8,6 +8,7 @@ use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\Query;
 use Doctrine\Persistence\ManagerRegistry;
 use Nowo\BlogKitBundle\Entity\BlogSettings;
+use SortDirection;
 use Symfony\Contracts\Service\ResetInterface;
 
 /**
@@ -53,7 +54,7 @@ final class BlogSettingsRepository extends ServiceEntityRepository implements Re
         }
 
         $settings = $this->createQueryBuilder('s')
-            ->orderBy('s.id', 'ASC')
+            ->orderBy('s.id', SortDirection::Ascending)
             ->setMaxResults(1)
             ->getQuery()
             ->setHint(Query::HINT_REFRESH, true)

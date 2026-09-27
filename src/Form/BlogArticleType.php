@@ -9,6 +9,7 @@ use Nowo\BlogKitBundle\Entity\BlogArticle;
 use Nowo\BlogKitBundle\Entity\BlogTag;
 use Nowo\BlogKitBundle\Repository\BlogTagRepository;
 use Override;
+use SortDirection;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\Extension\Core\Type\CollectionType;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
@@ -46,7 +47,7 @@ final class BlogArticleType extends AbstractBlogFormType
                 'query_builder' => static fn (BlogTagRepository $blogTagRepository): QueryBuilder => $blogTagRepository->createQueryBuilder('t')
                     ->leftJoin('t.translations', 'tt')
                     ->addSelect('tt')
-                    ->orderBy('t.slug', 'ASC'),
+                    ->orderBy('t.slug', SortDirection::Ascending),
                 'multiple' => true,
                 'expanded' => false,
                 'required' => false,

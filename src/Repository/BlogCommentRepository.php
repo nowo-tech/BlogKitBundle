@@ -9,6 +9,7 @@ use Doctrine\Persistence\ManagerRegistry;
 use Nowo\BlogKitBundle\Entity\BlogArticle;
 use Nowo\BlogKitBundle\Entity\BlogComment;
 use Nowo\BlogKitBundle\Entity\BlogCommentStatus;
+use SortDirection;
 
 /**
  * @extends ServiceEntityRepository<BlogComment>
@@ -35,8 +36,8 @@ final class BlogCommentRepository extends ServiceEntityRepository
             ->andWhere('comment.blogCommentStatus = :status')
             ->setParameter('article', $blogArticle)
             ->setParameter('status', BlogCommentStatus::Approved)
-            ->orderBy('comment.createdAt', 'ASC')
-            ->addOrderBy('reply.createdAt', 'ASC')
+            ->orderBy('comment.createdAt', SortDirection::Ascending)
+            ->addOrderBy('reply.createdAt', SortDirection::Ascending)
             ->getQuery()
             ->getResult();
     }
@@ -61,7 +62,7 @@ final class BlogCommentRepository extends ServiceEntityRepository
             ->addSelect('parent')
             ->leftJoin('comment.staffAuthor', 'staff')
             ->addSelect('staff')
-            ->orderBy('comment.createdAt', 'DESC');
+            ->orderBy('comment.createdAt', SortDirection::Descending);
 
         if ($blogCommentStatus instanceof BlogCommentStatus) {
             $queryBuilder

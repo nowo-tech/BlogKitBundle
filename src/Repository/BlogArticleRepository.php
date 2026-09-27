@@ -13,6 +13,7 @@ use Nowo\BlogKitBundle\Entity\BlogArticle;
 use Nowo\BlogKitBundle\Locale\BlogLocales;
 use Nowo\BlogKitBundle\Repository\Concerns\JoinsTranslationsAndAuditUsers;
 use Nowo\BlogKitBundle\Repository\Concerns\RunsDocumentedSql;
+use SortDirection;
 use Symfony\Contracts\Service\ResetInterface;
 
 use function array_key_exists;
@@ -308,9 +309,9 @@ class BlogArticleRepository extends ServiceEntityRepository implements ResetInte
     public function findAllOrdered(): array
     {
         $queryBuilder = $this->createQueryBuilder('b')
-            ->orderBy('b.position', 'ASC')
-            ->addOrderBy('b.publishedAt', 'DESC')
-            ->addOrderBy('b.slug', 'ASC');
+            ->orderBy('b.position', SortDirection::Ascending)
+            ->addOrderBy('b.publishedAt', SortDirection::Descending)
+            ->addOrderBy('b.slug', SortDirection::Ascending);
 
         $this->joinTranslations($queryBuilder, 'b', 'bt');
         $this->joinAuditUsers($queryBuilder, 'b');
@@ -333,9 +334,9 @@ class BlogArticleRepository extends ServiceEntityRepository implements ResetInte
             ->leftJoin('b.translations', 'bt')->addSelect('bt')
             ->leftJoin('b.createdBy', 'cb')->addSelect('cb')
             ->leftJoin('b.updatedBy', 'ub')->addSelect('ub')
-            ->orderBy('b.position', 'ASC')
-            ->addOrderBy('b.publishedAt', 'DESC')
-            ->addOrderBy('b.slug', 'ASC')
+            ->orderBy('b.position', SortDirection::Ascending)
+            ->addOrderBy('b.publishedAt', SortDirection::Descending)
+            ->addOrderBy('b.slug', SortDirection::Ascending)
             ->setFirstResult(($page - 1) * $perPage)
             ->setMaxResults($perPage);
 
@@ -390,9 +391,9 @@ class BlogArticleRepository extends ServiceEntityRepository implements ResetInte
             ->leftJoin('b.translations', 'bt')->addSelect('bt')
             ->leftJoin('b.createdBy', 'cb')->addSelect('cb')
             ->leftJoin('b.updatedBy', 'ub')->addSelect('ub')
-            ->orderBy('b.position', 'ASC')
-            ->addOrderBy('b.publishedAt', 'DESC')
-            ->addOrderBy('b.slug', 'ASC');
+            ->orderBy('b.position', SortDirection::Ascending)
+            ->addOrderBy('b.publishedAt', SortDirection::Descending)
+            ->addOrderBy('b.slug', SortDirection::Ascending);
 
         $this->restrictToCreatedBy($queryBuilder, 'b', $createdById);
 
@@ -677,9 +678,9 @@ class BlogArticleRepository extends ServiceEntityRepository implements ResetInte
             ->leftJoin($alias . '.translations', $translationAlias)->addSelect($translationAlias)
             ->andWhere($alias . '.published = :published')
             ->setParameter('published', true)
-            ->orderBy($alias . '.position', 'ASC')
-            ->addOrderBy($alias . '.publishedAt', 'DESC')
-            ->addOrderBy($alias . '.slug', 'ASC');
+            ->orderBy($alias . '.position', SortDirection::Ascending)
+            ->addOrderBy($alias . '.publishedAt', SortDirection::Descending)
+            ->addOrderBy($alias . '.slug', SortDirection::Ascending);
     }
 
     /**

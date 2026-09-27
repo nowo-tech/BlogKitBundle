@@ -12,6 +12,7 @@ use Doctrine\ORM\Mapping as ORM;
 use Nowo\AuditKitBundle\Model\AuditableInterface;
 use Nowo\BlogKitBundle\Model\BlameableUserTrait;
 use Nowo\BlogKitBundle\Repository\BlogArticleRepository;
+use SortDirection;
 
 #[ORM\Entity(repositoryClass: BlogArticleRepository::class)]
 #[ORM\Table(name: 'content_blog_article')]
@@ -56,7 +57,7 @@ class BlogArticle implements AuditableInterface
 
     /** @var Collection<int, BlogArticleResource> */
     #[ORM\OneToMany(targetEntity: BlogArticleResource::class, mappedBy: 'blogArticle', cascade: ['persist', 'remove'], orphanRemoval: true)]
-    #[ORM\OrderBy(['position' => 'ASC', 'id' => 'ASC'])]
+    #[ORM\OrderBy(['position' => SortDirection::Ascending, 'id' => SortDirection::Ascending])]
     private Collection $resources;
 
     public function __construct()
