@@ -103,6 +103,7 @@ class BlogComment
 
     public function setId(?int $id): self
     {
+        // @igor-ignore - Doctrine entity field; instance-scoped, not a shared service.
         $this->id = $id;
 
         return $this;
@@ -115,6 +116,7 @@ class BlogComment
 
     public function setArticle(BlogArticle $blogArticle): self
     {
+        // @igor-ignore - Doctrine entity field; instance-scoped, not a shared service.
         $this->blogArticle = $blogArticle;
 
         return $this;
@@ -127,6 +129,7 @@ class BlogComment
 
     public function setParent(?self $parent): self
     {
+        // @igor-ignore - Doctrine entity field; instance-scoped, not a shared service.
         $this->blogComment = $parent;
 
         return $this;
@@ -164,6 +167,7 @@ class BlogComment
 
     public function setAuthorName(string $authorName): self
     {
+        // @igor-ignore - Doctrine entity field; instance-scoped, not a shared service.
         $this->authorName = $authorName;
 
         return $this;
@@ -176,6 +180,7 @@ class BlogComment
 
     public function setAuthorEmail(?string $authorEmail): self
     {
+        // @igor-ignore - Doctrine entity field; instance-scoped, not a shared service.
         $this->authorEmail = $authorEmail;
 
         return $this;
@@ -188,6 +193,7 @@ class BlogComment
 
     public function setStaffAuthor(?BlogUserInterface $user): self
     {
+        // @igor-ignore - Doctrine entity field; instance-scoped, not a shared service.
         $this->staffAuthor = $user;
 
         return $this;
@@ -200,6 +206,7 @@ class BlogComment
 
     public function setBody(string $body): self
     {
+        // @igor-ignore - Doctrine entity field; instance-scoped, not a shared service.
         $this->body = $body;
 
         return $this;
@@ -212,6 +219,7 @@ class BlogComment
 
     public function setStatus(BlogCommentStatus $blogCommentStatus): self
     {
+        // @igor-ignore - Doctrine entity field; instance-scoped, not a shared service.
         $this->blogCommentStatus = $blogCommentStatus;
 
         return $this;
@@ -224,6 +232,7 @@ class BlogComment
 
     public function setCreatedAt(DateTimeImmutable $createdAt): self
     {
+        // @igor-ignore - Doctrine entity field; instance-scoped, not a shared service.
         $this->createdAt = $createdAt;
 
         return $this;
@@ -236,6 +245,7 @@ class BlogComment
 
     public function setModeratedAt(?DateTimeImmutable $moderatedAt): self
     {
+        // @igor-ignore - Doctrine entity field; instance-scoped, not a shared service.
         $this->moderatedAt = $moderatedAt;
 
         return $this;
@@ -248,6 +258,7 @@ class BlogComment
 
     public function setModeratedBy(?BlogUserInterface $user): self
     {
+        // @igor-ignore - Doctrine entity field; instance-scoped, not a shared service.
         $this->moderatedBy = $user;
 
         return $this;
@@ -260,6 +271,7 @@ class BlogComment
 
     public function setIpHash(?string $ipHash): self
     {
+        // @igor-ignore - Doctrine entity field; instance-scoped, not a shared service.
         $this->ipHash = $ipHash;
 
         return $this;

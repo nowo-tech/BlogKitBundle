@@ -79,6 +79,7 @@ Public blog: `/blog`. Admin: `/admin/blog`, `/admin/blog/tags`, `/admin/blog/com
 make up
 make test
 make phpstan
+make igor
 make -C demo/symfony8 up
 make demo-smoke
 ```

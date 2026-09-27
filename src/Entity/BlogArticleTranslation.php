@@ -50,6 +50,7 @@ class BlogArticleTranslation
 
     public function setId(?int $id): self
     {
+        // @igor-ignore - Doctrine entity field; instance-scoped, not a shared service.
         $this->id = $id;
 
         return $this;
@@ -62,6 +63,7 @@ class BlogArticleTranslation
 
     public function setTranslatable(BlogArticle $translatable): self
     {
+        // @igor-ignore - Doctrine entity field; instance-scoped, not a shared service.
         $this->translatable = $translatable;
 
         return $this;
@@ -74,6 +76,7 @@ class BlogArticleTranslation
 
     public function setLocale(string $locale): self
     {
+        // @igor-ignore - Doctrine entity field; instance-scoped, not a shared service.
         $this->locale = $locale;
 
         return $this;
@@ -86,6 +89,7 @@ class BlogArticleTranslation
 
     public function setTitle(string $title): self
     {
+        // @igor-ignore - Doctrine entity field; instance-scoped, not a shared service.
         $this->title = $title;
 
         return $this;
@@ -98,6 +102,7 @@ class BlogArticleTranslation
 
     public function setMetaTitle(string $metaTitle): self
     {
+        // @igor-ignore - Doctrine entity field; instance-scoped, not a shared service.
         $this->metaTitle = $metaTitle;
 
         return $this;
@@ -110,6 +115,7 @@ class BlogArticleTranslation
 
     public function setMetaDescription(?string $metaDescription): self
     {
+        // @igor-ignore - Doctrine entity field; instance-scoped, not a shared service.
         $this->metaDescription = $metaDescription;
 
         return $this;
@@ -122,6 +128,7 @@ class BlogArticleTranslation
 
     public function setExcerpt(?string $excerpt): self
     {
+        // @igor-ignore - Doctrine entity field; instance-scoped, not a shared service.
         $this->excerpt = $excerpt;
 
         return $this;
@@ -134,6 +141,7 @@ class BlogArticleTranslation
 
     public function setBody(?string $body): self
     {
+        // @igor-ignore - Doctrine entity field; instance-scoped, not a shared service.
         $this->body = $body;
 
         return $this;

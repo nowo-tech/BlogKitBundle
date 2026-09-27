@@ -39,6 +39,7 @@ class BlogArticleResource
 
     public function setId(?int $id): self
     {
+        // @igor-ignore - Doctrine entity field; instance-scoped, not a shared service.
         $this->id = $id;
 
         return $this;
@@ -51,6 +52,7 @@ class BlogArticleResource
 
     public function setArticle(BlogArticle $blogArticle): self
     {
+        // @igor-ignore - Doctrine entity field; instance-scoped, not a shared service.
         $this->blogArticle = $blogArticle;
 
         return $this;
@@ -63,6 +65,7 @@ class BlogArticleResource
 
     public function setTitle(?string $title): self
     {
+        // @igor-ignore - Doctrine entity field; instance-scoped, not a shared service.
         $this->title = $title !== null && trim($title) !== '' ? trim($title) : null;
 
         return $this;
@@ -75,6 +78,7 @@ class BlogArticleResource
 
     public function setImage(string $image): self
     {
+        // @igor-ignore - Doctrine entity field; instance-scoped, not a shared service.
         $this->image = trim($image);
 
         return $this;
@@ -87,6 +91,7 @@ class BlogArticleResource
 
     public function setPosition(int $position): self
     {
+        // @igor-ignore - Doctrine entity field; instance-scoped, not a shared service.
         $this->position = $position;
 
         return $this;

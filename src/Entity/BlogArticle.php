@@ -155,6 +155,7 @@ class BlogArticle implements AuditableInterface
     /** @param iterable<BlogTag> $tags */
     public function setTags(iterable $tags): self
     {
+        // @igor-ignore - Doctrine entity field; instance-scoped, not a shared service.
         $this->tags = new ArrayCollection();
 
         foreach ($tags as $tag) {
@@ -199,6 +200,7 @@ class BlogArticle implements AuditableInterface
 
     public function setId(?int $id): self
     {
+        // @igor-ignore - Doctrine entity field; instance-scoped, not a shared service.
         $this->id = $id;
 
         return $this;
@@ -222,6 +224,7 @@ class BlogArticle implements AuditableInterface
 
     public function setSlug(string $slug): self
     {
+        // @igor-ignore - Doctrine entity field; instance-scoped, not a shared service.
         $this->slug = $slug;
 
         return $this;
@@ -234,6 +237,7 @@ class BlogArticle implements AuditableInterface
 
     public function setImage(?string $image): self
     {
+        // @igor-ignore - Doctrine entity field; instance-scoped, not a shared service.
         $this->image = $image;
 
         return $this;
@@ -246,6 +250,7 @@ class BlogArticle implements AuditableInterface
 
     public function setPublishedAt(?DateTimeImmutable $publishedAt): self
     {
+        // @igor-ignore - Doctrine entity field; instance-scoped, not a shared service.
         $this->publishedAt = $publishedAt;
 
         return $this;
@@ -258,6 +263,7 @@ class BlogArticle implements AuditableInterface
 
     public function setLinkedinUrl(?string $linkedinUrl): self
     {
+        // @igor-ignore - Doctrine entity field; instance-scoped, not a shared service.
         $this->linkedinUrl = $linkedinUrl;
 
         return $this;
@@ -270,6 +276,7 @@ class BlogArticle implements AuditableInterface
 
     public function setPosition(int $position): self
     {
+        // @igor-ignore - Doctrine entity field; instance-scoped, not a shared service.
         $this->position = $position;
 
         return $this;
@@ -282,6 +289,7 @@ class BlogArticle implements AuditableInterface
 
     public function setPublished(bool $published): self
     {
+        // @igor-ignore - Doctrine entity field; instance-scoped, not a shared service.
         $this->published = $published;
 
         return $this;

@@ -133,6 +133,7 @@ class BlogTag implements Stringable
 
     public function setId(?int $id): self
     {
+        // @igor-ignore - Doctrine entity field; instance-scoped, not a shared service.
         $this->id = $id;
 
         return $this;
@@ -145,6 +146,7 @@ class BlogTag implements Stringable
 
     public function setSlug(string $slug): self
     {
+        // @igor-ignore - Doctrine entity field; instance-scoped, not a shared service.
         $this->slug = strtolower(trim($slug));
 
         return $this;

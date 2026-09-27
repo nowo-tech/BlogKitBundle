@@ -70,7 +70,7 @@ Before opening a PR, aim to pass:
 
 - `make test`
 - `make test-coverage-100`
-- `make phpstan`
+- `make phpstan`, `make igor`
 - `make validate-translations`
 - `make release-check`
 

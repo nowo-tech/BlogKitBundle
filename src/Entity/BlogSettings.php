@@ -124,6 +124,7 @@ class BlogSettings
 
     public function setId(?int $id): self
     {
+        // @igor-ignore - Doctrine entity field; instance-scoped, not a shared service.
         $this->id = $id;
 
         return $this;
@@ -136,6 +137,7 @@ class BlogSettings
 
     public function setListingMode(string $listingMode): self
     {
+        // @igor-ignore - Doctrine entity field; instance-scoped, not a shared service.
         $this->listingMode = $this->normalizeOverrideStrategy(
             $listingMode,
             BlogListingMode::class,
@@ -156,6 +158,7 @@ class BlogSettings
 
     public function setPerPage(int $perPage): self
     {
+        // @igor-ignore - Doctrine entity field; instance-scoped, not a shared service.
         $this->perPage = max(1, min(24, $perPage));
 
         return $this;
@@ -168,6 +171,7 @@ class BlogSettings
 
     public function setMasonryStrategy(string $masonryStrategy): self
     {
+        // @igor-ignore - Doctrine entity field; instance-scoped, not a shared service.
         $this->masonryStrategy = $this->normalizeOverrideStrategy(
             $masonryStrategy,
             BlogMasonryStrategy::class,
@@ -188,6 +192,7 @@ class BlogSettings
 
     public function setMasonryColumnsMobile(int $masonryColumnsMobile): self
     {
+        // @igor-ignore - Doctrine entity field; instance-scoped, not a shared service.
         $this->masonryColumnsMobile = max(0, min(2, $masonryColumnsMobile));
 
         return $this;
@@ -200,6 +205,7 @@ class BlogSettings
 
     public function setMasonryColumnsTablet(int $masonryColumnsTablet): self
     {
+        // @igor-ignore - Doctrine entity field; instance-scoped, not a shared service.
         $this->masonryColumnsTablet = max(0, min(2, $masonryColumnsTablet));
 
         return $this;
@@ -212,6 +218,7 @@ class BlogSettings
 
     public function setMasonryColumnsDesktop(int $masonryColumnsDesktop): self
     {
+        // @igor-ignore - Doctrine entity field; instance-scoped, not a shared service.
         $this->masonryColumnsDesktop = max(0, min(3, $masonryColumnsDesktop));
 
         return $this;
@@ -224,6 +231,7 @@ class BlogSettings
 
     public function setShowCardImage(bool $showCardImage): self
     {
+        // @igor-ignore - Doctrine entity field; instance-scoped, not a shared service.
         $this->showCardImage = $showCardImage;
 
         return $this;
@@ -236,6 +244,7 @@ class BlogSettings
 
     public function setShowCardExcerpt(bool $showCardExcerpt): self
     {
+        // @igor-ignore - Doctrine entity field; instance-scoped, not a shared service.
         $this->showCardExcerpt = $showCardExcerpt;
 
         return $this;
@@ -248,6 +257,7 @@ class BlogSettings
 
     public function setShowCardTags(bool $showCardTags): self
     {
+        // @igor-ignore - Doctrine entity field; instance-scoped, not a shared service.
         $this->showCardTags = $showCardTags;
 
         return $this;
@@ -260,6 +270,7 @@ class BlogSettings
 
     public function setIndexTagsLimit(int $indexTagsLimit): self
     {
+        // @igor-ignore - Doctrine entity field; instance-scoped, not a shared service.
         $this->indexTagsLimit = max(0, min(100, $indexTagsLimit));
 
         return $this;
@@ -272,6 +283,7 @@ class BlogSettings
 
     public function setIndexAsideSearch(string $indexAsideSearch): self
     {
+        // @igor-ignore - Doctrine entity field; instance-scoped, not a shared service.
         $this->indexAsideSearch = $this->normalizePlacement($indexAsideSearch);
 
         return $this;
@@ -289,6 +301,7 @@ class BlogSettings
 
     public function setIndexAsideLatest(string $indexAsideLatest): self
     {
+        // @igor-ignore - Doctrine entity field; instance-scoped, not a shared service.
         $this->indexAsideLatest = $this->normalizePlacement($indexAsideLatest);
 
         return $this;
@@ -306,6 +319,7 @@ class BlogSettings
 
     public function setIndexAsideTags(string $indexAsideTags): self
     {
+        // @igor-ignore - Doctrine entity field; instance-scoped, not a shared service.
         $this->indexAsideTags = $this->normalizePlacement($indexAsideTags);
 
         return $this;
@@ -323,6 +337,7 @@ class BlogSettings
 
     public function setIndexLatestLimit(int $indexLatestLimit): self
     {
+        // @igor-ignore - Doctrine entity field; instance-scoped, not a shared service.
         $this->indexLatestLimit = max(1, min(24, $indexLatestLimit));
 
         return $this;
@@ -335,6 +350,7 @@ class BlogSettings
 
     public function setIndexAsideTagsLimit(int $indexAsideTagsLimit): self
     {
+        // @igor-ignore - Doctrine entity field; instance-scoped, not a shared service.
         $this->indexAsideTagsLimit = max(0, min(100, $indexAsideTagsLimit));
 
         return $this;
@@ -347,6 +363,7 @@ class BlogSettings
 
     public function setShowAsideSearch(string $showAsideSearch): self
     {
+        // @igor-ignore - Doctrine entity field; instance-scoped, not a shared service.
         $this->showAsideSearch = $this->normalizePlacement($showAsideSearch);
 
         return $this;
@@ -364,6 +381,7 @@ class BlogSettings
 
     public function setShowAsideRelated(string $showAsideRelated): self
     {
+        // @igor-ignore - Doctrine entity field; instance-scoped, not a shared service.
         $this->showAsideRelated = $this->normalizePlacement($showAsideRelated);
 
         return $this;
@@ -381,6 +399,7 @@ class BlogSettings
 
     public function setShowAsideArticleTags(string $showAsideArticleTags): self
     {
+        // @igor-ignore - Doctrine entity field; instance-scoped, not a shared service.
         $this->showAsideArticleTags = $this->normalizePlacement($showAsideArticleTags);
 
         return $this;
@@ -398,6 +417,7 @@ class BlogSettings
 
     public function setShowAsideResources(string $showAsideResources): self
     {
+        // @igor-ignore - Doctrine entity field; instance-scoped, not a shared service.
         $this->showAsideResources = $this->normalizePlacement($showAsideResources);
 
         return $this;
@@ -415,6 +435,7 @@ class BlogSettings
 
     public function setRelatedLimit(int $relatedLimit): self
     {
+        // @igor-ignore - Doctrine entity field; instance-scoped, not a shared service.
         $this->relatedLimit = max(1, min(24, $relatedLimit));
 
         return $this;
@@ -427,6 +448,7 @@ class BlogSettings
 
     public function setResourcesIncludeLinkedin(bool $resourcesIncludeLinkedin): self
     {
+        // @igor-ignore - Doctrine entity field; instance-scoped, not a shared service.
         $this->resourcesIncludeLinkedin = $resourcesIncludeLinkedin;
 
         return $this;
@@ -439,6 +461,7 @@ class BlogSettings
 
     public function setShowShare(bool $showShare): self
     {
+        // @igor-ignore - Doctrine entity field; instance-scoped, not a shared service.
         $this->showShare = $showShare;
 
         return $this;
@@ -451,6 +474,7 @@ class BlogSettings
 
     public function setShowComments(bool $showComments): self
     {
+        // @igor-ignore - Doctrine entity field; instance-scoped, not a shared service.
         $this->showComments = $showComments;
 
         return $this;
@@ -463,6 +487,7 @@ class BlogSettings
 
     public function setShowSourceLink(bool $showSourceLink): self
     {
+        // @igor-ignore - Doctrine entity field; instance-scoped, not a shared service.
         $this->showSourceLink = $showSourceLink;
 
         return $this;
@@ -475,6 +500,7 @@ class BlogSettings
 
     public function setHeroImageMode(string $heroImageMode): self
     {
+        // @igor-ignore - Doctrine entity field; instance-scoped, not a shared service.
         $this->heroImageMode = (BlogHeroImageMode::tryFrom($heroImageMode) ?? BlogHeroImageMode::Contain)->value;
 
         return $this;
@@ -492,6 +518,7 @@ class BlogSettings
 
     public function setCommentRateLimitStrategy(string $commentRateLimitStrategy): self
     {
+        // @igor-ignore - Doctrine entity field; instance-scoped, not a shared service.
         $this->commentRateLimitStrategy = $this->normalizeOverrideStrategy(
             $commentRateLimitStrategy,
             CommentRateLimitStrategy::class,
@@ -507,6 +534,7 @@ class BlogSettings
 
     public function setCommentRateLimitLimit(int $commentRateLimitLimit): self
     {
+        // @igor-ignore - Doctrine entity field; instance-scoped, not a shared service.
         $this->commentRateLimitLimit = max(0, min(1000, $commentRateLimitLimit));
 
         return $this;
@@ -519,6 +547,7 @@ class BlogSettings
 
     public function setCommentRateLimitIntervalSeconds(int $commentRateLimitIntervalSeconds): self
     {
+        // @igor-ignore - Doctrine entity field; instance-scoped, not a shared service.
         $this->commentRateLimitIntervalSeconds = max(0, min(86400, $commentRateLimitIntervalSeconds));
 
         return $this;
@@ -531,6 +560,7 @@ class BlogSettings
 
     public function setCommentCaptchaStrategy(string $commentCaptchaStrategy): self
     {
+        // @igor-ignore - Doctrine entity field; instance-scoped, not a shared service.
         $this->commentCaptchaStrategy = $this->normalizeOverrideStrategy(
             $commentCaptchaStrategy,
             CommentCaptchaStrategy::class,
@@ -546,6 +576,7 @@ class BlogSettings
 
     public function setHtmlSanitizeStrategy(string $htmlSanitizeStrategy): self
     {
+        // @igor-ignore - Doctrine entity field; instance-scoped, not a shared service.
         $this->htmlSanitizeStrategy = $this->normalizeOverrideStrategy(
             $htmlSanitizeStrategy,
             HtmlSanitizeStrategy::class,

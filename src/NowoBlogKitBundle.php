@@ -32,6 +32,7 @@ class NowoBlogKitBundle extends Bundle
     public function getContainerExtension(): ExtensionInterface
     {
         if (!$this->extension instanceof NowoBlogKitExtension) {
+            // @igor-ignore - Boot-time Symfony Bundle extension cache (not request state).
             $this->extension = new NowoBlogKitExtension();
         }
 
