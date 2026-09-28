@@ -1124,16 +1124,16 @@
         },
         {
             "name": "nowo-tech/routing-kit-bundle",
-            "version": "v1.4.6",
+            "version": "v1.5.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/nowo-tech/RoutingKitBundle.git",
-                "reference": "be12370d1b4b70a16fb65117448b22a76a32d387"
+                "reference": "6f1304b6a58dfd882b78a11e0776629ad205413e"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/nowo-tech/RoutingKitBundle/zipball/be12370d1b4b70a16fb65117448b22a76a32d387",
-                "reference": "be12370d1b4b70a16fb65117448b22a76a32d387",
+                "url": "https://api.github.com/repos/nowo-tech/RoutingKitBundle/zipball/6f1304b6a58dfd882b78a11e0776629ad205413e",
+                "reference": "6f1304b6a58dfd882b78a11e0776629ad205413e",
                 "shasum": ""
             },
             "require": {
@@ -1218,7 +1218,7 @@
                 "issues": "https://github.com/nowo-tech/RoutingKitBundle/issues",
                 "source": "https://github.com/nowo-tech/RoutingKitBundle"
             },
-            "time": "2026-09-27T16:22:29+00:00"
+            "time": "2026-09-28T07:49:03+00:00"
         },
         {
             "name": "nowo-tech/ui-kit-bundle",
