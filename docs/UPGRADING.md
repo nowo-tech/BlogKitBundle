@@ -3,7 +3,16 @@
 
 ## Unreleased
 
+## To 1.4.1
+
+From **1.4.0** — maintainers npm lockfile only. **No application upgrade steps.**
+
+```bash
+composer update nowo-tech/blog-kit-bundle
+```
+
 ## To 1.4.0
+
 
 From **1.3.1** — default HTML sanitize allowlist; Doctrine `SortDirection`; demo e2e.
 
