@@ -65,7 +65,7 @@ nowo_blog_kit:
             service: null
     html:
         sanitize:
-            strategy: none
+            strategy: allowlist
             service: null
     doctrine:
         table_prefix: ''
@@ -159,7 +159,7 @@ Remote providers need `site_key` and `secret_key`. Missing keys fail closed (for
 
 | Key | Default | Description |
 | --- | --- | --- |
-| `sanitize.strategy` | `none` | `none` (trusted-editor `\|raw`), `strip`, `allowlist` (safe CMS tags + YouTube/Vimeo iframes), or `service`. |
+| `sanitize.strategy` | `allowlist` | `allowlist` (default), `strip`, `service`, or `none` (trusted-editor `\|raw`). |
 | `sanitize.service` | `null` | Service id implementing `BlogHtmlSanitizerInterface` when `strategy: service`. |
 
 Sanitizing runs on article translation persist and again on public render (before hashtag links / body enhancer).

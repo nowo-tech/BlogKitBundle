@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Table of contents
 
 - [Unreleased](#unreleased)
+- [1.4.0 - 2026-09-28](#140---2026-09-28)
+- [1.3.1 - 2026-09-27](#131---2026-09-27)
 - [1.3.0 - 2026-09-24](#130---2026-09-24)
 - [1.2.0 - 2026-08-28](#120---2026-08-28)
 - [1.1.6 - 2026-08-19](#116---2026-08-19)
@@ -19,6 +21,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [1.0.0 - 2026-08-18](#100---2026-08-18)
 
 ## [Unreleased]
+
+## [1.4.0] - 2026-09-28
+
+### Security
+
+- Default `html.sanitize.strategy` is **`allowlist`** (was `none`). Flex recipe ships allowlist; `when@prod` still forces allowlist. Set `none` only for fully trusted editors.
 
 ### Added
 
@@ -38,6 +46,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Worker safety (Igor):** justified `// @igor-ignore` annotations and/or `ResetInterface` / request-scoped fixes so `make igor` passes on package `src/`.
 
+[1.4.0]: https://github.com/nowo-tech/BlogKitBundle/releases/tag/v1.4.0
 [1.3.1]: https://github.com/nowo-tech/BlogKitBundle/releases/tag/v1.3.1
 
 ## [1.3.0] - 2026-09-24

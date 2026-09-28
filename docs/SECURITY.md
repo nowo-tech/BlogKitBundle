@@ -84,7 +84,7 @@ Admin create/edit/delete, comment approve/reject/reply/delete, settings save, an
 
 ## Rich text rendering
 
-`public/show.html.twig` renders editor-authored article HTML with `|raw`. Enable `html.sanitize.strategy: allowlist` (or `strip` / a host `BlogHtmlSanitizerInterface`) if untrusted authors can edit bodies. `none` is for trusted editors only.
+`public/show.html.twig` renders editor-authored article HTML with `|raw`. The **default** strategy is `allowlist`. Set `html.sanitize.strategy: none` only for fully trusted editors.
 
 ## Infinite scroll HTML
 
@@ -95,7 +95,7 @@ Admin create/edit/delete, comment approve/reject/reply/delete, settings save, an
 - Audit which users receive `ROLE_EDITOR`, `ROLE_MODERATOR`, and `ROLE_ADMIN`.
 - Leave `allow_unauthenticated: false` in production.
 - Pick a comment rate-limit and CAPTCHA strategy for public internet sites. Keep remote CAPTCHA secrets in YAML.
-- Set `html.sanitize.strategy` to `allowlist` if article authors are not fully trusted.
+- Leave `html.sanitize.strategy` at `allowlist` unless article authors are fully trusted.
 - Set a real `web_ui.privacy_url`.
 - Use `doctrine.table_prefix` when multiple applications share one schema.
 - Review demo credentials and never copy demo auth settings into production.

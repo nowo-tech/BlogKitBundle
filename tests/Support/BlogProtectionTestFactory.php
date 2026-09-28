@@ -40,7 +40,7 @@ final class BlogProtectionTestFactory
             $config['minScore'] ?? 0.5,
             $config['honeypotField'] ?? 'website',
             $config['captchaService'] ?? null,
-            $config['htmlStrategy'] ?? HtmlSanitizeStrategy::None,
+            $config['htmlStrategy'] ?? HtmlSanitizeStrategy::Allowlist,
             $config['htmlService'] ?? null,
         );
     }

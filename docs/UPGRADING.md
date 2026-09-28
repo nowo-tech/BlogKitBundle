@@ -3,6 +3,18 @@
 
 ## Unreleased
 
+## To 1.4.0
+
+From **1.3.1** — default HTML sanitize allowlist; Doctrine `SortDirection`; demo e2e.
+
+```bash
+composer update nowo-tech/blog-kit-bundle
+php bin/console cache:clear
+```
+
+- Default `html.sanitize.strategy` is **`allowlist`** (was `none`). Hosts that need unsanitized editor HTML must set `strategy: none` explicitly (trusted editors only).
+- Ensure `doctrine/orm` is `^3.7` (SortDirection).
+
 ## To 1.3.1
 
 From **1.3.0** — REQ-CS-008 Igor FrankenPHP worker audit (igor-php require-dev, igor.json, make igor).

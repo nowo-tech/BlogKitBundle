@@ -48,7 +48,7 @@ final class ConfigurationTest extends TestCase
         self::assertSame(0.5, $config['comments']['captcha']['min_score']);
         self::assertSame('website', $config['comments']['captcha']['honeypot_field']);
         self::assertSame(5.0, $config['comments']['captcha']['timeout_seconds']);
-        self::assertSame('none', $config['html']['sanitize']['strategy']);
+        self::assertSame('allowlist', $config['html']['sanitize']['strategy']);
         self::assertNull($config['html']['sanitize']['service']);
     }
 

@@ -44,7 +44,7 @@ final class BlogProtectionTest extends TestCase
 
         self::assertSame(CommentRateLimitStrategy::FixedWindow, $protection->resolveRateLimitStrategy());
         self::assertSame(CommentCaptchaStrategy::Honeypot, $protection->resolveCaptchaStrategy());
-        self::assertSame(HtmlSanitizeStrategy::None, $protection->resolveHtmlSanitizeStrategy());
+        self::assertSame(HtmlSanitizeStrategy::Allowlist, $protection->resolveHtmlSanitizeStrategy());
         self::assertInstanceOf(CacheBlogCommentRateLimiter::class, $protection->rateLimiter());
     }
 
@@ -55,7 +55,7 @@ final class BlogProtectionTest extends TestCase
 
         self::assertSame(CommentRateLimitStrategy::FixedWindow, $protection->resolveRateLimitStrategy());
         self::assertSame(CommentCaptchaStrategy::Honeypot, $protection->resolveCaptchaStrategy());
-        self::assertSame(HtmlSanitizeStrategy::None, $protection->resolveHtmlSanitizeStrategy());
+        self::assertSame(HtmlSanitizeStrategy::Allowlist, $protection->resolveHtmlSanitizeStrategy());
         self::assertInstanceOf(CacheBlogCommentRateLimiter::class, $protection->rateLimiter());
         self::assertSame('honeypot', $protection->captcha()->twigContext()['strategy']);
         self::assertSame('<b>x</b>', $protection->htmlSanitizer()->sanitize('<b>x</b>'));
@@ -85,7 +85,7 @@ final class BlogProtectionTest extends TestCase
         $fallback = BlogProtectionTestFactory::create(settings: $invalid);
         self::assertSame(CommentRateLimitStrategy::FixedWindow, $fallback->resolveRateLimitStrategy());
         self::assertSame(CommentCaptchaStrategy::Honeypot, $fallback->resolveCaptchaStrategy());
-        self::assertSame(HtmlSanitizeStrategy::None, $fallback->resolveHtmlSanitizeStrategy());
+        self::assertSame(HtmlSanitizeStrategy::Allowlist, $fallback->resolveHtmlSanitizeStrategy());
 
         $empty = new BlogSettings();
         foreach (['commentRateLimitStrategy', 'commentCaptchaStrategy', 'htmlSanitizeStrategy'] as $property) {
@@ -94,7 +94,7 @@ final class BlogProtectionTest extends TestCase
         $fromEmpty = BlogProtectionTestFactory::create(settings: $empty);
         self::assertSame(CommentRateLimitStrategy::FixedWindow, $fromEmpty->resolveRateLimitStrategy());
         self::assertSame(CommentCaptchaStrategy::Honeypot, $fromEmpty->resolveCaptchaStrategy());
-        self::assertSame(HtmlSanitizeStrategy::None, $fromEmpty->resolveHtmlSanitizeStrategy());
+        self::assertSame(HtmlSanitizeStrategy::Allowlist, $fromEmpty->resolveHtmlSanitizeStrategy());
     }
 
     #[Test]

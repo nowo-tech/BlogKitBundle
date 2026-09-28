@@ -104,7 +104,7 @@ nowo_blog_kit:
             strategy: honeypot
     html:
         sanitize:
-            strategy: none
+            strategy: allowlist
     doctrine:
         table_prefix: ''
         connection: default
