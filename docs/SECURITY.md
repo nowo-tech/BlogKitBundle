@@ -86,6 +86,8 @@ Admin create/edit/delete, comment approve/reject/reply/delete, settings save, an
 
 `public/show.html.twig` renders editor-authored article HTML with `|raw`. The **default** strategy is `allowlist`. Set `html.sanitize.strategy: none` only for fully trusted editors.
 
+The `allowlist` sanitizer removes executable / raw-text elements (`script`, `style`, `template`, `svg`, `math`, `object`, `embed`, `meta`, `link`, `base`, …) with their content, unwraps other unknown elements and sanitizes their children, and only keeps `http(s)` / `mailto:` / same-origin relative URLs (protocol-relative `//host`, `/\host` and whitespace-split variants are rejected).
+
 ## Infinite scroll HTML
 
 `blog-kit.js` inserts HTML fragments returned by `GET /blog?partial=1` using `DOMParser`. Those fragments are the bundle's own Twig cards (auto-escaped). Do not point the infinite-scroll URL at an untrusted origin.

@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Table of contents
 
 - [Unreleased](#unreleased)
+- [1.4.2 - 2026-10-09](#142---2026-10-09)
 - [1.4.1 - 2026-09-28](#141---2026-09-28)
 - [1.4.0 - 2026-09-28](#140---2026-09-28)
 - [1.3.1 - 2026-09-27](#131---2026-09-27)
@@ -22,6 +23,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [1.0.0 - 2026-08-18](#100---2026-08-18)
 
 ## [Unreleased]
+
+## [1.4.2] - 2026-10-09
+
+### Security
+
+- `AllowlistBlogHtmlSanitizer`: children of an unwrapped (disallowed) element are now sanitized — they were hoisted after the walk had moved past them, so `<section><script>…</script><img onerror>…</section>` survived unchanged.
+- Executable / raw-text elements (`script`, `style`, `template`, `svg`, `math`, `object`, `embed`, `meta`, `link`, `base`, …) are removed with their content instead of being unwrapped.
+- `href` / `src` starting with `/\` (read as `//host` by browsers) are rejected like protocol-relative URLs; ASCII tab / LF / CR are stripped before the check (`/<TAB>/host` is `//host`).
+
+### Dependencies
+
+- Bundle lockfile: `nowo-tech/audit-kit-bundle` 1.1.18, `nowo-tech/form-kit-bundle` 2.6.0, `nowo-tech/ui-kit-bundle` 1.9.1; dev `phpstan/phpstan` 2.3.1, `rector/rector` 2.7.0.
+- Already on `main`: Symfony group bumps, Vite 8.3.2 / `@types/node` 26.6.4 with `pnpm-lock.yaml` sync, PHP CS Fixer bot fixes.
+- Demo (`demo/symfony8`): Symfony 8.1.8, `doctrine/dbal` 4.5.0, `doctrine/orm` 3.7.4, `twig/twig` 3.30.0, `nowo-tech/routing-kit-bundle` 1.5.0; regenerated `config/reference.php`.
 
 ## [1.4.1] - 2026-09-28
 
@@ -217,7 +232,8 @@ Initial public release of **Blog Kit Bundle** (`nowo-tech/blog-kit-bundle`).
 - CSRF-protected admin mutations and public comment forms; deletes go through native confirm dialogs
 - Comment bodies escaped in Twig; article HTML documented as trusted-editor `|raw`
 
-[Unreleased]: https://github.com/nowo-tech/BlogKitBundle/compare/v1.1.3...HEAD
+[Unreleased]: https://github.com/nowo-tech/BlogKitBundle/compare/v1.4.2...HEAD
+[1.4.2]: https://github.com/nowo-tech/BlogKitBundle/compare/v1.4.1...v1.4.2
 [1.1.3]: https://github.com/nowo-tech/BlogKitBundle/releases/tag/v1.1.3
 [1.1.2]: https://github.com/nowo-tech/BlogKitBundle/releases/tag/v1.1.2
 [1.1.1]: https://github.com/nowo-tech/BlogKitBundle/releases/tag/v1.1.1

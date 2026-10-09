@@ -3,6 +3,17 @@
 
 ## Unreleased
 
+## To 1.4.2
+
+From **1.4.1** — `allowlist` HTML sanitizer security fix and dependency updates.
+
+```bash
+composer update nowo-tech/blog-kit-bundle
+```
+
+- No breaking changes. **No application upgrade steps.**
+- With `html.sanitize.strategy: allowlist`, `script` / `style` / `template` / `svg` / `math` / `object` / `embed` / `meta` / `link` / `base` (and other raw-text elements) are now removed together with their content, and children of other disallowed wrappers are sanitized. Article bodies saved before this release are re-sanitized on public render; re-save them if you also want the stored HTML cleaned.
+
 ## To 1.4.1
 
 From **1.4.0** — maintainers npm lockfile only. **No application upgrade steps.**
@@ -39,7 +50,7 @@ This document describes how to upgrade **Blog Kit Bundle** between released vers
 
 ## Table of contents
 
-
+- [To 1.4.2](#to-142)
 - [From 1.2.0 to 1.3.0](#from-120-to-130)
 - [From 1.1.7 to 1.2.0](#from-117-to-120)
 - [From 1.1.6 to 1.1.7](#from-116-to-117)
