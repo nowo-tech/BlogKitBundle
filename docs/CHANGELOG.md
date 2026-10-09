@@ -24,6 +24,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Development: `composer.json` pins `config.platform.php` to 8.4.1 so the committed lock stays installable on the minimum PHP; CI overrides the platform per matrix cell.
+
 ## [1.4.2] - 2026-10-09
 
 ### Security
