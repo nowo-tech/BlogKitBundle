@@ -95,4 +95,38 @@ final class BlogHtmlSanitizerTest extends TestCase
         self::assertStringContainsString('youtube-nocookie.com', $result);
         self::assertStringNotContainsString('unknown', $result);
     }
+
+    #[Test]
+    public function allowlistSanitizesChildrenOfUnwrappedElements(): void
+    {
+        $result = new AllowlistBlogHtmlSanitizer()->sanitize(
+            '<section><script>alert(1)</script><img src="x" onerror="alert(2)">'
+            . '<a href="javascript:alert(3)">x</a><meta http-equiv="refresh" content="0;url=https://evil.test">'
+            . '<article><section><style>body{display:none}</style><p onclick="a()">deep</p></section></article></section>',
+        );
+
+        foreach (['script', 'alert', 'onerror', 'javascript:', 'meta', 'refresh', 'style', 'onclick', 'section', 'article'] as $forbidden) {
+            self::assertStringNotContainsString($forbidden, $result, $forbidden);
+        }
+        self::assertStringContainsString('<p>deep</p>', $result);
+    }
+
+    #[Test]
+    public function allowlistRejectsBackslashProtocolRelativeUrls(): void
+    {
+        $result = new AllowlistBlogHtmlSanitizer()->sanitize('<a href="/\\evil.test">x</a><img src="/\\evil.test/a.png" alt="a"><a href="/ok">ok</a>');
+
+        self::assertStringNotContainsString('evil.test', $result);
+        self::assertStringContainsString('href="/ok"', $result);
+    }
+
+    #[Test]
+    public function allowlistRejectsProtocolRelativeUrlsSplitByUrlWhitespace(): void
+    {
+        $result = new AllowlistBlogHtmlSanitizer()->sanitize(
+            '<a href="/&#9;/evil.test">x</a><a href="/&#10;\\evil.test">y</a><img src="/&#13;/evil.test/a.png" alt="a">',
+        );
+
+        self::assertStringNotContainsString('evil.test', $result);
+    }
 }

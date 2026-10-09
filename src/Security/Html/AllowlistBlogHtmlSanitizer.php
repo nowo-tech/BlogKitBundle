@@ -60,6 +60,12 @@ final class AllowlistBlogHtmlSanitizer implements BlogHtmlSanitizerInterface
         'iframe'     => ['src', 'title', 'allow', 'allowfullscreen', 'frameborder', 'width', 'height', 'class'],
     ];
 
+    /** Elements dropped with their content (unwrapping them would leave code / markup behind). */
+    private const DROPPED_ELEMENTS = [
+        'script', 'style', 'template', 'noscript', 'object', 'embed', 'applet', 'svg', 'math',
+        'meta', 'link', 'base', 'frame', 'frameset', 'xmp', 'noembed', 'noframes', 'textarea', 'select',
+    ];
+
     /** @var list<string> */
     private const ALLOWED_EMBED_HOSTS = [
         'www.youtube.com',
@@ -114,12 +120,20 @@ final class AllowlistBlogHtmlSanitizer implements BlogHtmlSanitizerInterface
             if ($child instanceof DOMElement) {
                 $tag = strtolower($child->nodeName);
 
-                if (!isset(self::ALLOWED_ELEMENTS[$tag])) {
+                if (in_array($tag, self::DROPPED_ELEMENTS, true)) {
+                    $node->removeChild($child);
+                } elseif (!isset(self::ALLOWED_ELEMENTS[$tag])) {
+                    // Unwrap, then continue with the hoisted children: they are now siblings of
+                    // the next node and must be sanitized too (`<section><script>…` bypass).
+                    $hoisted = $child->firstChild;
                     while ($child->firstChild instanceof DOMNode) {
                         $node->insertBefore($child->firstChild, $child);
                     }
 
                     $node->removeChild($child);
+                    if ($hoisted instanceof DOMNode) {
+                        $next = $hoisted;
+                    }
                 } else {
                     $this->sanitizeAttributes($child, $tag);
                     $this->sanitizeNode($child);
@@ -174,12 +188,16 @@ final class AllowlistBlogHtmlSanitizer implements BlogHtmlSanitizerInterface
 
     private function isAllowedHref(string $href): bool
     {
+        // Browsers strip ASCII tab / LF / CR anywhere in a URL (`/<TAB>/host` is `//host`).
+        $href = str_replace(["\t", "\n", "\r"], '', $href);
+
         if ($href === '') {
             return false;
         }
 
         if (str_starts_with($href, '/')) {
-            return !str_starts_with($href, '//');
+            // `/\host` is read as `//host` by browsers.
+            return !str_starts_with($href, '//') && !str_starts_with($href, '/\\');
         }
 
         return (bool) preg_match('#^(https?:|mailto:)#i', $href);
@@ -187,7 +205,9 @@ final class AllowlistBlogHtmlSanitizer implements BlogHtmlSanitizerInterface
 
     private function isAllowedSrc(string $src): bool
     {
-        if ($src === '' || str_starts_with($src, '//')) {
+        $src = str_replace(["\t", "\n", "\r"], '', $src);
+
+        if ($src === '' || str_starts_with($src, '//') || str_starts_with($src, '/\\')) {
             return false;
         }
 
