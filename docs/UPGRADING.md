@@ -3,6 +3,7 @@
 ## Table of contents
 
 - [Unreleased](#unreleased)
+- [To 1.5.2](#to-152)
 - [To 1.5.1](#to-151)
 - [To 1.5.0](#to-150)
 - [To 1.4.5](#to-145)
@@ -27,6 +28,16 @@
 - [Future releases](#future-releases)
 
 ## Unreleased
+
+## To 1.5.2
+
+From **1.5.1** — Twig coding-standard cleanup; twig-lint in CI
+
+```bash
+composer update nowo-tech/blog-kit-bundle
+```
+
+- No breaking changes. No application upgrade steps.
 
 ## To 1.5.1
 
