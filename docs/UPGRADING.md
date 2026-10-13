@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## To 1.4.5
+
+From **1.4.4** — duplicate blog.scss removed from public assets; vitest 4.
+
+```bash
+composer update nowo-tech/blog-kit-bundle
+```
+
+- No breaking changes. No application upgrade steps.
+
 ## To 1.4.4
 
 From **1.4.3** — security - https-only embed iframes, CAPTCHA hostname/action checks.
@@ -69,6 +79,7 @@ This document describes how to upgrade **Blog Kit Bundle** between released vers
 
 ## Table of contents
 
+- [To 1.4.5](#to-145)
 - [To 1.4.4](#to-144)
 - [To 1.4.3](#to-143)
 - [To 1.4.2](#to-142)
