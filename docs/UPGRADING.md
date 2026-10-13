@@ -26,6 +26,8 @@
 
 ## Unreleased
 
+- Blog kit form types no longer render FormKit's convention `{form}.{field}.help` / `.placeholder` keys implicitly (they were untranslated and appeared verbatim). If your app translated any of those keys in its own `NowoBlogKitBundle` catalogue and wants them back, override the form type (or use a form type extension) to pass `help` / `placeholder` explicitly. No action needed otherwise.
+
 ## To 1.4.5
 
 From **1.4.4** — duplicate blog.scss removed from public assets; vitest 4.
