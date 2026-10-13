@@ -11,73 +11,73 @@ admin:
   area_nav:
     label: Secções do blog
   articles:
-    edit: Edit article
-    empty: No articles yet.
-    new: New article
+    edit: Editar artigo
+    empty: Ainda não há artigos.
+    new: Novo artigo
     title: Artigos
   audit:
-    updated_at: Updated
-    updated_by: Updated by
+    updated_at: Atualizado
+    updated_by: Atualizado por
   collection:
-    add_resource: Add resource
-    empty_resources: No resources yet.
-    remove: Remove
+    add_resource: Adicionar recurso
+    empty_resources: Ainda não há recursos.
+    remove: Remover
   column:
-    actions: Actions
+    actions: Ações
     article: Artigo
     articles: Artigos
     author: Autor
     comment: Comentário
     date: Data
     name: Nome
-    position: Position
+    position: Posição
     slug: Slug
-    status: Status
-    title: Title
+    status: Estado
+    title: Título
   comments:
     empty: Ainda não há comentários.
     pending_count: '%count% pendentes'
     title: Comentários
   confirm:
     delete_title: Confirmar eliminação
-    delete_article: 'Delete this article?'
+    delete_article: Eliminar este artigo?
     delete_comment: 'Eliminar este comentário?'
     delete_tag: 'Eliminar esta etiqueta?'
   filter:
-    apply: Apply
-    article: Article
-    author: Author
-    body: Body
-    clear: Clear
-    name: Name
-    published: Published
-    published_no: 'No'
-    published_yes: 'Yes'
+    apply: Aplicar
+    article: Artigo
+    author: Autor
+    body: Texto
+    clear: Limpar
+    name: Nome
+    published: Publicado
+    published_no: Não
+    published_yes: Sim
     slug: Slug
-    title: Title
+    title: Título
   flash:
-    article_created: Article created.
-    article_deleted: Article deleted.
-    article_updated: Article updated.
-    comment_approved: Comment approved.
-    comment_deleted: Comment deleted.
-    comment_rejected: Comment rejected.
-    reply_invalid: Invalid reply.
-    reply_published: Reply published.
-    settings_saved: Settings saved.
-    tag_created: Tag created.
-    tag_deleted: Tag deleted.
-    tag_in_use: This tag is still used by articles.
-    tag_updated: Tag updated.
+    article_created: Artigo criado.
+    article_deleted: Artigo eliminado.
+    article_updated: Artigo atualizado.
+    comment_approved: Comentário aprovado.
+    comment_deleted: Comentário eliminado.
+    comment_rejected: Comentário rejeitado.
+    reply_invalid: Resposta inválida.
+    reply_published: Resposta publicada.
+    settings_saved: Definições guardadas.
+    tag_created: Etiqueta criada.
+    tag_deleted: Etiqueta eliminada.
+    tag_in_use: Esta etiqueta ainda é usada por artigos.
+    tag_updated: Etiqueta atualizada.
   locale_tabs:
-    label: Locales
+    label: Idiomas
   pagination:
-    label: Pagination
-    next: Next
+    label: Paginação
+    next: Seguinte
     page: 'Página %page% de %total%'
-    prev: Previous
+    prev: Anterior
   settings:
-    lead: 'Configure listing, cards, asides and article extras.'
+    lead: Configure a listagem, os cartões, as laterais e os extras dos artigos.
     title: Definições do blog
     section_tabs_label: Secções das definições
     sections:
@@ -96,15 +96,15 @@ admin:
   status:
     all: Todos
     approved: Aprovado
-    draft: Draft
+    draft: Rascunho
     pending: Pendente
-    published: Published
+    published: Publicado
     rejected: Rejeitado
   tags:
-    edit: Edit tag
+    edit: Editar etiqueta
     empty: Ainda não há etiquetas.
     lead: Organize artigos com etiquetas.
-    new: New tag
+    new: Nova etiqueta
     title: Etiquetas
   title: Blog
 admin_blog_article_filter:
@@ -114,23 +114,23 @@ admin_blog_article_filter:
     label: Slug
     placeholder: Pesquisar por slug…
   title:
-    label: Title
+    label: Título
     placeholder: Pesquisar por título…
 admin_blog_comment_filter:
   article:
-    label: Article
+    label: Artigo
     placeholder: Pesquisar por artigo…
   author:
-    label: Author
+    label: Autor
     placeholder: Pesquisar por autor…
   body:
-    label: Body
+    label: Texto
     placeholder: Pesquisar no texto do comentário…
   status:
-    label: Status
+    label: Estado
 admin_blog_tag_filter:
   name:
-    label: Name
+    label: Nome
     placeholder: Pesquisar por nome…
   slug:
     label: Slug
@@ -140,177 +140,177 @@ blog:
     hashtags_label: Hashtags
     not_found: Artigo não encontrado.
   comments:
-    empty: No comments yet.
-    error_invalid: Please check the form and try again.
-    error_reply: Could not publish the reply.
-    form_lead: Your comment will be reviewed before it appears.
-    form_title: Leave a comment
+    empty: Ainda não há comentários.
+    error_invalid: Verifique o formulário e tente novamente.
+    error_reply: Não foi possível publicar a resposta.
+    form_lead: O seu comentário será revisto antes de ser publicado.
+    form_title: Deixe um comentário
     privacy_accept: 'Aceito a <a href="%url%" target="_blank" rel="noopener">política de privacidade</a>'
-    privacy_required: You must accept the privacy policy.
-    reply_submit: Reply
+    privacy_required: Tem de aceitar a política de privacidade.
+    reply_submit: Responder
     submit: Enviar comentário
-    success_pending: 'Thanks! Your comment is pending moderation.'
+    success_pending: Obrigado! O seu comentário aguarda moderação.
     title: Comentários
 blog_article:
   image:
-    label: Image URL
+    label: URL da imagem
   linkedin_url:
-    label: LinkedIn URL
+    label: URL do LinkedIn
   position:
-    label: Position
+    label: Posição
   published:
-    label: Published
+    label: Publicado
   published_at:
-    label: Published at
+    label: Publicado em
   resources:
-    label: Resources
+    label: Recursos
   slug:
     label: Slug
   tags:
-    label: Tags
+    label: Etiquetas
 blog_article_resource:
   image:
-    label: Image URL
+    label: URL da imagem
   position:
-    label: Position
+    label: Posição
   title:
-    label: Title
+    label: Título
 blog_article_translation:
   body:
-    label: Body
+    label: Conteúdo
   excerpt:
-    label: Excerpt
+    label: Excerto
   meta_description:
-    label: Meta description
+    label: Meta descrição
   meta_title:
-    label: Meta title
+    label: Meta título
   title:
-    label: Title
+    label: Título
 blog_public_search:
   q:
-    label: Search
+    label: Pesquisar
 blog_settings:
   aside_placement:
     choices:
-      'off': 'Off'
-      both: Both
-      left: Left
-      right: Right
+      'off': Desativado
+      both: Ambos
+      left: Esquerda
+      right: Direita
   hero_image_mode:
     choices:
-      contain: Contain
-      cover: Cover
-    label: Hero image mode
+      contain: Conter
+      cover: Cobrir
+    label: Modo da imagem principal
   index_aside_latest:
-    label: 'Index aside: latest'
+    label: 'Lateral do índice: recentes'
   index_aside_search:
-    label: 'Index aside: search'
+    label: 'Lateral do índice: pesquisa'
   index_aside_tags:
-    label: 'Index aside: tags'
+    label: 'Lateral do índice: etiquetas'
   index_aside_tags_limit:
-    help: Maximum number of tags in the index sidebar block.
-    label: Aside tags limit
+    help: Número máximo de etiquetas no bloco lateral do índice.
+    label: Limite de etiquetas (lateral)
   index_latest_limit:
-    help: Number of articles in the index «latest posts» block.
-    label: Latest articles limit
+    help: Número de artigos no bloco «últimos artigos» do índice.
+    label: Limite de artigos recentes
   index_tags_limit:
-    help: Maximum number of tags shown on each listing card.
-    label: Index tags limit
+    help: Número máximo de etiquetas mostradas em cada cartão da listagem.
+    label: Limite de etiquetas (listagem)
   listing_mode:
     choices:
-      inherit: Use YAML default
-      infinite: Infinite scroll
-      paginated: Paginated
-    label: Listing mode
+      inherit: Usar valor YAML
+      infinite: Deslocamento infinito
+      paginated: Paginado
+    label: Modo de listagem
   masonry_strategy:
     choices:
       inherit: Usar valor YAML
-      masonry: Masonry
+      masonry: Mosaico (masonry)
       grid: Grelha uniforme
       list: Uma coluna
     label: Disposição dos cartões
   masonry_columns_desktop:
-    help: Leave 0 to use the default configuration value.
-    label: Desktop columns
+    help: Deixe 0 para usar o valor de configuração predefinido.
+    label: Colunas (computador)
   masonry_columns_mobile:
-    help: Leave 0 to use the default configuration value.
-    label: Mobile columns
+    help: Deixe 0 para usar o valor de configuração predefinido.
+    label: Colunas (telemóvel)
   masonry_columns_tablet:
-    help: Leave 0 to use the default configuration value.
-    label: Tablet columns
+    help: Deixe 0 para usar o valor de configuração predefinido.
+    label: Colunas (tablet)
   per_page:
-    help: Number of articles visible on each page when listing mode is paginated.
-    label: Articles per page
+    help: Número de artigos visíveis por página quando a listagem é paginada.
+    label: Artigos por página
   related_limit:
-    help: Maximum number of related articles in the article sidebar.
-    label: Related articles limit
+    help: Número máximo de artigos relacionados no lateral do artigo.
+    label: Limite de artigos relacionados
   resources_include_linkedin:
-    label: Include LinkedIn in resources
+    label: Incluir o LinkedIn nos recursos
   show_aside_article_tags:
-    label: 'Article aside: tags'
+    label: 'Lateral do artigo: etiquetas'
   show_aside_related:
-    label: 'Article aside: related'
+    label: 'Lateral do artigo: relacionados'
   show_aside_resources:
-    label: 'Article aside: resources'
+    label: 'Lateral do artigo: recursos'
   show_aside_search:
-    label: 'Article aside: search'
+    label: 'Lateral do artigo: pesquisa'
   show_card_excerpt:
-    label: Show card excerpt
+    label: Mostrar excerto no cartão
   show_card_image:
-    label: Show card image
+    label: Mostrar imagem no cartão
   show_card_tags:
-    label: Show card tags
+    label: Mostrar etiquetas no cartão
   show_comments:
-    label: Show comments
+    label: Mostrar comentários
   show_share:
-    label: Show share actions
+    label: Mostrar ações de partilha
   show_source_link:
-    label: Show source link
+    label: Mostrar ligação da fonte
   comment_rate_limit_strategy:
-    help: How often comments may be posted per IP or article.
-    label: Comment rate-limit strategy
+    help: Com que frequência podem ser publicados comentários por IP ou por artigo.
+    label: Estratégia de limite de comentários
     choices:
-      inherit: Use YAML default
-      none: None
-      fixed_window: Fixed window (per IP)
-      per_ip_article: Per IP and article
-      sliding_window: Sliding window
-      service: Custom service
+      inherit: Usar valor YAML
+      none: Nenhuma
+      fixed_window: Janela fixa (por IP)
+      per_ip_article: Por IP e artigo
+      sliding_window: Janela deslizante
+      service: Serviço personalizado
   comment_rate_limit_limit:
-    help: Leave 0 to use the default configuration value.
-    label: Comment limit
+    help: Deixe 0 para usar o valor de configuração predefinido.
+    label: Limite de comentários
   comment_rate_limit_interval_seconds:
-    help: Leave 0 to use the default configuration value.
-    label: Limit interval (seconds)
+    help: Deixe 0 para usar o valor de configuração predefinido.
+    label: Intervalo do limite (segundos)
   comment_captcha_strategy:
-    help: Anti-bot verification method for the public comment form.
-    label: Comment CAPTCHA strategy
+    help: Método de verificação anti-bot do formulário público de comentários.
+    label: Estratégia CAPTCHA dos comentários
     choices:
-      inherit: Use YAML default
-      none: None
-      honeypot: Honeypot
+      inherit: Usar valor YAML
+      none: Nenhuma
+      honeypot: Campo armadilha (honeypot)
       recaptcha_v2: reCAPTCHA v2
       recaptcha_v3: reCAPTCHA v3
       hcaptcha: hCaptcha
       turnstile: Cloudflare Turnstile
-      service: Custom service
+      service: Serviço personalizado
   html_sanitize_strategy:
-    help: Sanitization level applied to published article HTML.
-    label: Article HTML sanitizer
+    help: Nível de limpeza aplicado ao HTML dos artigos publicados.
+    label: Limpeza do HTML dos artigos
     choices:
-      inherit: Use YAML default
-      none: None (trusted editors)
-      strip: Strip all tags
-      allowlist: Allowlist
-      service: Custom service
+      inherit: Usar valor YAML
+      none: Nenhuma (editores de confiança)
+      strip: Remover todas as etiquetas HTML
+      allowlist: Lista de permissões
+      service: Serviço personalizado
 blog_tag:
   slug:
     label: Slug
 blog_tag_translation:
   name:
-    label: Name
+    label: Nome
 cms:
-  edit_blog_post: Edit post
+  edit_blog_post: Editar artigo
 locale:
   de: Alemão
   en: Inglês
@@ -323,40 +323,40 @@ page:
   blog:
     empty: Ainda não há artigos.
     empty_filtered: Nenhum artigo corresponde à sua pesquisa.
-    end_of_list: You have reached the end.
+    end_of_list: Chegou ao fim.
     heading: Blog
     intro: 'Notícias, guias e atualizações do produto.'
-    loading_more: Loading more…
-    original_linkedin: Original post on LinkedIn
+    loading_more: A carregar mais…
+    original_linkedin: Publicação original no LinkedIn
     read_more: Ler mais
     resource_linkedin: LinkedIn
-    resource_linkedin_hint: View on LinkedIn
-    resources_heading: Resources
-    resources_label: Resources
-    search_clear: Clear search
+    resource_linkedin_hint: Ver no LinkedIn
+    resources_heading: Recursos
+    resources_label: Recursos
+    search_clear: Limpar pesquisa
     search_label: Pesquisar
     search_placeholder: Pesquisar artigos…
     search_submit: Pesquisar
     share: Partilhar
-    sidebar_article_tags: Tags
-    sidebar_label: Browse
-    sidebar_latest: Latest
-    sidebar_related: Related
-    sidebar_tags: Tags
-    tags_label: Tags
+    sidebar_article_tags: Etiquetas
+    sidebar_label: Explorar
+    sidebar_latest: Recentes
+    sidebar_related: Relacionados
+    sidebar_tags: Etiquetas
+    tags_label: Etiquetas
 public_blog_comment:
   author_email:
     label: Endereço de e-mail
     placeholder: voce@exemplo.pt
   author_name:
-    label: Name
+    label: Nome
     placeholder: O seu nome
   body:
-    label: Comment
+    label: Comentário
     placeholder: Escreva o seu comentário…
   privacy_accepted:
-    label: Privacy policy
+    label: Política de privacidade
 staff_blog_comment_reply:
   body:
-    label: Reply
+    label: Resposta
     placeholder: Escreva uma resposta…

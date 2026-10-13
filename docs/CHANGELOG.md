@@ -29,6 +29,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **English copies in the fr/de/it/nl/pt catalogues**: about 150–160 messages per locale (admin lists, filters, flashes, settings labels/help, public comment form, e.g. `blog.comments.privacy_required`) were shipped in English. They are now translated into French, German, Italian, Dutch and (European) Portuguese; placeholders and HTML are unchanged. A new `CatalogueTranslationTest` checks key parity, placeholder/HTML parity and flags any message identical to English unless it is on an allowlist of legitimately identical strings (brand and technical names such as Blog, Slug, LinkedIn, reCAPTCHA, plus per-locale words like fr "Actions"/"Date" or de "Name"/"Status").
+
 ## [1.5.0] - 2026-10-13
 
 ### Fixed

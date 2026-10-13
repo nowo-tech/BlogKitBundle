@@ -11,73 +11,73 @@ admin:
   area_nav:
     label: Blogsecties
   articles:
-    edit: Edit article
-    empty: No articles yet.
-    new: New article
+    edit: Artikel bewerken
+    empty: Nog geen artikelen.
+    new: Nieuw artikel
     title: Artikelen
   audit:
-    updated_at: Updated
-    updated_by: Updated by
+    updated_at: Bijgewerkt
+    updated_by: Bijgewerkt door
   collection:
-    add_resource: Add resource
-    empty_resources: No resources yet.
-    remove: Remove
+    add_resource: Bron toevoegen
+    empty_resources: Nog geen bronnen.
+    remove: Verwijderen
   column:
-    actions: Actions
+    actions: Acties
     article: Artikel
     articles: Artikelen
     author: Auteur
     comment: Reactie
     date: Datum
     name: Naam
-    position: Position
+    position: Positie
     slug: Slug
     status: Status
-    title: Title
+    title: Titel
   comments:
     empty: Nog geen reacties.
     pending_count: '%count% in behandeling'
     title: Reacties
   confirm:
     delete_title: Bevestig verwijderen
-    delete_article: 'Delete this article?'
+    delete_article: Dit artikel verwijderen?
     delete_comment: 'Deze reactie verwijderen?'
     delete_tag: 'Deze tag verwijderen?'
   filter:
-    apply: Apply
-    article: Article
-    author: Author
-    body: Body
-    clear: Clear
-    name: Name
-    published: Published
-    published_no: 'No'
-    published_yes: 'Yes'
+    apply: Toepassen
+    article: Artikel
+    author: Auteur
+    body: Tekst
+    clear: Wissen
+    name: Naam
+    published: Gepubliceerd
+    published_no: Nee
+    published_yes: Ja
     slug: Slug
-    title: Title
+    title: Titel
   flash:
-    article_created: Article created.
-    article_deleted: Article deleted.
-    article_updated: Article updated.
-    comment_approved: Comment approved.
-    comment_deleted: Comment deleted.
-    comment_rejected: Comment rejected.
-    reply_invalid: Invalid reply.
-    reply_published: Reply published.
-    settings_saved: Settings saved.
-    tag_created: Tag created.
-    tag_deleted: Tag deleted.
-    tag_in_use: This tag is still used by articles.
-    tag_updated: Tag updated.
+    article_created: Artikel aangemaakt.
+    article_deleted: Artikel verwijderd.
+    article_updated: Artikel bijgewerkt.
+    comment_approved: Reactie goedgekeurd.
+    comment_deleted: Reactie verwijderd.
+    comment_rejected: Reactie afgewezen.
+    reply_invalid: Ongeldig antwoord.
+    reply_published: Antwoord gepubliceerd.
+    settings_saved: Instellingen opgeslagen.
+    tag_created: Tag aangemaakt.
+    tag_deleted: Tag verwijderd.
+    tag_in_use: Deze tag wordt nog door artikelen gebruikt.
+    tag_updated: Tag bijgewerkt.
   locale_tabs:
-    label: Locales
+    label: Talen
   pagination:
-    label: Pagination
-    next: Next
+    label: Paginering
+    next: Volgende
     page: 'Pagina %page% van %total%'
-    prev: Previous
+    prev: Vorige
   settings:
-    lead: 'Configure listing, cards, asides and article extras.'
+    lead: Configureer het overzicht, kaarten, zijbalken en extra’s van artikelen.
     title: Bloginstellingen
     section_tabs_label: Instellingensecties
     sections:
@@ -96,15 +96,15 @@ admin:
   status:
     all: Alle
     approved: Goedgekeurd
-    draft: Draft
+    draft: Concept
     pending: In behandeling
-    published: Published
+    published: Gepubliceerd
     rejected: Afgewezen
   tags:
-    edit: Edit tag
+    edit: Tag bewerken
     empty: Nog geen tags.
     lead: Organiseer artikelen met tags.
-    new: New tag
+    new: Nieuwe tag
     title: Tags
   title: Blog
 admin_blog_article_filter:
@@ -114,23 +114,23 @@ admin_blog_article_filter:
     label: Slug
     placeholder: Zoeken op slug…
   title:
-    label: Title
+    label: Titel
     placeholder: Zoeken op titel…
 admin_blog_comment_filter:
   article:
-    label: Article
+    label: Artikel
     placeholder: Zoeken op artikel…
   author:
-    label: Author
+    label: Auteur
     placeholder: Zoeken op auteur…
   body:
-    label: Body
+    label: Tekst
     placeholder: Zoeken in reactietekst…
   status:
     label: Status
 admin_blog_tag_filter:
   name:
-    label: Name
+    label: Naam
     placeholder: Zoeken op naam…
   slug:
     label: Slug
@@ -140,177 +140,177 @@ blog:
     hashtags_label: Hashtags
     not_found: Artikel niet gevonden.
   comments:
-    empty: No comments yet.
-    error_invalid: Please check the form and try again.
-    error_reply: Could not publish the reply.
-    form_lead: Your comment will be reviewed before it appears.
-    form_title: Leave a comment
+    empty: Nog geen reacties.
+    error_invalid: Controleer het formulier en probeer het opnieuw.
+    error_reply: Het antwoord kon niet worden gepubliceerd.
+    form_lead: Uw reactie wordt beoordeeld voordat deze verschijnt.
+    form_title: Laat een reactie achter
     privacy_accept: 'Ik ga akkoord met het <a href="%url%" target="_blank" rel="noopener">privacybeleid</a>'
-    privacy_required: You must accept the privacy policy.
-    reply_submit: Reply
+    privacy_required: U moet akkoord gaan met het privacybeleid.
+    reply_submit: Beantwoorden
     submit: Reactie verzenden
-    success_pending: 'Thanks! Your comment is pending moderation.'
+    success_pending: Bedankt! Uw reactie wacht op moderatie.
     title: Reacties
 blog_article:
   image:
-    label: Image URL
+    label: Afbeeldings-URL
   linkedin_url:
-    label: LinkedIn URL
+    label: LinkedIn-URL
   position:
-    label: Position
+    label: Positie
   published:
-    label: Published
+    label: Gepubliceerd
   published_at:
-    label: Published at
+    label: Gepubliceerd op
   resources:
-    label: Resources
+    label: Bronnen
   slug:
     label: Slug
   tags:
     label: Tags
 blog_article_resource:
   image:
-    label: Image URL
+    label: Afbeeldings-URL
   position:
-    label: Position
+    label: Positie
   title:
-    label: Title
+    label: Titel
 blog_article_translation:
   body:
-    label: Body
+    label: Inhoud
   excerpt:
-    label: Excerpt
+    label: Samenvatting
   meta_description:
-    label: Meta description
+    label: Metabeschrijving
   meta_title:
-    label: Meta title
+    label: Metatitel
   title:
-    label: Title
+    label: Titel
 blog_public_search:
   q:
-    label: Search
+    label: Zoeken
 blog_settings:
   aside_placement:
     choices:
-      'off': 'Off'
-      both: Both
-      left: Left
-      right: Right
+      'off': Uit
+      both: Beide
+      left: Links
+      right: Rechts
   hero_image_mode:
     choices:
-      contain: Contain
-      cover: Cover
-    label: Hero image mode
+      contain: Passend
+      cover: Vullend
+    label: Weergave van de hoofdafbeelding
   index_aside_latest:
-    label: 'Index aside: latest'
+    label: 'Zijbalk overzicht: nieuwste'
   index_aside_search:
-    label: 'Index aside: search'
+    label: 'Zijbalk overzicht: zoeken'
   index_aside_tags:
-    label: 'Index aside: tags'
+    label: 'Zijbalk overzicht: tags'
   index_aside_tags_limit:
-    help: Maximum number of tags in the index sidebar block.
-    label: Aside tags limit
+    help: Maximaal aantal tags in het zijbalkblok van het overzicht.
+    label: Taglimiet (zijbalk)
   index_latest_limit:
-    help: Number of articles in the index «latest posts» block.
-    label: Latest articles limit
+    help: Aantal artikelen in het blok „laatste berichten” van het overzicht.
+    label: Limiet laatste artikelen
   index_tags_limit:
-    help: Maximum number of tags shown on each listing card.
-    label: Index tags limit
+    help: Maximaal aantal tags op elke kaart in het overzicht.
+    label: Taglimiet (overzicht)
   listing_mode:
     choices:
-      inherit: Use YAML default
-      infinite: Infinite scroll
-      paginated: Paginated
-    label: Listing mode
+      inherit: YAML-waarde gebruiken
+      infinite: Oneindig scrollen
+      paginated: Gepagineerd
+    label: Overzichtsmodus
   masonry_strategy:
     choices:
       inherit: YAML-waarde gebruiken
-      masonry: Masonry
+      masonry: Metselwerk (masonry)
       grid: Uniform raster
       list: Eén kolom
     label: Kaartlay-out
   masonry_columns_desktop:
-    help: Leave 0 to use the default configuration value.
-    label: Desktop columns
+    help: Laat 0 staan om de standaardwaarde uit de configuratie te gebruiken.
+    label: Kolommen (desktop)
   masonry_columns_mobile:
-    help: Leave 0 to use the default configuration value.
-    label: Mobile columns
+    help: Laat 0 staan om de standaardwaarde uit de configuratie te gebruiken.
+    label: Kolommen (mobiel)
   masonry_columns_tablet:
-    help: Leave 0 to use the default configuration value.
-    label: Tablet columns
+    help: Laat 0 staan om de standaardwaarde uit de configuratie te gebruiken.
+    label: Kolommen (tablet)
   per_page:
-    help: Number of articles visible on each page when listing mode is paginated.
-    label: Articles per page
+    help: Aantal artikelen per pagina wanneer het overzicht gepagineerd is.
+    label: Artikelen per pagina
   related_limit:
-    help: Maximum number of related articles in the article sidebar.
-    label: Related articles limit
+    help: Maximaal aantal gerelateerde artikelen in de zijbalk van het artikel.
+    label: Limiet gerelateerde artikelen
   resources_include_linkedin:
-    label: Include LinkedIn in resources
+    label: LinkedIn opnemen in bronnen
   show_aside_article_tags:
-    label: 'Article aside: tags'
+    label: 'Zijbalk artikel: tags'
   show_aside_related:
-    label: 'Article aside: related'
+    label: 'Zijbalk artikel: gerelateerd'
   show_aside_resources:
-    label: 'Article aside: resources'
+    label: 'Zijbalk artikel: bronnen'
   show_aside_search:
-    label: 'Article aside: search'
+    label: 'Zijbalk artikel: zoeken'
   show_card_excerpt:
-    label: Show card excerpt
+    label: Samenvatting op kaart tonen
   show_card_image:
-    label: Show card image
+    label: Afbeelding op kaart tonen
   show_card_tags:
-    label: Show card tags
+    label: Tags op kaart tonen
   show_comments:
-    label: Show comments
+    label: Reacties tonen
   show_share:
-    label: Show share actions
+    label: Deelacties tonen
   show_source_link:
-    label: Show source link
+    label: Bronlink tonen
   comment_rate_limit_strategy:
-    help: How often comments may be posted per IP or article.
-    label: Comment rate-limit strategy
+    help: Hoe vaak reacties per IP of per artikel geplaatst mogen worden.
+    label: Strategie voor reactielimiet
     choices:
-      inherit: Use YAML default
-      none: None
-      fixed_window: Fixed window (per IP)
-      per_ip_article: Per IP and article
-      sliding_window: Sliding window
-      service: Custom service
+      inherit: YAML-waarde gebruiken
+      none: Geen
+      fixed_window: Vast venster (per IP)
+      per_ip_article: Per IP en artikel
+      sliding_window: Schuivend venster
+      service: Aangepaste service
   comment_rate_limit_limit:
-    help: Leave 0 to use the default configuration value.
-    label: Comment limit
+    help: Laat 0 staan om de standaardwaarde uit de configuratie te gebruiken.
+    label: Reactielimiet
   comment_rate_limit_interval_seconds:
-    help: Leave 0 to use the default configuration value.
-    label: Limit interval (seconds)
+    help: Laat 0 staan om de standaardwaarde uit de configuratie te gebruiken.
+    label: Limietinterval (seconden)
   comment_captcha_strategy:
-    help: Anti-bot verification method for the public comment form.
-    label: Comment CAPTCHA strategy
+    help: Anti-botverificatiemethode voor het openbare reactieformulier.
+    label: CAPTCHA-strategie voor reacties
     choices:
-      inherit: Use YAML default
-      none: None
-      honeypot: Honeypot
+      inherit: YAML-waarde gebruiken
+      none: Geen
+      honeypot: Lokveld (honeypot)
       recaptcha_v2: reCAPTCHA v2
       recaptcha_v3: reCAPTCHA v3
       hcaptcha: hCaptcha
       turnstile: Cloudflare Turnstile
-      service: Custom service
+      service: Aangepaste service
   html_sanitize_strategy:
-    help: Sanitization level applied to published article HTML.
-    label: Article HTML sanitizer
+    help: Opschoningsniveau voor de HTML van gepubliceerde artikelen.
+    label: HTML-opschoning van artikelen
     choices:
-      inherit: Use YAML default
-      none: None (trusted editors)
-      strip: Strip all tags
-      allowlist: Allowlist
-      service: Custom service
+      inherit: YAML-waarde gebruiken
+      none: Geen (vertrouwde redacteuren)
+      strip: Alle tags verwijderen
+      allowlist: Toegestane lijst
+      service: Aangepaste service
 blog_tag:
   slug:
     label: Slug
 blog_tag_translation:
   name:
-    label: Name
+    label: Naam
 cms:
-  edit_blog_post: Edit post
+  edit_blog_post: Bericht bewerken
 locale:
   de: Duits
   en: Engels
@@ -323,25 +323,25 @@ page:
   blog:
     empty: Nog geen artikelen.
     empty_filtered: Geen artikelen komen overeen met je zoekopdracht.
-    end_of_list: You have reached the end.
+    end_of_list: U hebt het einde bereikt.
     heading: Blog
     intro: 'Nieuws, gidsen en productupdates.'
-    loading_more: Loading more…
-    original_linkedin: Original post on LinkedIn
+    loading_more: Meer laden…
+    original_linkedin: Origineel bericht op LinkedIn
     read_more: Meer lezen
     resource_linkedin: LinkedIn
-    resource_linkedin_hint: View on LinkedIn
-    resources_heading: Resources
-    resources_label: Resources
-    search_clear: Clear search
+    resource_linkedin_hint: Bekijken op LinkedIn
+    resources_heading: Bronnen
+    resources_label: Bronnen
+    search_clear: Zoekopdracht wissen
     search_label: Zoeken
     search_placeholder: Artikelen zoeken…
     search_submit: Zoeken
     share: Delen
     sidebar_article_tags: Tags
-    sidebar_label: Browse
-    sidebar_latest: Latest
-    sidebar_related: Related
+    sidebar_label: Bladeren
+    sidebar_latest: Nieuwste
+    sidebar_related: Gerelateerd
     sidebar_tags: Tags
     tags_label: Tags
 public_blog_comment:
@@ -349,14 +349,14 @@ public_blog_comment:
     label: E-mailadres
     placeholder: u@voorbeeld.nl
   author_name:
-    label: Name
+    label: Naam
     placeholder: Uw naam
   body:
-    label: Comment
+    label: Reactie
     placeholder: Schrijf uw reactie…
   privacy_accepted:
-    label: Privacy policy
+    label: Privacybeleid
 staff_blog_comment_reply:
   body:
-    label: Reply
+    label: Antwoord
     placeholder: Schrijf een antwoord…
