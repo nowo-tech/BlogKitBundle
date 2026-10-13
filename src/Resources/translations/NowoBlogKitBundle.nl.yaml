@@ -74,7 +74,7 @@ admin:
   pagination:
     label: Pagination
     next: Next
-    page: Page
+    page: 'Pagina %page% van %total%'
     prev: Previous
   settings:
     lead: 'Configure listing, cards, asides and article extras.'
@@ -145,7 +145,7 @@ blog:
     error_reply: Could not publish the reply.
     form_lead: Your comment will be reviewed before it appears.
     form_title: Leave a comment
-    privacy_accept: I accept the privacy policy
+    privacy_accept: 'Ik ga akkoord met het <a href="%url%" target="_blank" rel="noopener">privacybeleid</a>'
     privacy_required: You must accept the privacy policy.
     reply_submit: Reply
     submit: Reactie verzenden

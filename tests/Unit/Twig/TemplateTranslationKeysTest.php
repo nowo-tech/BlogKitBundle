@@ -17,6 +17,7 @@ use function dirname;
 use function file_get_contents;
 use function glob;
 use function is_array;
+use function is_string;
 use function preg_match;
 use function preg_match_all;
 use function sort;
@@ -25,6 +26,8 @@ use function str_contains;
 use function str_ends_with;
 use function strlen;
 use function substr;
+
+use const PREG_SET_ORDER;
 
 /**
  * Regression: included partials do not inherit the caller's trans_default_domain, so every bundle
@@ -89,6 +92,61 @@ final class TemplateTranslationKeysTest extends TestCase
         sort($missing);
 
         self::assertSame([], $missing, sprintf('Missing keys in %s', basename($catalogueFile)));
+    }
+
+    /**
+     * Regression: a translation that drops a parameter the template passes renders a bare word
+     * (e.g. admin pagination showed "Page" instead of "Page 1 of 2").
+     */
+    #[Test]
+    #[DataProvider('catalogueProvider')]
+    public function parameterisedTemplateKeysKeepTheirPlaceholders(string $catalogueFile): void
+    {
+        $parsed = Yaml::parseFile($catalogueFile);
+        self::assertIsArray($parsed);
+        $messages = $this->flattenMessages($parsed);
+
+        $problems = [];
+        foreach (self::templates() as $relative => $path) {
+            $content = file_get_contents($path);
+            self::assertNotFalse($content);
+            preg_match_all("/'([a-z0-9_]+(?:\\.[a-z0-9_]+)+)'\\s*\\|\\s*trans\\s*\\(\\s*\\{([^}]*)\\}/", $content, $matches, PREG_SET_ORDER);
+            foreach ($matches as [, $key, $parameters]) {
+                if (!isset($messages[$key])) {
+                    continue;
+                }
+
+                preg_match_all("/'(%[a-z_]+%)'\\s*:/", $parameters, $placeholders);
+                foreach ($placeholders[1] as $placeholder) {
+                    if (!str_contains($messages[$key], $placeholder)) {
+                        $problems[] = sprintf('%s: %s lacks %s', $relative, $key, $placeholder);
+                    }
+                }
+            }
+        }
+        sort($problems);
+
+        self::assertSame([], $problems, sprintf('Dropped parameters in %s', basename($catalogueFile)));
+    }
+
+    /**
+     * @param array<mixed> $tree
+     *
+     * @return array<string, string>
+     */
+    private function flattenMessages(array $tree, string $prefix = ''): array
+    {
+        $flat = [];
+        foreach ($tree as $key => $value) {
+            $full = $prefix === '' ? (string) $key : $prefix . '.' . $key;
+            if (is_array($value)) {
+                $flat += $this->flattenMessages($value, $full);
+            } elseif (is_string($value)) {
+                $flat[$full] = $value;
+            }
+        }
+
+        return $flat;
     }
 
     /** @return array<string, string> */

@@ -74,7 +74,7 @@ admin:
   pagination:
     label: Paginación
     next: Siguiente
-    page: Página
+    page: 'Página %page% de %total%'
     prev: Anterior
   settings:
     lead: 'Configura listado, tarjetas, laterales y extras del artículo.'
@@ -145,7 +145,7 @@ blog:
     error_reply: No se pudo publicar la respuesta.
     form_lead: Tu comentario se revisará antes de publicarse.
     form_title: Deja un comentario
-    privacy_accept: Acepto la política de privacidad
+    privacy_accept: 'Acepto la <a href="%url%" target="_blank" rel="noopener">política de privacidad</a>'
     privacy_required: Debes aceptar la política de privacidad.
     reply_submit: Responder
     submit: Enviar comentario
