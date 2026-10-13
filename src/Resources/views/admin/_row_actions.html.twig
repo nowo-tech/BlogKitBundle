@@ -6,8 +6,8 @@
   @var framework string|null Optional css_framework override
   @var display string|null Optional row_actions_display override
 #}
-{% include '@NowoUiKitBundle/partials/_row_actions.html.twig' with {
+{{ include('@NowoUiKitBundle/partials/_row_actions.html.twig', {
   framework: framework|default(nowo_blog_kit_css_framework|default('bootstrap5')),
   display: display|default(nowo_blog_kit_row_actions_display|default('icon')),
   actions: actions,
-} only %}
+}, false) -}}

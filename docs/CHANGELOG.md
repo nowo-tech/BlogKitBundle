@@ -30,6 +30,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Twig coding standard**: `make twig-lint` (twig-cs-fixer) now passes with 0 errors. `admin/_delete_confirm.html.twig` and `admin/_row_actions.html.twig` use the `include()` function (with `with_context = false`, equivalent to the former `{% include … only %}`) and `admin/settings.html.twig` drops hash-literal padding; rendered output is byte-identical (`-}}` keeps the trailing newline trimmed as the tag did). CI runs `composer twig:lint` in a new **Twig lint** job.
+
 ## [1.5.1] - 2026-10-13
 
 ### Fixed

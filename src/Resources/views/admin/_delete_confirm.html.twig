@@ -19,10 +19,10 @@
   }) }}
   <button type="button" class="{{ ui.btn('secondary', 'sm', _css_fw) }}" data-nowo-confirm-close>{{ 'admin.action.cancel'|trans }}</button>
 {% endset %}
-{% include '@NowoUiKitBundle/partials/_confirm.html.twig' with {
+{{ include('@NowoUiKitBundle/partials/_confirm.html.twig', {
   id: id,
   title: title,
   body: body,
   footer: footer,
   framework: _css_fw,
-} only %}
+}, false) -}}
