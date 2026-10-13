@@ -3,6 +3,7 @@
 ## Table of contents
 
 - [Unreleased](#unreleased)
+- [To 1.5.0](#to-150)
 - [To 1.4.5](#to-145)
 - [To 1.4.4](#to-144)
 - [To 1.4.3](#to-143)
@@ -25,6 +26,14 @@
 - [Future releases](#future-releases)
 
 ## Unreleased
+
+## To 1.5.0
+
+From **1.4.5** — no raw translation keys in admin and public forms, localized tag labels
+
+```bash
+composer update nowo-tech/blog-kit-bundle
+```
 
 - Blog kit form types no longer render FormKit's convention `{form}.{field}.help` / `.placeholder` keys implicitly (they were untranslated and appeared verbatim). If your app translated any of those keys in its own `NowoBlogKitBundle` catalogue and wants them back, override the form type (or use a form type extension) to pass `help` / `placeholder` explicitly. No action needed otherwise.
 
