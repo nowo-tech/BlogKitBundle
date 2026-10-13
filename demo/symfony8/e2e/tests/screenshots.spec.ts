@@ -62,7 +62,24 @@ async function waitProfiler(page: import('@playwright/test').Page) {
     .catch(() => {});
 }
 
+/** Waits for web fonts and visible images (demo covers come from picsum.photos). */
+async function waitMedia(page: import('@playwright/test').Page) {
+  await page.waitForLoadState('networkidle', { timeout: 20000 }).catch(() => {});
+  await page.evaluate(() => document.fonts.ready).catch(() => {});
+  await page
+    .waitForFunction(
+      () =>
+        Array.from(document.images)
+          .filter((img) => img.getBoundingClientRect().top < window.innerHeight)
+          .every((img) => img.complete),
+      undefined,
+      { timeout: 20000 },
+    )
+    .catch(() => {});
+}
+
 async function capture(page: import('@playwright/test').Page, file: string) {
+  await waitMedia(page);
   const clip = await clipDemoFrame(page);
   if (clip.height >= 700) {
     await page.screenshot({ path: resolve(outDir, file), clip });

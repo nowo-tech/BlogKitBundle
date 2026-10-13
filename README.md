@@ -15,15 +15,15 @@ This bundle is **FrankenPHP worker mode friendly**, including the strict case wh
 <table>
   <tr>
     <td align="center" width="33%">
-      <img src="docs/images/demo/overview.png" alt="Demo masthead and public blog index with article cards" />
+      <img src="docs/images/demo/overview.webp" alt="Demo masthead and public blog index with article cards" />
       <br /><sub>Public blog index</sub>
     </td>
     <td align="center" width="33%">
-      <img src="docs/images/demo/article.png" alt="Demo masthead and published article detail" />
+      <img src="docs/images/demo/article.webp" alt="Demo masthead and published article detail" />
       <br /><sub>Article detail</sub>
     </td>
     <td align="center" width="33%">
-      <img src="docs/images/demo/admin.png" alt="Demo masthead and admin articles CRUD" />
+      <img src="docs/images/demo/admin.webp" alt="Demo masthead and admin articles CRUD" />
       <br /><sub>Admin articles</sub>
     </td>
   </tr>
@@ -98,7 +98,7 @@ make test
 make phpstan
 make igor
 make -C demo/symfony8 up
-make -C demo/symfony8 demo-screenshots   # refreshes docs/images/demo/*.png
+make -C demo/symfony8 demo-screenshots   # refreshes docs/images/demo/*.webp
 make demo-smoke
 ```
 
