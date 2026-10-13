@@ -40,6 +40,8 @@ use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\Form\Forms;
 use Symfony\Component\Form\PreloadedExtension;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Security\Csrf\CsrfTokenManager;
 use Symfony\Component\Validator\Constraints\Email;
@@ -206,6 +208,53 @@ final class BlogFormTypesTest extends TestCase
 
         $queryBuilderFactory = $captured['tags'][1]['query_builder'];
         self::assertSame($queryBuilder, $queryBuilderFactory($tagRepository));
+    }
+
+    #[Test]
+    public function itLabelsBlogArticleTagChoicesInTheRequestLocaleWithDefaultFallback(): void
+    {
+        $tag = (new BlogTag())->setSlug('php');
+        $tag->ensureTranslations(['es', 'en']);
+        $tag->getTranslationOrFallback('es')->setName('Programación');
+        $tag->getTranslationOrFallback('en')->setName('Programming');
+
+        $onlySpanish = (new BlogTag())->setSlug('solo');
+        $onlySpanish->ensureTranslations(['es']);
+        $onlySpanish->getTranslationOrFallback('es')->setName('Solo español');
+
+        $labelFor = function (?string $requestLocale): callable {
+            $requestStack = new RequestStack();
+            if ($requestLocale !== null) {
+                $request = new Request();
+                $request->setLocale($requestLocale);
+                $requestStack->push($request);
+            }
+
+            $merger = FormKitTestSupport::merger();
+            $type   = FormKitTestSupport::withMerger(
+                new BlogArticleType($merger, FormKitTestSupport::typeMap(), LocaleTestSupport::create(), $requestStack),
+            );
+            $captured = [];
+            $builder  = $this->createStub(FormBuilderInterface::class);
+            $builder->method('add')->willReturnCallback(static function (string $name, string $fieldType, array $options) use (&$captured, $builder): FormBuilderInterface {
+                $captured[$name] = $options;
+
+                return $builder;
+            });
+            $type->buildForm($builder, []);
+
+            self::assertIsCallable($captured['tags']['choice_label']);
+
+            return $captured['tags']['choice_label'];
+        };
+
+        // English UI: English names, not hardcoded Spanish.
+        self::assertSame('Programming (php)', $labelFor('en')($tag));
+        // Missing translation in the request locale falls back to the configured default locale (es).
+        self::assertSame('Solo español (solo)', $labelFor('en')($onlySpanish));
+        // Request locale outside nowo_blog_kit.locales and no request at all use the default locale.
+        self::assertSame('Programación (php)', $labelFor('fr')($tag));
+        self::assertSame('Programación (php)', $labelFor(null)($tag));
     }
 
     #[Test]

@@ -7,13 +7,17 @@ namespace Nowo\BlogKitBundle\Form;
 use Doctrine\ORM\QueryBuilder;
 use Nowo\BlogKitBundle\Entity\BlogArticle;
 use Nowo\BlogKitBundle\Entity\BlogTag;
+use Nowo\BlogKitBundle\Locale\BlogLocales;
 use Nowo\BlogKitBundle\Repository\BlogTagRepository;
+use Nowo\FormKitBundle\Form\FormOptionsMerger;
+use Nowo\FormKitBundle\Form\FormTypeMap;
 use Override;
 use SortDirection;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\Extension\Core\Type\CollectionType;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\Form\FormBuilderInterface;
+use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 /**
@@ -23,9 +27,20 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
  */
 final class BlogArticleType extends AbstractBlogFormType
 {
+    public function __construct(
+        FormOptionsMerger $formOptionsMerger,
+        FormTypeMap $formTypeMap,
+        private readonly ?BlogLocales $blogLocales = null,
+        private readonly ?RequestStack $requestStack = null,
+    ) {
+        parent::__construct($formOptionsMerger, $formTypeMap);
+    }
+
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
-        $this->withBuilder($builder, function (): void {
+        $tagLabel = $this->tagChoiceLabel();
+
+        $this->withBuilder($builder, function () use ($tagLabel): void {
             $this->addTextField('slug');
             $this->addTextField('image', [
                 'required' => false,
@@ -43,7 +58,7 @@ final class BlogArticleType extends AbstractBlogFormType
             ]);
             $this->addTypedField('tags', EntityType::class, [
                 'class'         => BlogTag::class,
-                'choice_label'  => static fn (BlogTag $blogTag): string => $blogTag->getName('es') . ' (' . $blogTag->getSlug() . ')',
+                'choice_label'  => $tagLabel,
                 'query_builder' => static fn (BlogTagRepository $blogTagRepository): QueryBuilder => $blogTagRepository->createQueryBuilder('t')
                     ->leftJoin('t.translations', 'tt')
                     ->addSelect('tt')
@@ -69,6 +84,27 @@ final class BlogArticleType extends AbstractBlogFormType
             ]);
             $this->addTranslationsCollectionField(BlogArticleTranslationType::class);
         });
+    }
+
+    /**
+     * Tag choice labels follow the current request locale (when it is a configured blog locale) and
+     * fall back to nowo_blog_kit.default_locale, then to the tag's first translation.
+     *
+     * @return callable(BlogTag): string
+     */
+    private function tagChoiceLabel(): callable
+    {
+        $default = $this->blogLocales?->getDefault();
+        $locale  = $this->requestStack?->getCurrentRequest()?->getLocale();
+        if ($locale === null || !$this->blogLocales instanceof BlogLocales || !$this->blogLocales->isSupported($locale)) {
+            $locale = $default;
+        }
+
+        return static function (BlogTag $blogTag) use ($locale, $default): string {
+            $name = $locale === null ? $blogTag->getName() : $blogTag->getTranslationOrFallback($locale, $default)->getName();
+
+            return $name . ' (' . $blogTag->getSlug() . ')';
+        };
     }
 
     #[Override]
