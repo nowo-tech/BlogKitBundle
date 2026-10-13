@@ -14,12 +14,21 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 
 use function is_numeric;
+use function is_string;
+use function strtolower;
 
 /**
  * Verifies reCAPTCHA v2/v3, hCaptcha, or Cloudflare Turnstile tokens.
+ *
+ * A token is accepted only when siteverify reports success, the `hostname` it was solved on
+ * (when returned) matches the current request host, and, for reCAPTCHA v3, the `action` is
+ * {@see self::RECAPTCHA_V3_ACTION} and the score reaches the minimum.
  */
 final readonly class RemoteCommentCaptchaStrategy implements BlogCommentCaptchaStrategyInterface
 {
+    /** reCAPTCHA v3 action sent by the comment form and expected back from siteverify. */
+    public const string RECAPTCHA_V3_ACTION = 'blog_comment';
+
     private const array ENDPOINTS = [
         'recaptcha_v2' => 'https://www.google.com/recaptcha/api/siteverify',
         'recaptcha_v3' => 'https://www.google.com/recaptcha/api/siteverify',
@@ -107,8 +116,19 @@ final readonly class RemoteCommentCaptchaStrategy implements BlogCommentCaptchaS
             return false;
         }
 
+        // A token solved on another site (same keys reused, or a harvested token) is rejected.
+        $hostname = $payload['hostname'] ?? null;
+        if ($hostname !== null && (!is_string($hostname) || strtolower($hostname) !== strtolower($request->getHost()))) {
+            return false;
+        }
+
         if ($this->provider !== CommentCaptchaStrategy::RecaptchaV3) {
             return true;
+        }
+
+        $action = $payload['action'] ?? null;
+        if ($action !== null && $action !== self::RECAPTCHA_V3_ACTION) {
+            return false;
         }
 
         $score = $payload['score'] ?? 0;

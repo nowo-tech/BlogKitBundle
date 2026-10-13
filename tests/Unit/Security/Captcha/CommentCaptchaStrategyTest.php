@@ -14,6 +14,7 @@ use Nowo\BlogKitBundle\Security\Captcha\RemoteCommentCaptchaStrategy;
 use Nowo\BlogKitBundle\Security\Captcha\StreamCaptchaHttpClient;
 use Nowo\BlogKitBundle\Tests\Support\BlogProtectionTestFactory;
 use Nowo\BlogKitBundle\Tests\Support\FormKitTestSupport;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Form\Extension\HttpFoundation\HttpFoundationExtension;
@@ -251,6 +252,46 @@ final class CommentCaptchaStrategyTest extends TestCase
             'secret',
         );
         self::assertTrue($this->submittedRootForm($turnstile)->isValid());
+    }
+
+    /**
+     * @return iterable<string, array{CommentCaptchaStrategy, string, array<string, mixed>, bool}>
+     */
+    public static function remoteHostnameAndActionPayloads(): iterable
+    {
+        foreach ([
+            [CommentCaptchaStrategy::RecaptchaV2, 'g-recaptcha-response'],
+            [CommentCaptchaStrategy::RecaptchaV3, 'g-recaptcha-response'],
+            [CommentCaptchaStrategy::Hcaptcha, 'h-captcha-response'],
+            [CommentCaptchaStrategy::Turnstile, 'cf-turnstile-response'],
+        ] as [$provider, $field]) {
+            $base = ['success' => true, 'score' => 0.9, 'action' => RemoteCommentCaptchaStrategy::RECAPTCHA_V3_ACTION];
+
+            yield $provider->value . ' token solved on another host' => [$provider, $field, $base + ['hostname' => 'evil.example'], false];
+            yield $provider->value . ' empty hostname' => [$provider, $field, $base + ['hostname' => ''], false];
+            yield $provider->value . ' non-string hostname' => [$provider, $field, $base + ['hostname' => 123], false];
+            yield $provider->value . ' matching hostname (case-insensitive)' => [$provider, $field, $base + ['hostname' => 'Blog.Example.COM'], true];
+            yield $provider->value . ' no hostname returned' => [$provider, $field, $base, true];
+        }
+
+        $v3 = ['success' => true, 'score' => 0.9, 'hostname' => 'blog.example.com'];
+        yield 'recaptcha_v3 other action' => [CommentCaptchaStrategy::RecaptchaV3, 'g-recaptcha-response', $v3 + ['action' => 'login'], false];
+        yield 'recaptcha_v3 no action returned' => [CommentCaptchaStrategy::RecaptchaV3, 'g-recaptcha-response', $v3, true];
+        yield 'recaptcha_v2 ignores action' => [CommentCaptchaStrategy::RecaptchaV2, 'g-recaptcha-response', $v3 + ['action' => 'login'], true];
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     */
+    #[Test]
+    #[DataProvider('remoteHostnameAndActionPayloads')]
+    public function remoteChecksSiteverifyHostnameAndV3Action(CommentCaptchaStrategy $provider, string $field, array $payload, bool $valid): void
+    {
+        $stack = new RequestStack();
+        $stack->push(Request::create('https://blog.example.com/blog/post', 'POST', [$field => 'token']));
+        $strategy = new RemoteCommentCaptchaStrategy($provider, $this->http($payload), $stack, 'site', 'secret');
+
+        self::assertSame($valid, $this->submittedRootForm($strategy)->isValid());
     }
 
     #[Test]

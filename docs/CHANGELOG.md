@@ -25,6 +25,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- **HTML allowlist:** an `<iframe>` is now kept only when its `src` is an absolute `https://` URL on the YouTube/Vimeo list. Previously only the host was checked, so `<iframe src="javascript://www.youtube.com/%0Aalert(document.cookie)">` survived and ran on the public article page. Protocol-relative, `http`, userinfo (`user@host`) and backslash forms are rejected as well.
+- **Remote CAPTCHA (`recaptcha_v2`, `recaptcha_v3`, `hcaptcha`, `turnstile`):** a token is rejected when siteverify reports a `hostname` other than the current request host, and reCAPTCHA v3 tokens whose `action` is not `blog_comment` are rejected too (a token solved on another site that uses the same keys is no longer accepted).
+
 ## [1.4.3] - 2026-10-13
 
 ### Changed

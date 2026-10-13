@@ -79,14 +79,14 @@ Admin create/edit/delete, comment approve/reject/reply/delete, settings save, an
 - New comments are stored as **pending** until a moderator approves them.
 - The privacy checkbox label can point at `web_ui.privacy_url`.
 - Rate limiting defaults to `fixed_window` (5 posts / 60s per IP) via `cache.app`. Switch strategy in YAML or admin settings.
-- CAPTCHA defaults to a hidden honeypot. Remote providers (`recaptcha_v2`, `recaptcha_v3`, `hcaptcha`, `turnstile`) need `site_key` / `secret_key` in YAML.
+- CAPTCHA defaults to a hidden honeypot. Remote providers (`recaptcha_v2`, `recaptcha_v3`, `hcaptcha`, `turnstile`) need `site_key` / `secret_key` in YAML. When siteverify returns a `hostname`, it must equal the request host (`Request::getHost()`, so configure trusted proxies / hosts behind a reverse proxy); reCAPTCHA v3 tokens must also carry the `blog_comment` action.
 - Public staff replies require `canModerate()`.
 
 ## Rich text rendering
 
 `public/show.html.twig` renders editor-authored article HTML with `|raw`. The **default** strategy is `allowlist`. Set `html.sanitize.strategy: none` only for fully trusted editors.
 
-The `allowlist` sanitizer removes executable / raw-text elements (`script`, `style`, `template`, `svg`, `math`, `object`, `embed`, `meta`, `link`, `base`, …) with their content, unwraps other unknown elements and sanitizes their children, and only keeps `http(s)` / `mailto:` / same-origin relative URLs (protocol-relative `//host`, `/\host` and whitespace-split variants are rejected).
+The `allowlist` sanitizer removes executable / raw-text elements (`script`, `style`, `template`, `svg`, `math`, `object`, `embed`, `meta`, `link`, `base`, …) with their content, unwraps other unknown elements and sanitizes their children, and only keeps `http(s)` / `mailto:` / same-origin relative URLs in `href` and image `src` (protocol-relative `//host`, `/\host` and whitespace-split variants are rejected). An `iframe` is kept only when its `src` is an absolute `https://` URL on the YouTube / Vimeo allowlist (no other scheme, no userinfo or backslash in the authority).
 
 ## Infinite scroll HTML
 

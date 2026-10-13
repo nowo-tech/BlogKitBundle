@@ -10,6 +10,7 @@ use DOMElement;
 use DOMNode;
 
 use function in_array;
+use function is_array;
 use function is_string;
 use function sprintf;
 
@@ -17,7 +18,6 @@ use const ENT_QUOTES;
 use const ENT_SUBSTITUTE;
 use const LIBXML_HTML_NODEFDTD;
 use const LIBXML_HTML_NOIMPLIED;
-use const PHP_URL_HOST;
 
 /**
  * Allowlist sanitizer for CMS article bodies (`allowlist` strategy).
@@ -180,10 +180,22 @@ final class AllowlistBlogHtmlSanitizer implements BlogHtmlSanitizerInterface
 
     private function isAllowedIframe(DOMElement $element): bool
     {
-        $src  = trim($element->getAttribute('src'));
-        $host = parse_url($src, PHP_URL_HOST);
+        $src = str_replace(["\t", "\n", "\r"], '', trim($element->getAttribute('src')));
 
-        return is_string($host) && in_array($host, self::ALLOWED_EMBED_HOSTS, true);
+        // Absolute https only: `javascript://www.youtube.com/%0A…` has an allowed "host" too, and
+        // protocol-relative / backslash / userinfo forms are parsed differently by browsers.
+        if (preg_match('#^https://#i', $src) !== 1 || str_contains($src, '\\')) {
+            return false;
+        }
+
+        $parts = parse_url($src);
+        if (!is_array($parts) || isset($parts['user']) || isset($parts['pass'])) {
+            return false;
+        }
+
+        $host = $parts['host'] ?? null;
+
+        return is_string($host) && in_array(strtolower($host), self::ALLOWED_EMBED_HOSTS, true);
     }
 
     private function isAllowedHref(string $href): bool

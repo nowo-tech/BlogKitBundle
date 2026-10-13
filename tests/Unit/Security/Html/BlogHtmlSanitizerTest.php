@@ -7,6 +7,7 @@ namespace Nowo\BlogKitBundle\Tests\Unit\Security\Html;
 use Nowo\BlogKitBundle\Security\Html\AllowlistBlogHtmlSanitizer;
 use Nowo\BlogKitBundle\Security\Html\NullBlogHtmlSanitizer;
 use Nowo\BlogKitBundle\Security\Html\StripBlogHtmlSanitizer;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
@@ -128,5 +129,69 @@ final class BlogHtmlSanitizerTest extends TestCase
         );
 
         self::assertStringNotContainsString('evil.test', $result);
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function rejectedIframeSources(): iterable
+    {
+        yield 'javascript scheme with allowed host' => ['javascript://www.youtube.com/%0Aalert(document.cookie)'];
+        yield 'uppercase javascript scheme' => ['JAVASCRIPT://www.youtube.com/%0Aalert(1)'];
+        yield 'entity-encoded javascript scheme' => ['&#106;avascript://www.youtube.com/%0Aalert(1)'];
+        yield 'tab inside scheme' => ["java\tscript://www.youtube.com/%0Aalert(1)"];
+        yield 'data scheme' => ['data://www.youtube.com/text/html,x'];
+        yield 'plain http' => ['http://www.youtube.com/embed/abc'];
+        yield 'protocol-relative' => ['//www.youtube.com/embed/abc'];
+        yield 'backslash authority' => ['https://evil.example\@www.youtube.com/embed/abc'];
+        yield 'userinfo' => ['https://evil.example@www.youtube.com/embed/abc'];
+        yield 'unparsable' => ['https:///embed/abc'];
+    }
+
+    #[Test]
+    #[DataProvider('rejectedIframeSources')]
+    public function allowlistRejectsIframeSourcesThatAreNotHttpsOnAllowedHost(string $src): void
+    {
+        $result = (new AllowlistBlogHtmlSanitizer())->sanitize('<p>v</p><iframe src="' . $src . '"></iframe>');
+
+        self::assertStringNotContainsString('iframe', strtolower($result));
+        self::assertStringNotContainsString('alert', $result);
+        self::assertStringContainsString('<p>v</p>', $result);
+    }
+
+    #[Test]
+    public function allowlistKeepsHttpsEmbedWithUppercaseHost(): void
+    {
+        $result = (new AllowlistBlogHtmlSanitizer())->sanitize('<iframe src="HTTPS://WWW.YOUTUBE.COM/embed/abc"></iframe>');
+
+        self::assertStringContainsString('<iframe src="HTTPS://WWW.YOUTUBE.COM/embed/abc"></iframe>', $result);
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function rejectedLinkAndImageUrls(): iterable
+    {
+        yield 'decimal entity javascript' => ['&#106;avascript:alert(1)'];
+        yield 'hex entity javascript' => ['&#x6A;avascript:alert(1)'];
+        yield 'tab inside scheme' => ["java\tscript:alert(1)"];
+        yield 'leading space mixed case' => ['  JaVaScRiPt:alert(1)'];
+        yield 'vbscript' => ['vbscript:alert(1)'];
+        yield 'data html' => ['data:text/html,alert(1)'];
+    }
+
+    #[Test]
+    #[DataProvider('rejectedLinkAndImageUrls')]
+    public function allowlistRejectsDangerousHrefAndSrcSchemes(string $url): void
+    {
+        $sanitizer = new AllowlistBlogHtmlSanitizer();
+
+        foreach (['<a href="' . $url . '">x</a>', "<a href='" . $url . "'>x</a>", '<img src="' . $url . '">'] as $html) {
+            $result = $sanitizer->sanitize($html);
+
+            self::assertStringNotContainsString('href=', $result);
+            self::assertStringNotContainsString('src=', $result);
+            self::assertStringNotContainsString('alert', $result);
+        }
     }
 }

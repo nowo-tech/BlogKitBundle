@@ -54,6 +54,6 @@ final class PublicBlogCommentCaptchaTypeExtension extends AbstractTypeExtension
 
         $view->vars['attr']['data-blog-captcha']         = 'recaptcha_v3';
         $view->vars['attr']['data-blog-captcha-sitekey'] = $context['site_key'];
-        $view->vars['attr']['data-blog-captcha-action']  = 'blog_comment';
+        $view->vars['attr']['data-blog-captcha-action']  = RemoteCommentCaptchaStrategy::RECAPTCHA_V3_ACTION;
     }
 }

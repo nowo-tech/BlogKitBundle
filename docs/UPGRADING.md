@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- **Embeds:** stored article iframes with `http://`, protocol-relative (`//…`) or otherwise non-`https` YouTube/Vimeo URLs are now dropped by the `allowlist` sanitizer. Switch them to `https://`.
+- **Remote CAPTCHA:** the siteverify `hostname` must match the request host. Behind a reverse proxy, configure `framework.trusted_proxies` / `trusted_headers` so `Request::getHost()` is the public host. Provider test keys that report a fixed hostname (e.g. reCAPTCHA `testkey.google.com`) now fail verification. reCAPTCHA v3 tokens must use the `blog_comment` action (the bundled script already does).
+
 ## To 1.4.3
 
 From **1.4.2** — dependency refresh and repository maintenance.
