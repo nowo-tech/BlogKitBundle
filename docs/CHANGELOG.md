@@ -26,6 +26,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Assets:** removed `src/Resources/public/blog.scss`, a byte-identical copy of `blog.css` that `assets:install` published to `public/bundles/nowoblogkit/` without any use (no build step reads it). `blog.css` stays the stylesheet source.
+- **Dev:** Vitest 4 (`vitest` / `@vitest/coverage-v8` `^4.1.11`).
+
 ## [1.4.4] - 2026-10-13
 
 ### Security
