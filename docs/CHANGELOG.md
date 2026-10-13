@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Table of contents
 
 - [Unreleased](#unreleased)
+- [1.4.4 - 2026-10-13](#144---2026-10-13)
 - [1.4.3 - 2026-10-13](#143---2026-10-13)
 - [1.4.2 - 2026-10-09](#142---2026-10-09)
 - [1.4.1 - 2026-09-28](#141---2026-09-28)
@@ -24,6 +25,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [1.0.0 - 2026-08-18](#100---2026-08-18)
 
 ## [Unreleased]
+
+## [1.4.4] - 2026-10-13
 
 ### Security
 
@@ -253,7 +256,8 @@ Initial public release of **Blog Kit Bundle** (`nowo-tech/blog-kit-bundle`).
 - CSRF-protected admin mutations and public comment forms; deletes go through native confirm dialogs
 - Comment bodies escaped in Twig; article HTML documented as trusted-editor `|raw`
 
-[Unreleased]: https://github.com/nowo-tech/BlogKitBundle/compare/v1.4.3...HEAD
+[Unreleased]: https://github.com/nowo-tech/BlogKitBundle/compare/v1.4.4...HEAD
+[1.4.4]: https://github.com/nowo-tech/BlogKitBundle/compare/v1.4.3...v1.4.4
 [1.4.3]: https://github.com/nowo-tech/BlogKitBundle/compare/v1.4.2...v1.4.3
 [1.4.2]: https://github.com/nowo-tech/BlogKitBundle/compare/v1.4.1...v1.4.2
 [1.1.3]: https://github.com/nowo-tech/BlogKitBundle/releases/tag/v1.1.3

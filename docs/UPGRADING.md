@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+## To 1.4.4
+
+From **1.4.3** — security - https-only embed iframes, CAPTCHA hostname/action checks.
+
+```bash
+composer update nowo-tech/blog-kit-bundle
+```
+
 - **Embeds:** stored article iframes with `http://`, protocol-relative (`//…`) or otherwise non-`https` YouTube/Vimeo URLs are now dropped by the `allowlist` sanitizer. Switch them to `https://`.
 - **Remote CAPTCHA:** the siteverify `hostname` must match the request host. Behind a reverse proxy, configure `framework.trusted_proxies` / `trusted_headers` so `Request::getHost()` is the public host. Provider test keys that report a fixed hostname (e.g. reCAPTCHA `testkey.google.com`) now fail verification. reCAPTCHA v3 tokens must use the `blog_comment` action (the bundled script already does).
 
@@ -61,6 +69,7 @@ This document describes how to upgrade **Blog Kit Bundle** between released vers
 
 ## Table of contents
 
+- [To 1.4.4](#to-144)
 - [To 1.4.3](#to-143)
 - [To 1.4.2](#to-142)
 - [From 1.2.0 to 1.3.0](#from-120-to-130)
