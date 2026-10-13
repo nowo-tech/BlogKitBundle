@@ -1,5 +1,29 @@
 # Upgrading
 
+## Table of contents
+
+- [Unreleased](#unreleased)
+- [To 1.4.5](#to-145)
+- [To 1.4.4](#to-144)
+- [To 1.4.3](#to-143)
+- [To 1.4.2](#to-142)
+- [To 1.4.1](#to-141)
+- [To 1.4.0](#to-140)
+- [To 1.3.1](#to-131)
+- [From 1.2.0 to 1.3.0](#from-120-to-130)
+- [From 1.1.7 to 1.2.0](#from-117-to-120)
+  - [Breaking / behaviour changes](#breaking--behaviour-changes)
+  - [Upgrade steps](#upgrade-steps)
+- [From 1.1.6 to 1.1.7](#from-116-to-117)
+- [1.1.6](#116)
+- [1.1.5](#115)
+- [1.1.3](#113)
+- [1.1.2](#112)
+- [1.1.1](#111)
+- [1.1.0](#110)
+- [1.0.0](#100)
+- [Future releases](#future-releases)
+
 ## Unreleased
 
 ## To 1.4.5
@@ -76,24 +100,6 @@ php bin/console cache:clear
 - No application upgrade steps for require-dev Igor tooling (REQ-CS-008). Consumers do not pull `igor-php/igor-php` transitively.
 
 This document describes how to upgrade **Blog Kit Bundle** between released versions.
-
-## Table of contents
-
-- [To 1.4.5](#to-145)
-- [To 1.4.4](#to-144)
-- [To 1.4.3](#to-143)
-- [To 1.4.2](#to-142)
-- [From 1.2.0 to 1.3.0](#from-120-to-130)
-- [From 1.1.7 to 1.2.0](#from-117-to-120)
-- [From 1.1.6 to 1.1.7](#from-116-to-117)
-- [1.1.6](#116)
-- [1.1.5](#115)
-- [1.1.3](#113)
-- [1.1.2](#112)
-- [1.1.1](#111)
-- [1.1.0](#110)
-- [1.0.0](#100)
-- [Future releases](#future-releases)
 
 ## From 1.2.0 to 1.3.0
 
