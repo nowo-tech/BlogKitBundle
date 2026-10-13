@@ -37,6 +37,25 @@ abstract class AbstractBlogFormType extends FormKitAbstractType
     }
 
     /**
+     * Blog kit forms only show help / placeholder copy that is passed explicitly: FormKit's
+     * convention keys ({form}.{field}.help / .placeholder) are not shipped in the catalogues for
+     * every field, and an untranslated key would be rendered verbatim in the UI.
+     *
+     * @param FormBuilderInterface<mixed> $builder
+     * @param array<string, mixed> $options
+     */
+    #[Override]
+    protected function addField(FormBuilderInterface $builder, string $name, string $typeSnakeCase, array $options = []): void
+    {
+        $options += ['help' => false];
+        if (!isset($options['attr']['placeholder'])) {
+            $options += ['placeholder' => false];
+        }
+
+        parent::addField($builder, $name, $typeSnakeCase, $options);
+    }
+
+    /**
      * @param FormBuilderInterface<TData> $builder
      * @param array<string, mixed> $options
      */

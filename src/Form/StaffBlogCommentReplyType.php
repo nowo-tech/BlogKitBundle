@@ -22,6 +22,7 @@ final class StaffBlogCommentReplyType extends AbstractBlogFormType
         $this->withBuilder($builder, function (): void {
             $this->addTextareaField('body', [
                 'attr'        => ['rows' => 4],
+                'placeholder' => 'staff_blog_comment_reply.body.placeholder',
                 'constraints' => [
                     new NotBlank(),
                     new Length(min: 1, max: 5000),

@@ -28,6 +28,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Translations:** raw translation keys no longer leak into the UI. The admin list filters get real placeholders (`admin_blog_article_filter.{title,slug,published}.placeholder`, comment and tag filter equivalents); the audit column headers (`admin.audit.updated_at` / `updated_by`) and the locale tabs now translate in the `NowoBlogKitBundle` domain (both partials lacked `trans_default_domain`; locale tabs fall back to the bare code when no `locale.<code>` name exists); the public comment form gets real name / email / comment placeholders and the missing `public_blog_comment.author_email.label`; the staff reply textarea gets a placeholder. All keys added to the seven shipped locales.
+- **Forms:** blog kit form types (`AbstractBlogFormType`) no longer render FormKit's convention `{form}.{field}.help` / `.placeholder` keys unless the field passes them explicitly (they were shown verbatim in the article, tag, settings and comment forms). Settings fields that ship help copy pass it explicitly. New regression tests render every bundle form and check that every label / help / placeholder / choice key exists in every catalogue, and that every translating template declares the bundle domain.
+
 ## [1.4.5] - 2026-10-13
 
 ### Changed

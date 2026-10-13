@@ -108,24 +108,33 @@ admin:
     title: Tags
   title: Blog
 admin_blog_article_filter:
+  published:
+    placeholder: Tous
   slug:
     label: Slug
+    placeholder: Rechercher par slug…
   title:
     label: Title
+    placeholder: Rechercher par titre…
 admin_blog_comment_filter:
   article:
     label: Article
+    placeholder: Rechercher par article…
   author:
     label: Author
+    placeholder: Rechercher par auteur…
   body:
     label: Body
+    placeholder: Rechercher dans le texte du commentaire…
   status:
     label: Status
 admin_blog_tag_filter:
   name:
     label: Name
+    placeholder: Rechercher par nom…
   slug:
     label: Slug
+    placeholder: Rechercher par slug…
 blog:
   article:
     hashtags_label: Hashtags
@@ -302,6 +311,14 @@ blog_tag_translation:
     label: Name
 cms:
   edit_blog_post: Edit post
+locale:
+  de: Allemand
+  en: Anglais
+  es: Espagnol
+  fr: Français
+  it: Italien
+  nl: Néerlandais
+  pt: Portugais
 page:
   blog:
     empty: Aucun article pour le moment.
@@ -328,12 +345,18 @@ page:
     sidebar_tags: Tags
     tags_label: Tags
 public_blog_comment:
+  author_email:
+    label: Adresse e-mail
+    placeholder: vous@exemple.fr
   author_name:
     label: Name
+    placeholder: Votre nom
   body:
     label: Comment
+    placeholder: Écrivez votre commentaire…
   privacy_accepted:
     label: Privacy policy
 staff_blog_comment_reply:
   body:
     label: Reply
+    placeholder: Écrivez une réponse…

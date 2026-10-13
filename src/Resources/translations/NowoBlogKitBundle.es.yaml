@@ -108,24 +108,33 @@ admin:
     title: Etiquetas
   title: Blog
 admin_blog_article_filter:
+  published:
+    placeholder: Todos
   slug:
     label: Slug
+    placeholder: Buscar por slug…
   title:
     label: Título
+    placeholder: Buscar por título…
 admin_blog_comment_filter:
   article:
     label: Artículo
+    placeholder: Buscar por artículo…
   author:
     label: Autor
+    placeholder: Buscar por autor…
   body:
     label: Contenido
+    placeholder: Buscar en el texto del comentario…
   status:
     label: Estado
 admin_blog_tag_filter:
   name:
     label: Nombre
+    placeholder: Buscar por nombre…
   slug:
     label: Slug
+    placeholder: Buscar por slug…
 blog:
   article:
     hashtags_label: Hashtags
@@ -302,6 +311,14 @@ blog_tag_translation:
     label: Nombre
 cms:
   edit_blog_post: Editar entrada
+locale:
+  de: Alemán
+  en: Inglés
+  es: Español
+  fr: Francés
+  it: Italiano
+  nl: Neerlandés
+  pt: Portugués
 page:
   blog:
     empty: Todavía no hay artículos.
@@ -328,12 +345,18 @@ page:
     sidebar_tags: Etiquetas
     tags_label: Etiquetas
 public_blog_comment:
+  author_email:
+    label: Correo electrónico
+    placeholder: tu@ejemplo.com
   author_name:
     label: Nombre
+    placeholder: Tu nombre
   body:
     label: Comentario
+    placeholder: Escribe tu comentario…
   privacy_accepted:
     label: Política de privacidad
 staff_blog_comment_reply:
   body:
     label: Respuesta
+    placeholder: Escribe una respuesta…

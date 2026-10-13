@@ -108,24 +108,33 @@ admin:
     title: Tags
   title: Blog
 admin_blog_article_filter:
+  published:
+    placeholder: Alle
   slug:
     label: Slug
+    placeholder: Zoeken op slug…
   title:
     label: Title
+    placeholder: Zoeken op titel…
 admin_blog_comment_filter:
   article:
     label: Article
+    placeholder: Zoeken op artikel…
   author:
     label: Author
+    placeholder: Zoeken op auteur…
   body:
     label: Body
+    placeholder: Zoeken in reactietekst…
   status:
     label: Status
 admin_blog_tag_filter:
   name:
     label: Name
+    placeholder: Zoeken op naam…
   slug:
     label: Slug
+    placeholder: Zoeken op slug…
 blog:
   article:
     hashtags_label: Hashtags
@@ -302,6 +311,14 @@ blog_tag_translation:
     label: Name
 cms:
   edit_blog_post: Edit post
+locale:
+  de: Duits
+  en: Engels
+  es: Spaans
+  fr: Frans
+  it: Italiaans
+  nl: Nederlands
+  pt: Portugees
 page:
   blog:
     empty: Nog geen artikelen.
@@ -328,12 +345,18 @@ page:
     sidebar_tags: Tags
     tags_label: Tags
 public_blog_comment:
+  author_email:
+    label: E-mailadres
+    placeholder: u@voorbeeld.nl
   author_name:
     label: Name
+    placeholder: Uw naam
   body:
     label: Comment
+    placeholder: Schrijf uw reactie…
   privacy_accepted:
     label: Privacy policy
 staff_blog_comment_reply:
   body:
     label: Reply
+    placeholder: Schrijf een antwoord…

@@ -23,12 +23,14 @@ final class PublicBlogCommentType extends AbstractBlogFormType
     {
         $this->withBuilder($builder, function (): void {
             $this->addTextField('authorName', [
+                'placeholder' => 'public_blog_comment.author_name.placeholder',
                 'constraints' => [
                     new NotBlank(),
                     new Length(max: 120),
                 ],
             ]);
             $this->addEmailField('authorEmail', [
+                'placeholder' => 'public_blog_comment.author_email.placeholder',
                 'constraints' => [
                     new NotBlank(),
                     new Email(),
@@ -37,6 +39,7 @@ final class PublicBlogCommentType extends AbstractBlogFormType
             ]);
             $this->addTextareaField('body', [
                 'attr'        => ['rows' => 5],
+                'placeholder' => 'public_blog_comment.body.placeholder',
                 'constraints' => [
                     new NotBlank(),
                     new Length(min: 3, max: 5000),

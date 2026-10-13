@@ -98,9 +98,11 @@ final class BlogSettingsType extends AbstractBlogFormType
             'choice_translation_domain' => 'NowoBlogKitBundle',
         ]);
         $this->addIntegerField('perPage', [
+            'help'        => 'blog_settings.per_page.help',
             'constraints' => [new Assert\Range(min: 1, max: 24)],
         ]);
         $this->addIntegerField('indexTagsLimit', [
+            'help'        => 'blog_settings.index_tags_limit.help',
             'constraints' => [new Assert\Range(min: 0, max: 100)],
         ]);
     }
@@ -114,12 +116,15 @@ final class BlogSettingsType extends AbstractBlogFormType
             'choice_translation_domain' => 'NowoBlogKitBundle',
         ]);
         $this->addIntegerField('masonryColumnsMobile', [
+            'help'        => 'blog_settings.masonry_columns_mobile.help',
             'constraints' => [new Assert\Range(min: 0, max: 2)],
         ]);
         $this->addIntegerField('masonryColumnsTablet', [
+            'help'        => 'blog_settings.masonry_columns_tablet.help',
             'constraints' => [new Assert\Range(min: 0, max: 2)],
         ]);
         $this->addIntegerField('masonryColumnsDesktop', [
+            'help'        => 'blog_settings.masonry_columns_desktop.help',
             'constraints' => [new Assert\Range(min: 0, max: 3)],
         ]);
         $this->addCheckboxField('showCardImage', ['required' => false]);
@@ -133,9 +138,11 @@ final class BlogSettingsType extends AbstractBlogFormType
         $this->addChoiceField('indexAsideLatest', $this->placementFieldOptions());
         $this->addChoiceField('indexAsideTags', $this->placementFieldOptions());
         $this->addIntegerField('indexLatestLimit', [
+            'help'        => 'blog_settings.index_latest_limit.help',
             'constraints' => [new Assert\Range(min: 1, max: 24)],
         ]);
         $this->addIntegerField('indexAsideTagsLimit', [
+            'help'        => 'blog_settings.index_aside_tags_limit.help',
             'constraints' => [new Assert\Range(min: 0, max: 100)],
         ]);
     }
@@ -147,6 +154,7 @@ final class BlogSettingsType extends AbstractBlogFormType
         $this->addChoiceField('showAsideArticleTags', $this->placementFieldOptions());
         $this->addChoiceField('showAsideResources', $this->placementFieldOptions());
         $this->addIntegerField('relatedLimit', [
+            'help'        => 'blog_settings.related_limit.help',
             'constraints' => [new Assert\Range(min: 1, max: 24)],
         ]);
         $this->addCheckboxField('resourcesIncludeLinkedin', ['required' => false]);
@@ -164,22 +172,27 @@ final class BlogSettingsType extends AbstractBlogFormType
     private function addCommentsFields(): void
     {
         $this->addChoiceField('commentRateLimitStrategy', [
+            'help'                      => 'blog_settings.comment_rate_limit_strategy.help',
             'choices'                   => CommentRateLimitStrategy::adminChoices(),
             'choice_translation_domain' => 'NowoBlogKitBundle',
         ]);
         $this->addIntegerField('commentRateLimitLimit', [
+            'help'        => 'blog_settings.comment_rate_limit_limit.help',
             'constraints' => [new Assert\Range(min: 0, max: 1000)],
             'required'    => false,
         ]);
         $this->addIntegerField('commentRateLimitIntervalSeconds', [
+            'help'        => 'blog_settings.comment_rate_limit_interval_seconds.help',
             'constraints' => [new Assert\Range(min: 0, max: 86400)],
             'required'    => false,
         ]);
         $this->addChoiceField('commentCaptchaStrategy', [
+            'help'                      => 'blog_settings.comment_captcha_strategy.help',
             'choices'                   => CommentCaptchaStrategy::adminChoices(),
             'choice_translation_domain' => 'NowoBlogKitBundle',
         ]);
         $this->addChoiceField('htmlSanitizeStrategy', [
+            'help'                      => 'blog_settings.html_sanitize_strategy.help',
             'choices'                   => HtmlSanitizeStrategy::adminChoices(),
             'choice_translation_domain' => 'NowoBlogKitBundle',
         ]);
