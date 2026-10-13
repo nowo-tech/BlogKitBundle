@@ -1,7 +1,7 @@
 nowo_blog_kit:
     user_class: App\Entity\User
-    default_locale: es
-    locales: [es, en]
+    default_locale: en
+    locales: [en, es]
     security:
         access_roles: [ROLE_ADMIN]
         manage_roles: [ROLE_ADMIN]
