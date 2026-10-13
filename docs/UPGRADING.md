@@ -1,7 +1,16 @@
 # Upgrading
 
-
 ## Unreleased
+
+## To 1.4.3
+
+From **1.4.2** — dependency refresh and repository maintenance.
+
+```bash
+composer update nowo-tech/blog-kit-bundle
+```
+
+- No breaking changes. No application upgrade steps.
 
 ## To 1.4.2
 
@@ -23,7 +32,6 @@ composer update nowo-tech/blog-kit-bundle
 ```
 
 ## To 1.4.0
-
 
 From **1.3.1** — default HTML sanitize allowlist; Doctrine `SortDirection`; demo e2e.
 
@@ -50,6 +58,7 @@ This document describes how to upgrade **Blog Kit Bundle** between released vers
 
 ## Table of contents
 
+- [To 1.4.3](#to-143)
 - [To 1.4.2](#to-142)
 - [From 1.2.0 to 1.3.0](#from-120-to-130)
 - [From 1.1.7 to 1.2.0](#from-117-to-120)

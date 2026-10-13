@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Table of contents
 
 - [Unreleased](#unreleased)
+- [1.4.3 - 2026-10-13](#143---2026-10-13)
 - [1.4.2 - 2026-10-09](#142---2026-10-09)
 - [1.4.1 - 2026-09-28](#141---2026-09-28)
 - [1.4.0 - 2026-09-28](#140---2026-09-28)
@@ -24,9 +25,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.3] - 2026-10-13
+
 ### Changed
 
 - Development: `composer.json` pins `config.platform.php` to 8.4.1 so the committed lock stays installable on the minimum PHP; CI overrides the platform per matrix cell.
+- Repository: `.twig-cs-fixer.cache` is now git-ignored.
+
+### Dependencies
+
+- `happy-dom` 20.14.5 → 20.14.6 (frontend tooling; #25).
+- `vite` 8.3.3 → 8.3.4 (frontend tooling; #26).
+- `doctrine/orm` 3.7.4 → 3.7.5 (development lock; #28).
+- `nowo-tech/form-kit-bundle` 2.6.2 → 2.7.1 (development lock; #29).
+- `nowo-tech/ui-kit-bundle` 1.9.2 → 1.11.0 (development lock; #30).
+- `@types/node` 26.6.4 → 26.6.5 (frontend tooling; #27).
 
 ## [1.4.2] - 2026-10-09
 
@@ -49,7 +62,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dev dependencies: bump `@types/node` / Vite and sync `pnpm-lock.yaml` so CI `pnpm install --frozen-lockfile` succeeds.
 
 ## [1.4.0] - 2026-09-28
-
 
 ### Security
 
@@ -236,7 +248,8 @@ Initial public release of **Blog Kit Bundle** (`nowo-tech/blog-kit-bundle`).
 - CSRF-protected admin mutations and public comment forms; deletes go through native confirm dialogs
 - Comment bodies escaped in Twig; article HTML documented as trusted-editor `|raw`
 
-[Unreleased]: https://github.com/nowo-tech/BlogKitBundle/compare/v1.4.2...HEAD
+[Unreleased]: https://github.com/nowo-tech/BlogKitBundle/compare/v1.4.3...HEAD
+[1.4.3]: https://github.com/nowo-tech/BlogKitBundle/compare/v1.4.2...v1.4.3
 [1.4.2]: https://github.com/nowo-tech/BlogKitBundle/compare/v1.4.1...v1.4.2
 [1.1.3]: https://github.com/nowo-tech/BlogKitBundle/releases/tag/v1.1.3
 [1.1.2]: https://github.com/nowo-tech/BlogKitBundle/releases/tag/v1.1.2
