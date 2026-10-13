@@ -1362,11 +1362,28 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *     icon_set?: "bootstrap-icons"|"tabler-icons"|"ux_icon"|"svg_inline"|"none"|Param, // Icon rendering: bootstrap-icons|tabler-icons|ux_icon|svg_inline|none. // Default: "bootstrap-icons"
  *     row_actions_display?: "icon"|"text"|"icon_text"|Param, // Table/list row actions: icon (glyph only) | text (label only) | icon_text (both). // Default: "icon"
  *     panel_path_rewrites?: array<string, scalar|Param|null>,
+ *     release_check?: array{ // Optional GitHub release-version checker (footer dialog + JSON endpoint). Off by default.
+ *         enabled?: bool|Param, // Register the checker service + controller. Also import @NowoUiKitBundle/Resources/config/routes/release_check.yaml. // Default: false
+ *         github_repo?: scalar|Param|null, // Public GitHub repository "owner/name" whose releases are compared (e.g. nowo-tech/my-app). // Default: ""
+ *         current_version?: scalar|Param|null, // Installed version label, clean semver x.y.z with optional "v" (e.g. "%app.version%"). Non-semver values skip the check. // Default: ""
+ *         cache_ttl?: int|Param, // Seconds to cache the GitHub answer (cache.app). Default 12h. // Default: 43200
+ *         default_branch?: scalar|Param|null, // Branch used as compare target when the installed version is already the latest. // Default: "main"
+ *         user_agent?: scalar|Param|null, // User-Agent sent to api.github.com. // Default: "nowo-ui-kit-release-check"
+ *     },
  * }
  * @psalm-type NowoFormKitConfig = array{
  *     type_map?: array<string, scalar|Param|null>,
  *     default_profile?: scalar|Param|null, // Name of the profile to use when no profile is specified (key in profiles) // Default: "default"
  *     css_framework?: scalar|Param|null, // CSS framework for CssClassUtilities (column merge + class ordering): bootstrap, tailwind, foundation, none. // Default: "bootstrap"
+ *     stateless_csrf?: array{ // Give selected (usually anonymous/public) form types a stateless CSRF token id so rendering them does not start a session. Off by default.
+ *         enabled?: bool|Param, // Default: false
+ *         token_id?: scalar|Param|null, // csrf_token_id default applied to the listed form types. Must be listed in framework.csrf_protection.stateless_token_ids. // Default: "submit"
+ *         form_types?: list<scalar|Param|null>,
+ *         register_stateless_token_id?: bool|Param, // Prepend token_id to framework.csrf_protection.stateless_token_ids (enables framework CSRF protection if it was not configured). // Default: true
+ *     },
+ *     accessibility?: array{ // Accessibility helpers applied by kit form type extensions.
+ *         unlabelled_choice_aria_label?: bool|Param, // When true (default), non-expanded ChoiceType fields (and subtypes such as EntityType) rendered with label: false and no aria-label/aria-labelledby get aria-label from their translated help, else their placeholder. // Default: true
+ *     },
  *     profiles?: array<string, array{ // Default: []
  *         alias?: scalar|Param|null, // Alias for this profile (e.g. for reference in form types)
  *         translation_domain?: scalar|Param|null, // Default: "messages"
@@ -1538,6 +1555,14 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *         layout_template?: scalar|Param|null, // Twig layout that panel pages extend (host apps SHOULD set their project layout). // Default: "@NowoRoutingKitBundle/panel/layout.html.twig"
  *         css_framework?: "bootstrap"|"bootstrap4"|"bootstrap5"|"tailwind"|"foundation"|"custom"|"tabler"|"none"|Param, // Default: "custom"
  *         icon_set?: "bootstrap-icons"|"tabler-icons"|"ux_icon"|"svg_inline"|"none"|Param, // Default: "none"
+ *         classes?: array<string, scalar|Param|null>,
+ *         partials?: array<string, scalar|Param|null>,
+ *         ui_kit_assets?: bool|Param, // Append nowo-ui.css (and nowo-ui-modal.js in import_display: modal) from panel/base.html.twig. Set false when the host layout already loads UiKit assets before its theme. // Default: true
+ *         import_display?: "inline"|"modal"|Param, // Signed JSON import: inline section under the table (default) or a modal opened from the page actions. // Default: "inline"
+ *         show_row_count?: bool|Param, // Show the "N row(s)" line above the tables. // Default: true
+ *         primary_action_last?: bool|Param, // Render the primary "New" action after the secondary page actions. // Default: false
+ *         main_landmark?: bool|Param, // Wrap panel pages (definitions, form, redirects) in <main>. Set false when the host layout already renders its own <main>: the wrapper becomes a <div> with the same classes (no nested main landmarks). // Default: true
+ *         delete_confirm_attr?: array<string, scalar|Param|null>,
  *     },
  *     security?: array{ // REQ-UI-002 private panel access (firewall the path_prefix in the host app as well).
  *         access_roles?: list<scalar|Param|null>,
@@ -1547,10 +1572,24 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *     redirects?: array{
  *         canonical_enabled?: bool|Param, // Default: true
  *         canonical_status?: int|Param, // Default: 301
+ *         canonical_cache_pool?: scalar|Param|null, // Cache pool (Symfony Contracts CacheInterface) for the resolved canonical/alias path table, keyed by route-table version. null = storage read once per request. // Default: "cache.app"
  *         root_enabled?: bool|Param, // Default: false
  *         root_canonical_style?: "without_prefix"|"with_prefix"|Param, // Default: "without_prefix"
  *         root_home_path?: scalar|Param|null, // Default: "/"
  *         root_status?: int|Param, // Default: 302
+ *     },
+ *     url_redirects?: array{ // Operator-managed redirects (old public path → new path or URL), applied before routing.
+ *         enabled?: bool|Param, // Opt-in. Registers the request listener (priority 33) and the panel section. // Default: false
+ *         storage?: scalar|Param|null, // Service id implementing UrlRedirectStorageInterface (e.g. a Doctrine repository). null = JSON file. // Default: null
+ *         file?: scalar|Param|null, // JSON file used by the default FilesystemUrlRedirectStorage. // Default: "%kernel.project_dir%/var/routing_kit/redirects.json"
+ *         cache_pool?: scalar|Param|null, // Cache pool (Symfony Contracts CacheInterface) for the enabled-redirects map. null = storage read once per request. // Default: "cache.app"
+ *         cache_ttl?: int|Param, // Seconds the cached map lives; bounds staleness after writes made outside the panel. // Default: 3600
+ *         protected_prefixes?: list<scalar|Param|null>,
+ *         protected_starts?: list<scalar|Param|null>,
+ *         hits?: array{
+ *             enabled?: bool|Param, // Count hits / last hit per redirect. // Default: true
+ *             message_bus?: scalar|Param|null, // Messenger bus service id (e.g. messenger.default_bus) to count hits asynchronously. null = synchronous write. // Default: null
+ *         },
  *     },
  *     auto_invalidate_cache?: bool|Param, // Default: true
  *     register_unprefixed_default?: bool|Param, // Default: true
@@ -1558,7 +1597,7 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *     ...<string, mixed>
  * }
  * @psalm-type NowoAuditKitConfig = array{
- *     default_profile?: scalar|Param|null, // Profile name used when no profile is resolved from the authenticated user. // Default: "default"
+ *     default_profile?: scalar|Param|null, // Profile name used when no profile is resolved from the authenticated user. Defaults to the first configured profile (resolved after all configuration files are merged). // Default: null
  *     profiles?: array<string, array{ // Default: []
  *         enabled?: bool|Param, // Enable auditing for this profile. // Default: true
  *         user_class?: scalar|Param|null, // FQCN used for createdBy / updatedBy references. // Default: null
