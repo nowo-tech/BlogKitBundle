@@ -28,6 +28,7 @@ git config --global --add safe.directory /var/blog-kit-bundle 2>/dev/null || tru
 mkdir -p /app/var/cache /app/var/log /app/var/data
 chmod -R 777 /app/var 2>/dev/null || true
 
+if [ ! -f /app/vendor/autoload_runtime.php ]; then composer install --no-interaction; fi
 if [ -f /app/vendor/autoload.php ] && [ -f /app/bin/console ]; then
 	php /app/bin/console doctrine:schema:update --force --no-interaction || true
 fi
