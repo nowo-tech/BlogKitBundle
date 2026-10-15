@@ -119,3 +119,7 @@ The demo is useful for checking:
 
 - Open an issue on GitHub
 - Contact the maintainers at `hectorfranco@nowo.tech`
+
+## AI co-author trailers
+
+Do **not** add AI co-author trailers to commit messages: neither `Co-authored-by: Cursor` / `cursoragent@cursor.com` nor `Co-Authored-By: Claude …` / `noreply@anthropic.com` (REQ-GIT-001). Run `make setup-hooks` so the `commit-msg` hook strips them.
