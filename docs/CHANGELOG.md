@@ -31,6 +31,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Allows nowo-tech/ui-kit-bundle 2.x (`^1.5 || ^2.2`); the dev lock and the demo lock use UiKit 2.2.0 (with RoutingKit 1.9.x, whose 1.7 line still capped UiKit at 1.x). Templates are unchanged (compatibility release). With UiKit 2.x `nowo-ui.css` ships in `@layer nowo-ui`, so unlayered host/framework CSS wins equal-specificity conflicts with kit rules; to keep the 1.x cascade, override the public/admin `stylesheets` block and link `css/nowo-ui.unlayered.css` (UiKit 2.x only).
+
 ## [1.5.2] - 2026-10-13
 
 ### Changed
