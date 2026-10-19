@@ -28,6 +28,7 @@ use Nowo\BlogKitBundle\Form\StaffBlogCommentReplyType;
 use Nowo\BlogKitBundle\Repository\BlogTagRepository;
 use Nowo\BlogKitBundle\Tests\Support\FormKitTestSupport;
 use Nowo\BlogKitBundle\Tests\Support\LocaleTestSupport;
+use Nowo\FormKitBundle\Form\Extension\LocaleTabsExtension;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
@@ -494,6 +495,7 @@ final class BlogFormTypesTest extends TestCase
 
         return Forms::createFormFactoryBuilder()
             ->addExtension(new CsrfExtension($csrfManager))
+            ->addTypeExtension(new LocaleTabsExtension())
             ->addExtension(new ValidatorExtension(
                 Validation::createValidator(),
             ))

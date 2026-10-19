@@ -9,11 +9,13 @@
     </div>
     <div class="nowo-ui-modal__content">
       {% if form.translations is defined %}
-        {{ include('@NowoBlogKitBundle/admin/_locale_tabs.html.twig', {
-          translations: form.translations,
+        {{ form_errors(form.translations) }}
+        {{ include('@NowoFormKitBundle/form/_locale_tabs.html.twig', form.translations.vars.locale_tabs|default({})|merge({
+          field: form.translations,
+          tabs_id: id_prefix|default('cms-locale'),
           active_locale: locale|default(active_locale|default(null)),
-          id_prefix: 'cms-locale',
-        }) }}
+          testid: 'blog-kit-cms-locale-tabs',
+        }), with_context: false) }}
       {% endif %}
       {% for child in form %}
         {% if not child.rendered %}

@@ -208,7 +208,10 @@ Admin and public pages extend `@NowoBlogKitBundle/admin/base.html.twig` and `@No
 
 No host Stimulus application is required. TypeScript sources live in `src/Resources/assets/src/` and are built with Vite (`pnpm run build`).
 
-Admin locale tabs use UiKit `nowo-ui-tabs` (`asset('js/nowo-ui-tabs.js', 'nowo_ui_kit')`).
+Admin translation tabs (articles, tags, the inline CMS modal) are FormKit `locale_tabs` (mode `entries`) rendered
+through UiKit's `locale_tabs` partial: one tab per `nowo_blog_kit.locales` entry, the default locale first and marked
+required, invalid tabs marked and opened, keyboard navigation and the `nowo-ui:tabs:change` event from
+`nowo-ui-tabs.js` (loaded by `admin/base.html.twig` through UiKit's `scripts` partial). See [TEMPLATES](TEMPLATES.md).
 
 ## Rich text notes
 

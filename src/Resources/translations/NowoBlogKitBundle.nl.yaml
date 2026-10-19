@@ -69,8 +69,6 @@ admin:
     tag_deleted: Tag verwijderd.
     tag_in_use: Deze tag wordt nog door artikelen gebruikt.
     tag_updated: Tag bijgewerkt.
-  locale_tabs:
-    label: Talen
   pagination:
     label: Paginering
     next: Volgende

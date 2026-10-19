@@ -19,6 +19,7 @@ use Nowo\BlogKitBundle\Form\BlogTagType;
 use Nowo\BlogKitBundle\Form\PublicBlogCommentType;
 use Nowo\BlogKitBundle\Form\StaffBlogCommentReplyType;
 use Nowo\FormKitBundle\Form\CsrfOnlyFormFactory;
+use Nowo\FormKitBundle\Form\Extension\LocaleTabsExtension;
 use Nowo\FormKitBundle\Form\GetFilterFormFactory;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
@@ -117,6 +118,7 @@ final class ControllerTestHelper
         return Forms::createFormFactoryBuilder()
             ->addExtension(new HttpFoundationExtension())
             ->addExtension(new CsrfExtension($csrfTokenManager))
+            ->addTypeExtension(new LocaleTabsExtension())
             ->addExtension(new ValidatorExtension(Validation::createValidator()))
             ->addExtension(new PreloadedExtension($types, []))
             ->getFormFactory();

@@ -13,9 +13,8 @@
 {% block javascripts %}
     {{ parent() }}
     {% block nowo_ui_scripts %}
-        <script src="{{ asset('js/nowo-ui-tabs.js', 'nowo_ui_kit') }}" defer></script>
-        <script src="{{ asset('js/nowo-ui-confirm.js', 'nowo_ui_kit') }}" defer></script>
-        <script src="{{ asset('js/nowo-ui-modal.js', 'nowo_ui_kit') }}" defer></script>
+        {# UiKit runtimes (tabs: locale tabs keyboard / invalid / change event; modal; confirm…). #}
+        {{ include(nowo_ui_partial('scripts')) }}
         <script src="{{ asset('blog-kit.js', 'nowo_blog_kit') }}" defer></script>
     {% endblock %}
 {% endblock %}

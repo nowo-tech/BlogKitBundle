@@ -69,8 +69,6 @@ admin:
     tag_deleted: Tag gelöscht.
     tag_in_use: Dieses Tag wird noch von Artikeln verwendet.
     tag_updated: Tag aktualisiert.
-  locale_tabs:
-    label: Sprachen
   pagination:
     label: Seitennavigation
     next: Weiter

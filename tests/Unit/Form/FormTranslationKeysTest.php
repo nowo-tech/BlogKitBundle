@@ -26,6 +26,7 @@ use Nowo\BlogKitBundle\Form\PublicBlogCommentType;
 use Nowo\BlogKitBundle\Form\StaffBlogCommentReplyType;
 use Nowo\BlogKitBundle\Tests\Support\FormKitTestSupport;
 use Nowo\BlogKitBundle\Tests\Support\LocaleTestSupport;
+use Nowo\FormKitBundle\Form\Extension\LocaleTabsExtension;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
@@ -116,6 +117,7 @@ final class FormTranslationKeysTest extends TestCase
             }
             $factory = Forms::createFormFactoryBuilder()
                 ->addExtension(new CsrfExtension(new CsrfTokenManager()))
+                ->addTypeExtension(new LocaleTabsExtension())
                 ->addExtension(new ValidatorExtension(Validation::createValidator()))
                 ->addTypes($preloaded)
                 ->getFormFactory();

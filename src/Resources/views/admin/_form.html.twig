@@ -4,10 +4,14 @@
 
 {{ form_start(form, {attr: {class: 'nowo-ui-form'}}) }}
   {% if form.translations is defined %}
-    {{ include('@NowoBlogKitBundle/admin/_locale_tabs.html.twig', {
-      translations: form.translations,
+    {# FormKit locale tabs (mode entries) through the UiKit locale_tabs partial: default locale first. #}
+    {{ form_errors(form.translations) }}
+    {{ include('@NowoFormKitBundle/form/_locale_tabs.html.twig', form.translations.vars.locale_tabs|default({})|merge({
+      field: form.translations,
+      tabs_id: id_prefix|default('locale'),
       active_locale: active_locale|default(null),
-    }) }}
+      testid: 'blog-kit-locale-tabs',
+    }), with_context: false) }}
   {% endif %}
   {% for child in form %}
     {% if not child.rendered %}

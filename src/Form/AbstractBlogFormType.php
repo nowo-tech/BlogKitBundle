@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Nowo\BlogKitBundle\Form;
 
 use InvalidArgumentException;
+use Nowo\BlogKitBundle\Locale\BlogLocales;
 use Nowo\FormKitBundle\Attribute\FormKitConfig;
 use Nowo\FormKitBundle\Form\FormKitAbstractType;
 use Override;
@@ -15,6 +16,7 @@ use Symfony\Component\Form\Extension\Core\Type\HiddenType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
+use Symfony\Contracts\Service\Attribute\Required;
 
 use function array_key_exists;
 use function sprintf;
@@ -27,6 +29,18 @@ use function sprintf;
 #[FormKitConfig('blog_kit')]
 abstract class AbstractBlogFormType extends FormKitAbstractType
 {
+    private ?BlogLocales $tabLocales = null;
+
+    /**
+     * Blog locales for the translation tabs (default locale first and marked required).
+     * Optional: without it FormKit's nowo_form_kit.locale_tabs.default_locale applies.
+     */
+    #[Required]
+    public function setBlogLocales(BlogLocales $blogLocales): void
+    {
+        $this->tabLocales = $blogLocales;
+    }
+
     #[Override]
     public function configureOptions(OptionsResolver $resolver): void
     {
@@ -99,12 +113,32 @@ abstract class AbstractBlogFormType extends FormKitAbstractType
         array $options = [],
     ): void {
         $this->addWithDefaults($formBuilder, 'translations', CollectionType::class, [
-            'entry_type'   => $entryType,
-            'allow_add'    => false,
-            'allow_delete' => false,
-            'label'        => false,
+            'entry_type'    => $entryType,
+            'entry_options' => ['label' => false, 'error_bubbling' => false],
+            'allow_add'     => false,
+            'allow_delete'  => false,
+            'label'         => false,
+            'locale_tabs'   => $this->translationTabs(),
             ...$options,
         ]);
+    }
+
+    /**
+     * FormKit `locale_tabs` options for the translations collection (mode entries: one tab per
+     * translation entity, its `locale` child rendered as a hidden input).
+     *
+     * @return array<string, mixed>
+     */
+    protected function translationTabs(): array
+    {
+        $tabs = ['mode' => 'entries'];
+        if ($this->tabLocales instanceof BlogLocales) {
+            $default                  = $this->tabLocales->getDefault();
+            $tabs['default_locale']   = $default;
+            $tabs['required_locales'] = [$default];
+        }
+
+        return $tabs;
     }
 
     /** @param array<string, mixed> $options */

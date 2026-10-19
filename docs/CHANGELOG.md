@@ -32,6 +32,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Admin translation tabs** (article new/edit, tag new/edit, inline CMS modal) render through FormKit 2.13 `locale_tabs`
+  (mode `entries`) and UiKit 2.5's `locale_tabs` partial instead of the bundle's own `admin/_locale_tabs.html.twig`:
+  default locale (`nowo_blog_kit.default_locale`) listed first and marked `★` / `*`, the locale child a hidden input,
+  WAI-ARIA tabs with roving `tabindex` and arrow / Home / End keys (fixes keyboard users being unable to reach the
+  other tabs: every inactive tab had `tabindex="-1"` and nothing moved focus), invalid tabs marked `!` and opened
+  first, `aria-invalid` on the invalid widgets, stacked fieldsets without JavaScript, theme slots
+  `tabs` / `tab` / `tab_active` / `tab_panel`. Translation entries use `error_bubbling: false`, so entry errors show
+  inside their tab.
+- The default-locale panel no longer forces `required` on optional fields (meta title, meta description, excerpt,
+  body); each field keeps its own `required` (server-side validation unchanged).
+- `admin/base.html.twig` loads the UiKit runtimes through UiKit's `scripts` partial instead of listing
+  `nowo-ui-tabs.js`, `nowo-ui-confirm.js` and `nowo-ui-modal.js` by hand.
+- Requires `nowo-tech/form-kit-bundle ^2.13` and `nowo-tech/ui-kit-bundle ^2.5.1` (UiKit 1.x is no longer
+  supported).
+
+### Removed
+
+- `@NowoBlogKitBundle/admin/_locale_tabs.html.twig` and its `admin.locale_tabs.label` translation key.
+
 ## [1.5.3] - 2026-10-18
 
 Allows nowo-tech/ui-kit-bundle 2.x (^1.4 || ^2.2) so hosts can move to UiKit 2.2. See [UPGRADING](UPGRADING.md#to-153).

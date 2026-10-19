@@ -69,8 +69,6 @@ admin:
     tag_deleted: Etiqueta eliminada.
     tag_in_use: Esta etiqueta sigue usada por artículos.
     tag_updated: Etiqueta actualizada.
-  locale_tabs:
-    label: Idiomas
   pagination:
     label: Paginación
     next: Siguiente

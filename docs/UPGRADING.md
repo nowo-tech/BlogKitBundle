@@ -30,6 +30,35 @@
 
 ## Unreleased
 
+From **1.5.3**:
+
+```bash
+composer update nowo-tech/blog-kit-bundle nowo-tech/form-kit-bundle nowo-tech/ui-kit-bundle -W
+```
+
+Requires **FormKit ^2.13** and **UiKit ^2.5.1** (UiKit 1.x dropped). The admin translation tabs now come from FormKit
+`locale_tabs` rendered through UiKit's `locale_tabs` partial.
+
+What hosts may notice:
+
+- **Removed partial:** `@NowoBlogKitBundle/admin/_locale_tabs.html.twig`. Delete any override in
+  `templates/bundles/NowoBlogKitBundle/admin/_locale_tabs.html.twig`; customise the tabs with UiKit theme slots
+  (`tabs`, `tab`, `tab_active`, `tab_panel`) or `theme.partials.locale_tabs` instead. Overrides of `admin/_form.html.twig`
+  / `admin/_modal_form.html.twig` that include the old partial must include
+  `@NowoFormKitBundle/form/_locale_tabs.html.twig` (see [TEMPLATES](TEMPLATES.md)).
+- **Changed DOM ids / classes:** tab buttons `locale-tab-<locale>` → `tab-locale-<locale>`, panels
+  `locale-panel-<locale>` → `tab-locale-<locale>-panel` (modal: `cms-locale-tab-<locale>` → `tab-cms-locale-<locale>`,
+  `cms-locale-panel-<locale>` → `tab-cms-locale-<locale>-panel`); the root is `#locale` / `#cms-locale`
+  (`[data-nowo-ui-locale-tabs]`). The `admin-locale-tabs*` classes and the `is-active` class are gone: style
+  `.nowo-ui-locale-tabs*` or the theme slots, select the open tab with `[aria-selected="true"]`. `data-nowo-ui-tab-id`
+  values are now `<tabs id>-<locale>` (were the bare locale). E2E selectors based on the old ids must be updated.
+- **JavaScript:** nothing to add or remove. `nowo-ui-tabs.js` still drives the tabs (now loaded via UiKit's `scripts`
+  partial from `admin/base.html.twig`); hosts that mount editors in the panels listen to `nowo-ui:tabs:change`
+  (`event.detail.panel`). Without JavaScript every locale renders as a stacked fieldset.
+- **Translation key removed:** `admin.locale_tabs.label` (the tab list label now comes from FormKit / UiKit
+  `locale_tabs.label`).
+- The default-locale panel no longer adds `required` to optional fields.
+
 ## To 1.5.3
 
 From **1.5.2**:
