@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Table of contents
 
 - [[Unreleased]](#unreleased)
+- [[1.6.0] - 2026-10-19](#160---2026-10-19)
 - [[1.5.3] - 2026-10-18](#153---2026-10-18)
 - [[1.5.2] - 2026-10-13](#152---2026-10-13)
 - [[1.5.1] - 2026-10-13](#151---2026-10-13)
@@ -31,6 +32,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [[1.0.0] - 2026-08-18](#100---2026-08-18)
 
 ## [Unreleased]
+
+## [1.6.0] - 2026-10-19
+
+Admin translation tabs now use FormKit 2.13 locale_tabs through the UiKit 2.5 partial (default locale first, keyboard navigation, invalid tabs opened); requires FormKit ^2.13 and UiKit ^2.5.1. See [UPGRADING](UPGRADING.md#to-160).
 
 ### Changed
 
@@ -319,7 +324,8 @@ Initial public release of **Blog Kit Bundle** (`nowo-tech/blog-kit-bundle`).
 - CSRF-protected admin mutations and public comment forms; deletes go through native confirm dialogs
 - Comment bodies escaped in Twig; article HTML documented as trusted-editor `|raw`
 
-[Unreleased]: https://github.com/nowo-tech/BlogKitBundle/compare/v1.5.3...HEAD
+[Unreleased]: https://github.com/nowo-tech/BlogKitBundle/compare/v1.6.0...HEAD
+[1.6.0]: https://github.com/nowo-tech/BlogKitBundle/compare/v1.5.3...v1.6.0
 [1.5.3]: https://github.com/nowo-tech/BlogKitBundle/compare/v1.5.2...v1.5.3
 [1.5.2]: https://github.com/nowo-tech/BlogKitBundle/compare/v1.5.1...v1.5.2
 [1.5.1]: https://github.com/nowo-tech/BlogKitBundle/compare/v1.5.0...v1.5.1
