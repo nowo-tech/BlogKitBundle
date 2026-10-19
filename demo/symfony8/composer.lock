@@ -1026,7 +1026,7 @@
         },
         {
             "name": "nowo-tech/blog-kit-bundle",
-            "version": "dev-feature/locale-tabs",
+            "version": "dev-main",
             "dist": {
                 "type": "path",
                 "url": "/var/blog-kit-bundle",
