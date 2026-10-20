@@ -10,6 +10,8 @@ All options live under the root key `nowo_blog_kit`.
 - [web_ui](#web_ui)
 - [listing](#listing)
 - [comments](#comments)
+  - [comments.rate_limit](#commentsrate_limit)
+  - [comments.captcha](#commentscaptcha)
 - [html](#html)
 - [doctrine](#doctrine)
 - [Twig globals](#twig-globals)

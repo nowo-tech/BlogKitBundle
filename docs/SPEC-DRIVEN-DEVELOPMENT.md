@@ -8,6 +8,7 @@
 - [Validating the spec](#validating-the-spec)
 - [Requirement identifiers (`REQ-*`)](#requirement-identifiers-req-)
 - [Suggested workflow for contributors](#suggested-workflow-for-contributors)
+- [Relationship to Engram](#relationship-to-engram)
 - [GitHub Spec Kit (summary)](#github-spec-kit-summary)
 - [See also](#see-also)
 
@@ -71,6 +72,10 @@ make release-check
 3. Implement the change with tests if production behavior changes.
 4. Update integrator docs when host applications must act.
 5. Keep `specs/001-baseline/spec.md` and `code-inventory.md` aligned with `src/`.
+
+## Relationship to Engram
+
+[ENGRAM.md](ENGRAM.md) documents the org-wide checklist plane (Engram MCP memory, documentation hygiene, automation hints). It does **not** replace this document: the functional contract of the package (user stories, scope, validation, `REQ-*` anchors) lives here and in `specs/001-baseline/`. Link to Engram instead of duplicating checklist prose.
 
 ## GitHub Spec Kit (summary)
 

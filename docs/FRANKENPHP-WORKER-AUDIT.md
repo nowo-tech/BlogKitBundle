@@ -9,6 +9,20 @@
 | Remediation (2026-09-24) | W-01…W-05 resolved: new `BlogKitWorkerStateSubscriber`, refreshed settings read, per-call Twig access functions, publish buffer cleared per flush, configurable captcha timeout. Regression tests simulate consecutive requests without `reset()`. |
 | **Verdict** | ✅ **Viable under scenario B** — bundle memos are cleared at the start of each main request by a bundle-owned subscriber, per-user flags are Twig functions, and the publish buffer cannot outlive a failed flush. Residual host responsibility: clearing the Doctrine identity map between requests (see W-04) and migrating template overrides away from the deprecated `nowo_blog_kit_can_*` globals (see W-02). |
 
+## Table of contents
+
+- [Execution model assumed](#execution-model-assumed)
+- [Summary](#summary)
+- [Services reviewed](#services-reviewed)
+- [Findings](#findings)
+  - [W-01 — Settings and tag caches only cleared by `kernel.reset` (Medium)](#w-01--settings-and-tag-caches-only-cleared-by-kernelreset-medium)
+  - [W-02 — Per-user access flags exposed as Twig globals (Medium)](#w-02--per-user-access-flags-exposed-as-twig-globals-medium)
+  - [W-03 — Publish-event buffer not cleared when a flush fails (Medium)](#w-03--publish-event-buffer-not-cleared-when-a-flush-fails-medium)
+  - [W-04 — Relies on DoctrineBundle's reset for the EntityManager (Medium, scenario B only)](#w-04--relies-on-doctrinebundles-reset-for-the-entitymanager-medium-scenario-b-only)
+  - [W-05 — Captcha verification timeout is fixed at 5 s (Low)](#w-05--captcha-verification-timeout-is-fixed-at-5-s-low)
+- [Usage recommendations in worker mode](#usage-recommendations-in-worker-mode)
+- [Re-audit triggers](#re-audit-triggers)
+
 ## Execution model assumed
 
 FrankenPHP worker mode boots the Symfony kernel once per worker and serves many requests with the same container. This audit assumes the **strict** variant: the kernel is **not** rebooted between requests, so every shared service, static property and PHP global survives from one request to the next. Two scenarios are evaluated:

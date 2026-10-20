@@ -2,10 +2,10 @@
 
 **Baseline spec**: [`spec.md`](spec.md)  
 **Package**: `nowo-tech/blog-kit-bundle`  
-**Last audited**: 2026-09-24  
-**Coverage summary**: PHPUnit `src/` target 100% (`make test-coverage-100`)
+**Last audited**: 2026-10-20  
+**Coverage summary**: **153/153** files tracked under `src/` mapped (see [Coverage summary](#coverage-summary)); audit command: `git ls-files src | wc -l`.
 
-Maps **100%** of production PHP files under `src/` (100 units). Test and demo trees are out of Packagist scope unless promoted in the spec.
+Maps **100%** of the files under `src/` (100 PHP classes + Twig views, translations, config, public assets, TypeScript sources and co-located Vitest specs). Paths are relative to `src/`. Test and demo trees outside `src/` are out of Packagist scope unless promoted in the spec.
 
 ## Bundle entry
 
@@ -170,5 +170,36 @@ Maps **100%** of production PHP files under `src/` (100 units). Test and demo tr
 | `Resources/assets/src/blog-infinite-controller.ts` | Infinite scroll module | FR-PUB-002 |
 | `Resources/assets/src/blog-form-collection.ts` | CollectionType add/remove | FR-ADM-001 |
 | `Resources/assets/src/blog-captcha.ts` | reCAPTCHA v3 submit hook | FR-CMT-004 |
+| `Resources/assets/src/blog.css` | Public stylesheet source (built to `Resources/public/blog.css`) | FR-PUB-001 |
 | `Resources/config/services.yaml` | Service autowire | FR-CFG-002 |
 | `Resources/config/routing.yaml` | Attribute controller import | FR-BUNDLE-001 |
+
+## Co-located Vitest sources (`FR-TEST-*`)
+
+Vitest specs live next to the TypeScript sources under `src/`; they are not loaded at runtime but are tracked under `src/`, so they are inventoried here.
+
+| Source file | Purpose | Requirement IDs |
+| --- | --- | --- |
+| `Resources/assets/src/blog-kit.test.ts` | Vitest: IIFE entry wiring | FR-TEST-001, FR-PUB-002 |
+| `Resources/assets/src/blog-infinite-controller.test.ts` | Vitest: infinite scroll module | FR-TEST-001, FR-PUB-002 |
+| `Resources/assets/src/blog-form-collection.test.ts` | Vitest: CollectionType add/remove | FR-TEST-001, FR-ADM-001 |
+| `Resources/assets/src/blog-captcha.test.ts` | Vitest: reCAPTCHA v3 submit hook | FR-TEST-001, FR-CMT-004 |
+| `Resources/assets/src/vitest-setup.ts` | Vitest environment setup | FR-TEST-001 |
+
+## Coverage summary
+
+| Category | Files | Mapped |
+| --- | ---: | ---: |
+| Bundle entry | 1 | 1 |
+| DependencyInjection | 4 | 4 |
+| Controllers | 8 | 8 |
+| Entity & persistence | 17 | 17 |
+| Domain model & enums | 16 | 16 |
+| Services | 8 | 8 |
+| HTTP, events, command | 6 | 6 |
+| Forms | 15 | 15 |
+| Security | 24 | 24 |
+| Twig | 1 | 1 |
+| Non-PHP production assets (documented) | 48 | 48 |
+| Co-located Vitest sources (`FR-TEST-*`) | 5 | 5 |
+| **Total production files (`git ls-files src`)** | **153** | **153** |

@@ -155,6 +155,29 @@ As a maintainer, I run the Symfony 8 FrankenPHP demo and smoke checks.
 | FR-WORKER-004 | A closed blog EntityManager is recovered on the next main request; clearing an open identity map stays host-owned |
 | FR-WORKER-005 | Default captcha HTTP client timeout is configurable (`comments.captcha.timeout_seconds`) |
 
+### Frontend tests (`FR-TEST-*`)
+
+| ID | Requirement |
+| --- | --- |
+| FR-TEST-001 | TypeScript sources under `Resources/assets/src/` have co-located Vitest specs (`*.test.ts`, `vitest-setup.ts`) run by `make test-ts` / `pnpm test` |
+
+## Success criteria (`SC-*`)
+
+- **SC-001**: **153/153** files tracked under `src/` are mapped in [`code-inventory.md`](code-inventory.md) (audit: `git ls-files src | wc -l`).
+- **SC-002**: Every `FR-*` ID cited in the inventory is defined in this spec.
+- **SC-003**: `composer qa` (cs-check, PHPStan, PHPUnit) and `make release-check` pass; PHPUnit line coverage for `src/` stays at 100% (`make test-coverage-100`).
+- **SC-004**: Vitest specs pass (`make test-ts`).
+- **SC-005**: `make check-no-cursor-coauthor` exits 0 and the CI `git-hygiene` job passes (REQ-GIT-001).
+
+## Validation commands
+
+```bash
+make qa                  # composer cs-check + phpstan + PHPUnit (Docker)
+make test-coverage-100   # PHPUnit with 100% src/ line coverage floor
+make test-ts             # Vitest
+make release-check       # full pre-release gate (includes check-no-cursor-coauthor, demos)
+```
+
 ## Non-goals
 
 - Host authentication / user management (UserKit / AuthKit remain host-owned)

@@ -33,6 +33,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Documentation: wave-1 REQ compliance — README documentation list order, CONTRIBUTING Cursor Agent queue settings and post-commit co-author check, canonical issue templates, TOCs for long docs, spec-driven ↔ Engram relationship, tailored Spec Kit constitution, baseline success criteria and inventory refresh (153/153).
+
 ## [1.6.0] - 2026-10-19
 
 Admin translation tabs now use FormKit 2.13 locale_tabs through the UiKit 2.5 partial (default locale first, keyboard navigation, invalid tabs opened); requires FormKit ^2.13 and UiKit ^2.5.1. See [UPGRADING](UPGRADING.md#to-160).
