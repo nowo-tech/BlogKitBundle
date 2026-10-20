@@ -17,9 +17,6 @@ use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints as Assert;
 
-use function assert;
-use function in_array;
-
 /**
  * Blog settings form. Pass {@see self::OPTION_SECTION} for one admin tab, or omit for the full form.
  *
@@ -50,6 +47,7 @@ final class BlogSettingsType extends AbstractBlogFormType
 
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
+        /** @var self::SECTION_*|null $section restricted by configureOptions() (setAllowedValues) */
         $section = $options[self::OPTION_SECTION] ?? null;
 
         $this->withBuilder($builder, function () use ($section): void {
@@ -62,8 +60,6 @@ final class BlogSettingsType extends AbstractBlogFormType
 
                 return;
             }
-
-            assert(in_array($section, self::SECTIONS, true));
 
             match ($section) {
                 self::SECTION_LISTING     => $this->addListingFields(),
