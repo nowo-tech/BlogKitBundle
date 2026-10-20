@@ -11,6 +11,8 @@ Security considerations for public blog pages, comments, admin CRUD, and CMS HTM
 - [Rich text rendering](#rich-text-rendering)
 - [Infinite scroll HTML](#infinite-scroll-html)
 - [Operational guidance](#operational-guidance)
+- [Timeouts and resource limits](#timeouts-and-resource-limits)
+- [Logging](#logging)
 - [Release security checklist (12.4.1)](#release-security-checklist-1241)
 - [AI security audit](#ai-security-audit)
 - [Secrets](#secrets)
@@ -101,6 +103,22 @@ The `allowlist` sanitizer removes executable / raw-text elements (`script`, `sty
 - Set a real `web_ui.privacy_url`.
 - Use `doctrine.table_prefix` when multiple applications share one schema.
 - Review demo credentials and never copy demo auth settings into production.
+
+## Timeouts and resource limits
+
+The only blocking outbound call the bundle makes is the remote CAPTCHA verification (`recaptcha_v2`, `recaptcha_v3`, `hcaptcha`, `turnstile`). The default `StreamCaptchaHttpClient` bounds it with `comments.captcha.timeout_seconds` (default `5.0`, range 0.1–60 s); on timeout or transport failure verification fails closed (the comment is rejected) and a warning is logged. Keep PHP `max_execution_time` and your proxy write timeout strictly greater than this value (see [CONFIGURATION.md](CONFIGURATION.md#timeout-hierarchy) and [DEMO-FRANKENPHP.md](DEMO-FRANKENPHP.md#timeout-hierarchy)). Public listings are paginated and comment posting is rate-limited, so no request performs unbounded work.
+
+## Logging
+
+The bundle logs through the injected PSR-3 `LoggerInterface` (the `logger` service; nothing is logged when no logger is registered). Context arrays always carry `bundle: blog_kit` and an `action` key.
+
+| Event | Level | Context |
+| --- | --- | --- |
+| CAPTCHA siteverify call completed | `info` | `host` of the provider |
+| CAPTCHA siteverify failed, timed out or returned non-JSON | `warning` | `host`, `timeout_seconds` |
+| Comment approved / rejected / deleted | `info` | `comment_id` |
+
+**Never logged:** CAPTCHA secret keys and tokens, client IP addresses (comments store only a SHA-256 hash), comment author names, e-mail addresses or bodies, article content, and session identifiers.
 
 ## Release security checklist (12.4.1)
 

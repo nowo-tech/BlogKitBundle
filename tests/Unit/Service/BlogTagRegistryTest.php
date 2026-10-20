@@ -22,7 +22,7 @@ final class BlogTagRegistryTest extends TestCase
     #[Test]
     public function itSyncsDefinitionsAndResolvesExistingSlugs(): void
     {
-        $existing = (new BlogTag())->setSlug('php');
+        $existing = new BlogTag()->setSlug('php');
         $existing->ensureTranslations();
 
         $repo = $this->createMock(BlogTagRepository::class);

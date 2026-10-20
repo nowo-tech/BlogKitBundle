@@ -40,6 +40,19 @@ From **1.6.0**:
 composer update nowo-tech/blog-kit-bundle
 ```
 
+Only if your application **extends `AbstractBlogFormType`** with its own constructor: `setBlogLocales()` was removed;
+pass the optional `BlogLocales` as the third constructor argument instead:
+
+```php
+public function __construct(FormOptionsMerger $merger, FormTypeMap $map, ?BlogLocales $blogLocales = null)
+{
+    parent::__construct($merger, $map, $blogLocales);
+}
+```
+
+Autowired subclasses without a constructor need no change. Optionally route the bundle logs (channel `app`, context
+`bundle: blog_kit`) — see [SECURITY.md](SECURITY.md#logging).
+
 ## To 1.6.0
 
 From **1.5.3**:

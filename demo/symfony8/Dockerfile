@@ -13,6 +13,9 @@ ENV COMPOSER_ALLOW_SUPERUSER=1
 ENV PATH="/app/vendor/bin:${PATH}"
 ENV SERVER_NAME=:80
 
+# REQ-RUNTIME-001: PHP deadline strictly greater than the bundle's outbound CAPTCHA timeout (5 s default).
+RUN printf 'max_execution_time = 30\nmax_input_time = 30\n' > "$PHP_INI_DIR/conf.d/90-timeouts.ini"
+
 COPY docker/frankenphp/Caddyfile /etc/frankenphp/Caddyfile
 COPY docker/frankenphp/Caddyfile.dev /etc/frankenphp/Caddyfile.dev
 

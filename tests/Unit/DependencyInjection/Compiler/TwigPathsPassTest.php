@@ -20,7 +20,7 @@ final class TwigPathsPassTest extends TestCase
     {
         $container = new ContainerBuilder();
 
-        (new TwigPathsPass())->process($container);
+        new TwigPathsPass()->process($container);
 
         self::assertFalse($container->hasDefinition('twig.loader.native'));
     }
@@ -31,7 +31,7 @@ final class TwigPathsPassTest extends TestCase
         $container = new ContainerBuilder();
         $container->setDefinition('twig.loader.native', new Definition(FilesystemLoader::class));
 
-        (new TwigPathsPass())->process($container);
+        new TwigPathsPass()->process($container);
 
         $calls = $container->getDefinition('twig.loader.native')->getMethodCalls();
 
@@ -54,7 +54,7 @@ final class TwigPathsPassTest extends TestCase
             $container->setParameter('kernel.project_dir', $projectDir);
             $container->setDefinition('twig.loader.native_filesystem', new Definition(FilesystemLoader::class));
 
-            (new TwigPathsPass())->process($container);
+            new TwigPathsPass()->process($container);
 
             $calls = $container->getDefinition('twig.loader.native_filesystem')->getMethodCalls();
 
@@ -77,7 +77,7 @@ final class TwigPathsPassTest extends TestCase
         $container->setDefinition('twig.loader.native_filesystem', new Definition(FilesystemLoader::class));
         $container->setAlias('twig.loader.native', 'twig.loader.native_filesystem');
 
-        (new TwigPathsPass())->process($container);
+        new TwigPathsPass()->process($container);
 
         self::assertNotEmpty($container->getDefinition('twig.loader.native_filesystem')->getMethodCalls());
     }
@@ -90,7 +90,7 @@ final class TwigPathsPassTest extends TestCase
         $container->setAlias('twig.loader.first', 'twig.loader.actual');
         $container->setAlias('twig.loader.native', 'twig.loader.first');
 
-        (new TwigPathsPass())->process($container);
+        new TwigPathsPass()->process($container);
 
         self::assertNotEmpty($container->getDefinition('twig.loader.actual')->getMethodCalls());
     }
@@ -101,7 +101,7 @@ final class TwigPathsPassTest extends TestCase
         $container = new ContainerBuilder();
         $container->setDefinition('twig.loader.filesystem', new Definition(FilesystemLoader::class));
 
-        (new TwigPathsPass())->process($container);
+        new TwigPathsPass()->process($container);
 
         $calls = $container->getDefinition('twig.loader.filesystem')->getMethodCalls();
 

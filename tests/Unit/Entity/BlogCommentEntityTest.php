@@ -18,7 +18,7 @@ final class BlogCommentEntityTest extends TestCase
     public function testAccessorsRepliesAndVisibility(): void
     {
         $article = new BlogArticle();
-        $parent  = (new BlogComment())
+        $parent  = new BlogComment()
             ->setArticle($article)
             ->setAuthorName('Alice')
             ->setAuthorEmail('alice@example.com')
@@ -26,12 +26,12 @@ final class BlogCommentEntityTest extends TestCase
             ->setStatus(BlogCommentStatus::Approved)
             ->setIpHash('hash');
 
-        $approvedReply = (new BlogComment())
+        $approvedReply = new BlogComment()
             ->setArticle($article)
             ->setAuthorName('Bob')
             ->setBody('Reply')
             ->setStatus(BlogCommentStatus::Approved);
-        $pendingReply = (new BlogComment())
+        $pendingReply = new BlogComment()
             ->setArticle($article)
             ->setAuthorName('Carol')
             ->setBody('Pending')
@@ -42,7 +42,7 @@ final class BlogCommentEntityTest extends TestCase
         self::assertCount(2, $parent->getReplies());
         self::assertCount(1, $parent->getApprovedReplies());
 
-        $moderator = (new TestUser())->setEmail('mod@example.com');
+        $moderator = new TestUser()->setEmail('mod@example.com');
         $at        = new DateTimeImmutable('2024-06-01');
         $parent->setModeratedAt($at)->setModeratedBy($moderator);
 
@@ -64,8 +64,8 @@ final class BlogCommentEntityTest extends TestCase
     #[Test]
     public function testStaffReplyDisplayName(): void
     {
-        $staff   = (new TestUser())->setEmail('hector.franco@example.com');
-        $comment = (new BlogComment())
+        $staff   = new TestUser()->setEmail('hector.franco@example.com');
+        $comment = new BlogComment()
             ->setArticle(new BlogArticle())
             ->setStaffAuthor($staff)
             ->setAuthorName('')

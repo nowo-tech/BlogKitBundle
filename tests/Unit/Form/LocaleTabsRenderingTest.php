@@ -108,7 +108,7 @@ final class LocaleTabsRenderingTest extends TestCase
     {
         $article = new BlogArticle()->setSlug('hello');
         $article->ensureTranslations(['en', 'es']);
-        $types = [FormKitTestSupport::createType(BlogInlineModalType::class), FormKitTestSupport::createType(BlogArticleInlineTranslationType::class)];
+        $types = [FormKitTestSupport::createType(BlogInlineModalType::class, blogLocales: $this->locales()), FormKitTestSupport::createType(BlogArticleInlineTranslationType::class, blogLocales: $this->locales())];
         $form  = $this->factory($types)->create(BlogInlineModalType::class, $article);
 
         $html = $this->render('@NowoBlogKitBundle/admin/_modal_form.html.twig', $form, ['locale' => 'en']);
@@ -128,27 +128,26 @@ final class LocaleTabsRenderingTest extends TestCase
         $tabs = new ReflectionMethod(AbstractBlogFormType::class, 'translationTabs')->invoke($type);
         self::assertSame(['mode' => 'entries'], $tabs);
 
-        $type->setBlogLocales(new BlogLocales('en', ['en', 'es']));
+        $type = FormKitTestSupport::createType(BlogTagType::class, blogLocales: new BlogLocales('en', ['en', 'es']));
         self::assertSame(['mode' => 'entries', 'default_locale' => 'en', 'required_locales' => ['en']], new ReflectionMethod(AbstractBlogFormType::class, 'translationTabs')->invoke($type));
     }
 
     /** @return FormInterface<mixed> */
     private function tagForm(BlogTag $blogTag): FormInterface
     {
-        $types = [FormKitTestSupport::createType(BlogTagType::class), FormKitTestSupport::createType(BlogTagTranslationType::class)];
+        $types = [FormKitTestSupport::createType(BlogTagType::class, blogLocales: $this->locales()), FormKitTestSupport::createType(BlogTagTranslationType::class, blogLocales: $this->locales())];
 
         return $this->factory($types)->create(BlogTagType::class, $blogTag);
+    }
+
+    private function locales(): BlogLocales
+    {
+        return new BlogLocales('es', ['es', 'en']);
     }
 
     /** @param list<object> $types */
     private function factory(array $types): FormFactoryInterface
     {
-        foreach ($types as $type) {
-            if ($type instanceof AbstractBlogFormType) {
-                $type->setBlogLocales(new BlogLocales('es', ['es', 'en']));
-            }
-        }
-
         return Forms::createFormFactoryBuilder()
             ->addExtension(new ValidatorExtension(Validation::createValidator()))
             ->addTypeExtension(new LocaleTabsExtension())

@@ -14,6 +14,7 @@ use Nowo\BlogKitBundle\Security\Captcha\RemoteCommentCaptchaStrategy;
 use Nowo\BlogKitBundle\Security\Captcha\StreamCaptchaHttpClient;
 use Nowo\BlogKitBundle\Tests\Support\BlogProtectionTestFactory;
 use Nowo\BlogKitBundle\Tests\Support\FormKitTestSupport;
+use Nowo\BlogKitBundle\Tests\Support\RecordingLogger;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
@@ -340,6 +341,55 @@ final class CommentCaptchaStrategyTest extends TestCase
         self::assertSame('file', $native->post($tmp, ['secret' => 'x'])['via']);
         self::assertSame([], $native->post('/no/such/captcha-file', []));
         unlink($tmp);
+    }
+
+    #[Test]
+    public function streamClientLogsOutcomeWithoutSecrets(): void
+    {
+        $logger = new RecordingLogger();
+
+        new StreamCaptchaHttpClient(static fn (): string => '{"success":true}', 5.0, $logger)
+            ->post('https://hcaptcha.com/siteverify', ['secret' => 's3cr3t', 'response' => 'tok']);
+        new StreamCaptchaHttpClient(static fn (): string => 'nope', 5.0, $logger)
+            ->post('https://hcaptcha.com/siteverify', ['secret' => 's3cr3t', 'response' => 'tok']);
+        new StreamCaptchaHttpClient(static fn (): false => false, 5.0, $logger)
+            ->post('https://hcaptcha.com/siteverify', ['secret' => 's3cr3t', 'response' => 'tok']);
+
+        self::assertSame(['info', 'warning', 'warning'], array_column($logger->records, 'level'));
+        foreach ($logger->records as $record) {
+            self::assertSame('hcaptcha.com', $record['context']['host']);
+            self::assertStringNotContainsString('s3cr3t', json_encode($record, JSON_THROW_ON_ERROR));
+            self::assertStringNotContainsString('tok', json_encode($record['context'], JSON_THROW_ON_ERROR));
+        }
+        self::assertSame(5.0, $logger->records[2]['context']['timeout_seconds']);
+    }
+
+    /**
+     * REQ-RUNTIME-001: a siteverify endpoint that accepts the connection but never answers must not
+     * pin the PHP thread — the stream timeout fires and verification fails closed.
+     */
+    #[Test]
+    public function streamClientTimesOutOnUnresponsiveEndpoint(): void
+    {
+        $server = @stream_socket_server('tcp://127.0.0.1:0', $errno, $errstr);
+        if ($server === false) {
+            self::markTestSkipped('Cannot open a local TCP socket: ' . $errstr);
+        }
+
+        $address = stream_socket_get_name($server, false);
+        self::assertIsString($address);
+
+        $logger = new RecordingLogger();
+        $client = new StreamCaptchaHttpClient(timeout: 0.5, logger: $logger);
+
+        $started = microtime(true);
+        $result  = $client->post('http://' . $address . '/siteverify', ['secret' => 'x', 'response' => 'y']);
+        $elapsed = microtime(true) - $started;
+        fclose($server);
+
+        self::assertSame([], $result);
+        self::assertLessThan(5.0, $elapsed);
+        self::assertSame('warning', $logger->records[0]['level'] ?? null);
     }
 
     #[Test]

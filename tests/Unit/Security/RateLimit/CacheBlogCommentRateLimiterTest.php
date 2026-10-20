@@ -20,27 +20,27 @@ final class CacheBlogCommentRateLimiterTest extends TestCase
     #[Test]
     public function nullLimiterIsANoOp(): void
     {
-        (new NullBlogCommentRateLimiter())->consume(Request::create('/'), new BlogArticle());
+        new NullBlogCommentRateLimiter()->consume(Request::create('/'), new BlogArticle());
         $this->addToAssertionCount(1);
     }
 
     #[Test]
     public function skipsWhenDisabledOrUnsupported(): void
     {
-        $article = (new BlogArticle())->setSlug('post');
+        $article = new BlogArticle()->setSlug('post');
         $request = Request::create('/', 'POST', [], [], [], ['REMOTE_ADDR' => '203.0.113.10']);
         $cache   = new ArrayAdapter();
         $clock   = new MockClock();
 
-        (new CacheBlogCommentRateLimiter($cache, $clock, 0, 60, CommentRateLimitStrategy::FixedWindow))
+        new CacheBlogCommentRateLimiter($cache, $clock, 0, 60, CommentRateLimitStrategy::FixedWindow)
             ->consume($request, $article);
-        (new CacheBlogCommentRateLimiter($cache, $clock, 5, 0, CommentRateLimitStrategy::FixedWindow))
+        new CacheBlogCommentRateLimiter($cache, $clock, 5, 0, CommentRateLimitStrategy::FixedWindow)
             ->consume($request, $article);
-        (new CacheBlogCommentRateLimiter(null, $clock, 5, 60, CommentRateLimitStrategy::FixedWindow))
+        new CacheBlogCommentRateLimiter(null, $clock, 5, 60, CommentRateLimitStrategy::FixedWindow)
             ->consume($request, $article);
-        (new CacheBlogCommentRateLimiter($cache, $clock, 5, 60, CommentRateLimitStrategy::None))
+        new CacheBlogCommentRateLimiter($cache, $clock, 5, 60, CommentRateLimitStrategy::None)
             ->consume($request, $article);
-        (new CacheBlogCommentRateLimiter($cache, $clock, 5, 60, CommentRateLimitStrategy::Service))
+        new CacheBlogCommentRateLimiter($cache, $clock, 5, 60, CommentRateLimitStrategy::Service)
             ->consume($request, $article);
 
         $this->addToAssertionCount(1);
@@ -50,7 +50,7 @@ final class CacheBlogCommentRateLimiterTest extends TestCase
     public function fixedWindowAllowsThenBlocks(): void
     {
         $limiter = $this->limiter(CommentRateLimitStrategy::FixedWindow, 1);
-        $article = (new BlogArticle())->setSlug('post');
+        $article = new BlogArticle()->setSlug('post');
         $request = Request::create('/', 'POST', [], [], [], ['REMOTE_ADDR' => '203.0.113.10']);
 
         $limiter->consume($request, $article);
@@ -63,7 +63,7 @@ final class CacheBlogCommentRateLimiterTest extends TestCase
     public function fixedWindowIncrementsWithinTheSameWindow(): void
     {
         $limiter = $this->limiter(CommentRateLimitStrategy::FixedWindow, 2);
-        $article = (new BlogArticle())->setSlug('post');
+        $article = new BlogArticle()->setSlug('post');
         $request = Request::create('/', 'POST', [], [], [], ['REMOTE_ADDR' => '203.0.113.10']);
 
         $limiter->consume($request, $article);
@@ -79,8 +79,8 @@ final class CacheBlogCommentRateLimiterTest extends TestCase
         $limiter = $this->limiter(CommentRateLimitStrategy::PerIpArticle, 1);
         $request = Request::create('/', 'POST', [], [], [], ['REMOTE_ADDR' => '203.0.113.10']);
 
-        $limiter->consume($request, (new BlogArticle())->setSlug('one'));
-        $limiter->consume($request, (new BlogArticle())->setSlug('two'));
+        $limiter->consume($request, new BlogArticle()->setSlug('one'));
+        $limiter->consume($request, new BlogArticle()->setSlug('two'));
 
         $this->addToAssertionCount(1);
     }
@@ -91,7 +91,7 @@ final class CacheBlogCommentRateLimiterTest extends TestCase
         $cache   = new ArrayAdapter();
         $clock   = new MockClock('2026-08-18 12:00:00');
         $limiter = new CacheBlogCommentRateLimiter($cache, $clock, 2, 10, CommentRateLimitStrategy::SlidingWindow);
-        $article = (new BlogArticle())->setSlug('post');
+        $article = new BlogArticle()->setSlug('post');
         $request = Request::create('/');
 
         $limiter->consume($request, $article);
@@ -109,7 +109,7 @@ final class CacheBlogCommentRateLimiterTest extends TestCase
         $cache   = new ArrayAdapter();
         $clock   = new MockClock();
         $limiter = new CacheBlogCommentRateLimiter($cache, $clock, 1, 60, CommentRateLimitStrategy::SlidingWindow);
-        $article = (new BlogArticle())->setSlug('post');
+        $article = new BlogArticle()->setSlug('post');
         $request = Request::create('/', 'POST', [], [], [], ['REMOTE_ADDR' => '10.0.0.1']);
 
         $item = $cache->getItem('nowo_blog_kit_comment_sliding_window_' . hash('sha256', '10.0.0.1'));
@@ -126,7 +126,7 @@ final class CacheBlogCommentRateLimiterTest extends TestCase
         $cache   = new ArrayAdapter();
         $clock   = new MockClock('2026-08-18 12:00:00');
         $limiter = new CacheBlogCommentRateLimiter($cache, $clock, 1, 10, CommentRateLimitStrategy::FixedWindow);
-        $article = (new BlogArticle())->setSlug('post');
+        $article = new BlogArticle()->setSlug('post');
         $request = Request::create('/', 'POST', [], [], [], ['REMOTE_ADDR' => '10.0.0.2']);
 
         $limiter->consume($request, $article);

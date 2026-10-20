@@ -8,6 +8,8 @@ use InvalidArgumentException;
 use Nowo\BlogKitBundle\Locale\BlogLocales;
 use Nowo\FormKitBundle\Attribute\FormKitConfig;
 use Nowo\FormKitBundle\Form\FormKitAbstractType;
+use Nowo\FormKitBundle\Form\FormOptionsMerger;
+use Nowo\FormKitBundle\Form\FormTypeMap;
 use Override;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\Extension\Core\Type\CollectionType;
@@ -16,7 +18,6 @@ use Symfony\Component\Form\Extension\Core\Type\HiddenType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
-use Symfony\Contracts\Service\Attribute\Required;
 
 use function array_key_exists;
 use function sprintf;
@@ -29,16 +30,18 @@ use function sprintf;
 #[FormKitConfig('blog_kit')]
 abstract class AbstractBlogFormType extends FormKitAbstractType
 {
-    private ?BlogLocales $tabLocales = null;
-
     /**
-     * Blog locales for the translation tabs (default locale first and marked required).
-     * Optional: without it FormKit's nowo_form_kit.locale_tabs.default_locale applies.
+     * @param BlogLocales|null $tabLocales Blog locales for the translation tabs (default locale first and marked
+     *                                     required). Optional: without it FormKit's
+     *                                     nowo_form_kit.locale_tabs.default_locale applies. Injected through the
+     *                                     constructor so the form type holds no mutable state (REQ-CS-008).
      */
-    #[Required]
-    public function setBlogLocales(BlogLocales $blogLocales): void
-    {
-        $this->tabLocales = $blogLocales;
+    public function __construct(
+        FormOptionsMerger $formOptionsMerger,
+        FormTypeMap $formTypeMap,
+        private readonly ?BlogLocales $tabLocales = null,
+    ) {
+        parent::__construct($formOptionsMerger, $formTypeMap);
     }
 
     #[Override]

@@ -82,18 +82,18 @@ final class CoverageGapsTest extends TestCase
         self::assertSame(42, $article->getId());
 
         $onlyEn = new BlogArticle();
-        $onlyEn->addTranslation((new BlogArticleTranslation())->setLocale('en')->setTitle('EN'));
+        $onlyEn->addTranslation(new BlogArticleTranslation()->setLocale('en')->setTitle('EN'));
         self::assertSame('EN', $onlyEn->getTranslationOrFallback('fr')->getTitle());
         self::assertSame('EN', $onlyEn->getTranslationOrFallback('fr', 'en')->getTitle());
         self::assertSame('EN', $onlyEn->getTranslationOrFallback('fr', 'es')->getTitle());
 
-        $resource = (new BlogArticleResource())->setArticle($article);
+        $resource = new BlogArticleResource()->setArticle($article);
         self::assertSame($article, $resource->getArticle());
         self::assertNull($resource->getId());
         $resource->setId(7);
         self::assertSame(7, $resource->getId());
 
-        $tr = (new BlogArticleTranslation())
+        $tr = new BlogArticleTranslation()
             ->setTranslatable($article)
             ->setExcerpt(null)
             ->setMetaDescription(null);
@@ -106,7 +106,7 @@ final class CoverageGapsTest extends TestCase
 
         $tag = new BlogTag();
         self::assertSame('', $tag->getName());
-        $tagTr = (new BlogTagTranslation())->setTranslatable($tag)->setName('PHP');
+        $tagTr = new BlogTagTranslation()->setTranslatable($tag)->setName('PHP');
         self::assertSame($tag, $tagTr->getTranslatable());
         self::assertSame('PHP', $tagTr->getName());
         $tag->addTranslation($tagTr->setLocale('es'));
@@ -229,7 +229,7 @@ final class CoverageGapsTest extends TestCase
 
         $uow = $this->createMock(UnitOfWork::class);
         $uow->method('getScheduledEntityInsertions')->willReturn([new stdClass()]);
-        $uow->method('getScheduledEntityUpdates')->willReturn([new BlogArticle(), (new BlogArticle())->setPublished(true)]);
+        $uow->method('getScheduledEntityUpdates')->willReturn([new BlogArticle(), new BlogArticle()->setPublished(true)]);
         $uow->method('getEntityChangeSet')->willReturnOnConsecutiveCalls([], ['published' => 'invalid']);
 
         $em = $this->createMock(EntityManagerInterface::class);
@@ -244,12 +244,12 @@ final class CoverageGapsTest extends TestCase
     #[Test]
     public function syncHashtagsSkipsEmptyBodiesEmptyDefinitionsAndUnchangedTagSets(): void
     {
-        $existing = (new BlogTag())->setSlug('symfony');
+        $existing = new BlogTag()->setSlug('symfony');
         $existing->ensureTranslations();
 
         $article = new BlogArticle();
-        $article->addTranslation((new BlogArticleTranslation())->setLocale('es')->setBody(''));
-        $article->addTranslation((new BlogArticleTranslation())->setLocale('en')->setBody('Body without tags'));
+        $article->addTranslation(new BlogArticleTranslation()->setLocale('es')->setBody(''));
+        $article->addTranslation(new BlogArticleTranslation()->setLocale('en')->setBody('Body without tags'));
         $article->addTag($existing);
 
         $articleRepository = $this->createMock(BlogArticleRepository::class);

@@ -15,13 +15,13 @@ use function in_array;
 /**
  * Minimal ManagerRegistry for ServiceEntityRepository constructors and SQLite integration tests.
  */
-final class TestManagerRegistry implements ManagerRegistry
+final readonly class TestManagerRegistry implements ManagerRegistry
 {
     public function __construct(
-        private readonly EntityManager $entityManager,
-        private readonly Connection $connection,
+        private EntityManager $entityManager,
+        private Connection $connection,
         /** @var list<class-string> */
-        private readonly array $managedClasses = [],
+        private array $managedClasses = [],
     ) {
     }
 

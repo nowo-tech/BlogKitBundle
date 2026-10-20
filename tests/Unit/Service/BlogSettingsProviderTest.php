@@ -21,7 +21,7 @@ final class BlogSettingsProviderTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->settings = (new BlogSettings())
+        $this->settings = new BlogSettings()
             ->setListingMode('infinite')
             ->setPerPage(12)
             ->setIndexLatestLimit(8)

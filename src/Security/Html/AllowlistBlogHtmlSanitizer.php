@@ -25,7 +25,7 @@ use const LIBXML_HTML_NOIMPLIED;
 final class AllowlistBlogHtmlSanitizer implements BlogHtmlSanitizerInterface
 {
     /** @var array<string, list<string>> */
-    private const ALLOWED_ELEMENTS = [
+    private const array ALLOWED_ELEMENTS = [
         'p'          => ['class'],
         'br'         => [],
         'strong'     => ['class'],
@@ -61,13 +61,13 @@ final class AllowlistBlogHtmlSanitizer implements BlogHtmlSanitizerInterface
     ];
 
     /** Elements dropped with their content (unwrapping them would leave code / markup behind). */
-    private const DROPPED_ELEMENTS = [
+    private const array DROPPED_ELEMENTS = [
         'script', 'style', 'template', 'noscript', 'object', 'embed', 'applet', 'svg', 'math',
         'meta', 'link', 'base', 'frame', 'frameset', 'xmp', 'noembed', 'noframes', 'textarea', 'select',
     ];
 
     /** @var list<string> */
-    private const ALLOWED_EMBED_HOSTS = [
+    private const array ALLOWED_EMBED_HOSTS = [
         'www.youtube.com',
         'youtube.com',
         'www.youtube-nocookie.com',

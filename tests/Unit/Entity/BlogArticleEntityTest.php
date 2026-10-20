@@ -33,7 +33,7 @@ final class BlogArticleEntityTest extends TestCase
 
         $tag = new BlogTag();
         $tag->setSlug('php');
-        $tag->addTranslation((new BlogTagTranslation())->setLocale('es')->setName('PHP'));
+        $tag->addTranslation(new BlogTagTranslation()->setLocale('es')->setName('PHP'));
         self::assertSame('php', (string) $tag);
         $article->addTag($tag)->addTag($tag);
         self::assertCount(1, $article->getTags());
@@ -43,7 +43,7 @@ final class BlogArticleEntityTest extends TestCase
         self::assertCount(0, $article->getTags());
         $article->addTag($tag);
 
-        $resource = (new BlogArticleResource())->setTitle('PDF')->setImage('/a.pdf')->setPosition(1);
+        $resource = new BlogArticleResource()->setTitle('PDF')->setImage('/a.pdf')->setPosition(1);
         $article->addResource($resource)->addResource($resource);
         self::assertCount(1, $article->getResources());
         self::assertSame($article, $resource->getArticle());
@@ -90,7 +90,7 @@ final class BlogArticleEntityTest extends TestCase
         // getTranslationOrFallback: only 'en' translation → ask for 'fr' → falls back to 'en'
         $tag = new BlogTag();
         $tag->setSlug('design');
-        $enTr = (new BlogTagTranslation())->setLocale('en')->setName('Design');
+        $enTr = new BlogTagTranslation()->setLocale('en')->setName('Design');
         $tag->addTranslation($enTr);
 
         $fallback = $tag->getTranslationOrFallback('fr');

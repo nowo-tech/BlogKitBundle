@@ -23,7 +23,7 @@ Others are **N/A** (or already covered by Symfony) so the decision stays auditab
 
 | PSR | Decision | Notes |
 | --- | -------- | ----- |
-| PSR-3 Logger | **N/A** | Logging calls exist but there is no public/injectable logger SPI yet; do not add `psr/log` without type-hints. |
+| PSR-3 Logger | **Adopted** | `BlogCommentManager` and `StreamCaptchaHttpClient` type-hint `Psr\Log\LoggerInterface` (moderation actions and outbound CAPTCHA calls, no personal data; see [SECURITY.md](SECURITY.md#logging)). |
 | PSR-6 Caching | **Adopted** | Uses `Psr\Cache\` contracts where item metadata/tags matter. |
 | PSR-7 / PSR-17 HTTP messages | **N/A** | Symfony HttpFoundation (or no HTTP messages API) is the correct surface; a PSR-7 bridge would not help consumers. |
 | PSR-18 HTTP client | **N/A** | Outbound HTTP uses Symfony `HttpClientInterface` (or a package transport) as the supported SPI instead of PSR-18. |
@@ -34,7 +34,7 @@ Others are **N/A** (or already covered by Symfony) so the decision stays auditab
 
 ## Summary
 
-- **Adopted beyond baseline:** PSR-6 Caching, PSR-20 Clock
+- **Adopted beyond baseline:** PSR-3 Logger, PSR-6 Caching, PSR-20 Clock
 - **Rule:** do not add `psr/*` Composer dependencies without matching type-hints and DI wiring.
 - **Re-evaluate** when the package gains logging, HTTP, cache, clock, or event SPIs.
 

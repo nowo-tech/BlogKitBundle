@@ -64,7 +64,7 @@ final class BlogProtectionTest extends TestCase
     #[Test]
     public function settingsOverrideYamlAndInvalidFallsBack(): void
     {
-        $settings = (new BlogSettings())
+        $settings = new BlogSettings()
             ->setCommentRateLimitStrategy('sliding_window')
             ->setCommentCaptchaStrategy('none')
             ->setHtmlSanitizeStrategy('strip')
@@ -78,7 +78,7 @@ final class BlogProtectionTest extends TestCase
         self::assertSame(HtmlSanitizeStrategy::Strip, $protection->resolveHtmlSanitizeStrategy());
         self::assertSame('Hello', $protection->htmlSanitizer()->sanitize('<p>Hello</p>'));
 
-        $invalid = (new BlogSettings())
+        $invalid = new BlogSettings()
             ->setCommentRateLimitStrategy('nope')
             ->setCommentCaptchaStrategy('nope')
             ->setHtmlSanitizeStrategy('nope');
@@ -89,7 +89,7 @@ final class BlogProtectionTest extends TestCase
 
         $empty = new BlogSettings();
         foreach (['commentRateLimitStrategy', 'commentCaptchaStrategy', 'htmlSanitizeStrategy'] as $property) {
-            (new ReflectionProperty(BlogSettings::class, $property))->setValue($empty, '');
+            new ReflectionProperty(BlogSettings::class, $property)->setValue($empty, '');
         }
         $fromEmpty = BlogProtectionTestFactory::create(settings: $empty);
         self::assertSame(CommentRateLimitStrategy::FixedWindow, $fromEmpty->resolveRateLimitStrategy());
@@ -150,7 +150,7 @@ final class BlogProtectionTest extends TestCase
 
         self::assertSame('hcaptcha', $protection->captcha()->twigContext()['strategy']);
         self::assertStringNotContainsString('script', $protection->htmlSanitizer()->sanitize('<p>a</p><script>x</script>'));
-        $protection->rateLimiter()->consume(Request::create('/'), (new BlogArticle())->setSlug('post'));
+        $protection->rateLimiter()->consume(Request::create('/'), new BlogArticle()->setSlug('post'));
 
         foreach ([CommentCaptchaStrategy::RecaptchaV2, CommentCaptchaStrategy::RecaptchaV3, CommentCaptchaStrategy::Turnstile] as $strategy) {
             $remote = BlogProtectionTestFactory::create([
@@ -184,7 +184,7 @@ final class BlogProtectionTest extends TestCase
             new StreamCaptchaHttpClient(static fn (): string => '{}'),
             new RequestStack(),
         );
-        $noCache->rateLimiter()->consume(Request::create('/'), (new BlogArticle())->setSlug('post'));
+        $noCache->rateLimiter()->consume(Request::create('/'), new BlogArticle()->setSlug('post'));
         $this->addToAssertionCount(1);
     }
 }

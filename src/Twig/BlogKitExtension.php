@@ -97,13 +97,11 @@ final class BlogKitExtension extends AbstractExtension implements GlobalsInterfa
      */
     public function captchaContext(): array
     {
-        return $this->protection?->captcha()->twigContext() ?? [
-            'enabled'      => false,
-            'strategy'     => 'none',
-            'site_key'     => '',
-            'script_url'   => '',
-            'widget_class' => '',
-        ];
+        if (!$this->protection instanceof BlogProtection) {
+            return ['enabled' => false, 'strategy' => 'none', 'site_key' => '', 'script_url' => '', 'widget_class' => ''];
+        }
+
+        return $this->protection->captcha()->twigContext();
     }
 
     public function canManageArticle(BlogArticle $article): bool

@@ -16,13 +16,13 @@ final class BlogHtmlSanitizerTest extends TestCase
     #[Test]
     public function nullStrategyReturnsInput(): void
     {
-        self::assertSame('<script>x</script>', (new NullBlogHtmlSanitizer())->sanitize('<script>x</script>'));
+        self::assertSame('<script>x</script>', new NullBlogHtmlSanitizer()->sanitize('<script>x</script>'));
     }
 
     #[Test]
     public function stripStrategyRemovesTags(): void
     {
-        self::assertSame('Hello', (new StripBlogHtmlSanitizer())->sanitize(' <p>Hello</p> '));
+        self::assertSame('Hello', new StripBlogHtmlSanitizer()->sanitize(' <p>Hello</p> '));
     }
 
     #[Test]
@@ -76,7 +76,7 @@ final class BlogHtmlSanitizerTest extends TestCase
     #[Test]
     public function allowlistReturnsEmptyForBlankInput(): void
     {
-        self::assertSame('', (new AllowlistBlogHtmlSanitizer())->sanitize('   '));
+        self::assertSame('', new AllowlistBlogHtmlSanitizer()->sanitize('   '));
     }
 
     #[Test]
@@ -152,7 +152,7 @@ final class BlogHtmlSanitizerTest extends TestCase
     #[DataProvider('rejectedIframeSources')]
     public function allowlistRejectsIframeSourcesThatAreNotHttpsOnAllowedHost(string $src): void
     {
-        $result = (new AllowlistBlogHtmlSanitizer())->sanitize('<p>v</p><iframe src="' . $src . '"></iframe>');
+        $result = new AllowlistBlogHtmlSanitizer()->sanitize('<p>v</p><iframe src="' . $src . '"></iframe>');
 
         self::assertStringNotContainsString('iframe', strtolower($result));
         self::assertStringNotContainsString('alert', $result);
@@ -162,7 +162,7 @@ final class BlogHtmlSanitizerTest extends TestCase
     #[Test]
     public function allowlistKeepsHttpsEmbedWithUppercaseHost(): void
     {
-        $result = (new AllowlistBlogHtmlSanitizer())->sanitize('<iframe src="HTTPS://WWW.YOUTUBE.COM/embed/abc"></iframe>');
+        $result = new AllowlistBlogHtmlSanitizer()->sanitize('<iframe src="HTTPS://WWW.YOUTUBE.COM/embed/abc"></iframe>');
 
         self::assertStringContainsString('<iframe src="HTTPS://WWW.YOUTUBE.COM/embed/abc"></iframe>', $result);
     }

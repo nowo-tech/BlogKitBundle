@@ -185,7 +185,7 @@ final class BlogFormTypesTest extends TestCase
         self::assertSame('single_text', $captured['publishedAt'][1]['widget']);
         self::assertSame(8, $captured['tags'][1]['attr']['size']);
 
-        $tag = (new BlogTag())->setSlug('php');
+        $tag = new BlogTag()->setSlug('php');
         $tag->ensureTranslations();
         $tag->getTranslationOrFallback('es')->setName('PHP');
 
@@ -214,12 +214,12 @@ final class BlogFormTypesTest extends TestCase
     #[Test]
     public function itLabelsBlogArticleTagChoicesInTheRequestLocaleWithDefaultFallback(): void
     {
-        $tag = (new BlogTag())->setSlug('php');
+        $tag = new BlogTag()->setSlug('php');
         $tag->ensureTranslations(['es', 'en']);
         $tag->getTranslationOrFallback('es')->setName('Programación');
         $tag->getTranslationOrFallback('en')->setName('Programming');
 
-        $onlySpanish = (new BlogTag())->setSlug('solo');
+        $onlySpanish = new BlogTag()->setSlug('solo');
         $onlySpanish->ensureTranslations(['es']);
         $onlySpanish->getTranslationOrFallback('es')->setName('Solo español');
 

@@ -1,6 +1,10 @@
 {
 	order mercure after encode
 	skip_install_trust
+	# REQ-RUNTIME-001: cap how long a request waits for a free PHP thread (504 instead of an endless queue).
+	frankenphp {
+		max_wait_time 30s
+	}
 }
 
 :80 {

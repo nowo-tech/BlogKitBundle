@@ -26,10 +26,10 @@ use function sprintf;
  */
 final class CatalogueTranslationTest extends TestCase
 {
-    private const DOMAIN = 'NowoBlogKitBundle';
+    private const string DOMAIN = 'NowoBlogKitBundle';
 
     /** English values that stay identical in every language (brands, product names, technical terms). */
-    private const UNIVERSAL = [
+    private const array UNIVERSAL = [
         'Blog',
         'Slug',
         'LinkedIn',
@@ -40,7 +40,7 @@ final class CatalogueTranslationTest extends TestCase
     ];
 
     /** English values that are the correct word in the given language too. */
-    private const LOCALE_ALLOWLIST = [
+    private const array LOCALE_ALLOWLIST = [
         'es' => ['Masonry', 'Honeypot', 'No', 'Hashtags'],
         'fr' => ['Actions', 'Article', 'Articles', 'Date', 'Hashtags', 'Pagination', 'Position', 'Tags'],
         'de' => ['Hashtags', 'Name', 'Position', 'Status', 'Tags'],
@@ -61,8 +61,8 @@ final class CatalogueTranslationTest extends TestCase
     #[DataProvider('localeProvider')]
     public function catalogueHasSameKeysAsEnglish(string $locale): void
     {
-        $english    = self::catalogue('en');
-        $translated = self::catalogue($locale);
+        $english    = $this->catalogue('en');
+        $translated = $this->catalogue($locale);
 
         self::assertSame([], array_diff(array_keys($english), array_keys($translated)), sprintf('Missing keys in %s', $locale));
         self::assertSame([], array_diff(array_keys($translated), array_keys($english)), sprintf('Extra keys in %s', $locale));
@@ -74,8 +74,8 @@ final class CatalogueTranslationTest extends TestCase
     {
         $allowed = [...self::UNIVERSAL, ...self::LOCALE_ALLOWLIST[$locale]];
         $copies  = [];
-        foreach (self::catalogue($locale) as $key => $value) {
-            $english = self::catalogue('en')[$key] ?? null;
+        foreach ($this->catalogue($locale) as $key => $value) {
+            $english = $this->catalogue('en')[$key] ?? null;
             if ($value === $english && !in_array($value, $allowed, true)) {
                 $copies[] = sprintf('%s: "%s"', $key, $value);
             }
@@ -88,14 +88,14 @@ final class CatalogueTranslationTest extends TestCase
     #[DataProvider('localeProvider')]
     public function placeholdersAndHtmlTagsArePreserved(string $locale): void
     {
-        $english = self::catalogue('en');
-        foreach (self::catalogue($locale) as $key => $value) {
-            self::assertSame(self::tokens($english[$key] ?? ''), self::tokens($value), sprintf('%s.%s placeholders/HTML differ from English', $locale, $key));
+        $english = $this->catalogue('en');
+        foreach ($this->catalogue($locale) as $key => $value) {
+            self::assertSame($this->tokens($english[$key] ?? ''), $this->tokens($value), sprintf('%s.%s placeholders/HTML differ from English', $locale, $key));
         }
     }
 
     /** @return list<string> */
-    private static function tokens(string $message): array
+    private function tokens(string $message): array
     {
         preg_match_all('/%[a-z_]+%|\{[a-z_]+\}|<\/?[a-z]+\b[^>]*>/i', $message, $matches);
         $tokens = $matches[0];
@@ -105,7 +105,7 @@ final class CatalogueTranslationTest extends TestCase
     }
 
     /** @return array<string, string> */
-    private static function catalogue(string $locale): array
+    private function catalogue(string $locale): array
     {
         static $cache = [];
         if (!isset($cache[$locale])) {

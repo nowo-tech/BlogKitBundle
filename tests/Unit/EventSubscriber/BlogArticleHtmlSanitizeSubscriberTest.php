@@ -22,7 +22,7 @@ final class BlogArticleHtmlSanitizeSubscriberTest extends TestCase
         $subscriber = new BlogArticleHtmlSanitizeSubscriber(
             BlogProtectionTestFactory::create(['htmlStrategy' => HtmlSanitizeStrategy::Strip]),
         );
-        $translation = (new BlogArticleTranslation())->setBody('<p>Hello</p>');
+        $translation = new BlogArticleTranslation()->setBody('<p>Hello</p>');
         $args        = new LifecycleEventArgs($translation, $this->createMock(ObjectManager::class));
 
         $subscriber->prePersist($args);
@@ -43,7 +43,7 @@ final class BlogArticleHtmlSanitizeSubscriberTest extends TestCase
 
         $subscriber->prePersist(new LifecycleEventArgs(new BlogTag(), $manager));
 
-        $empty = (new BlogArticleTranslation())->setBody('');
+        $empty = new BlogArticleTranslation()->setBody('');
         $subscriber->prePersist(new LifecycleEventArgs($empty, $manager));
         self::assertSame('', $empty->getBody());
 

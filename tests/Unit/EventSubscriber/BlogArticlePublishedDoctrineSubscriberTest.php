@@ -22,7 +22,7 @@ final class BlogArticlePublishedDoctrineSubscriberTest extends TestCase
     #[Test]
     public function postFlushDispatchesEventForPublishedInsertions(): void
     {
-        $article    = (new BlogArticle())->setPublished(true);
+        $article    = new BlogArticle()->setPublished(true);
         $dispatcher = $this->createMock(EventDispatcherInterface::class);
         $dispatcher->expects(self::once())
             ->method('dispatch')
@@ -41,7 +41,7 @@ final class BlogArticlePublishedDoctrineSubscriberTest extends TestCase
     #[Test]
     public function postFlushDispatchesEventForFalseToTruePublishedUpdates(): void
     {
-        $article    = (new BlogArticle())->setPublished(true);
+        $article    = new BlogArticle()->setPublished(true);
         $dispatcher = $this->createMock(EventDispatcherInterface::class);
         $dispatcher->expects(self::once())
             ->method('dispatch')
@@ -73,7 +73,7 @@ final class BlogArticlePublishedDoctrineSubscriberTest extends TestCase
     #[Test]
     public function onFlushReturnsImmediatelyWhileSubscriberIsAlreadyFlushing(): void
     {
-        $article    = (new BlogArticle())->setPublished(true);
+        $article    = new BlogArticle()->setPublished(true);
         $dispatcher = $this->createMock(EventDispatcherInterface::class);
         $dispatcher->expects(self::never())->method('dispatch');
 
@@ -98,8 +98,8 @@ final class BlogArticlePublishedDoctrineSubscriberTest extends TestCase
     #[Test]
     public function failedFlushDoesNotLeakPendingArticlesIntoTheNextFlush(): void
     {
-        $rolledBack = (new BlogArticle())->setPublished(true);
-        $published  = (new BlogArticle())->setPublished(true);
+        $rolledBack = new BlogArticle()->setPublished(true);
+        $published  = new BlogArticle()->setPublished(true);
         $dispatched = [];
         $dispatcher = $this->createMock(EventDispatcherInterface::class);
         $dispatcher->method('dispatch')->willReturnCallback(
@@ -124,7 +124,7 @@ final class BlogArticlePublishedDoctrineSubscriberTest extends TestCase
     #[Test]
     public function resetClearsPendingArticlesAndFlushingFlag(): void
     {
-        $article    = (new BlogArticle())->setPublished(true);
+        $article    = new BlogArticle()->setPublished(true);
         $dispatcher = $this->createMock(EventDispatcherInterface::class);
         $dispatcher->expects(self::once())->method('dispatch')->willReturnArgument(0);
 

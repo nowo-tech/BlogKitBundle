@@ -12,6 +12,7 @@ All options live under the root key `nowo_blog_kit`.
 - [comments](#comments)
   - [comments.rate_limit](#commentsrate_limit)
   - [comments.captcha](#commentscaptcha)
+  - [Timeout hierarchy](#timeout-hierarchy)
 - [html](#html)
 - [doctrine](#doctrine)
 - [Twig globals](#twig-globals)
@@ -156,6 +157,10 @@ Requires Symfony `cache.app`. Without a cache pool, limiting is skipped.
 | `service` | `null` | Service id implementing `BlogCommentCaptchaStrategyInterface` when `strategy: service`. |
 
 Remote providers need `site_key` and `secret_key`. Missing keys fail closed (form invalid).
+
+### Timeout hierarchy
+
+`timeout_seconds` is the innermost deadline (REQ-RUNTIME-001): a timed-out or failed verification fails closed and logs a warning. Keep PHP `max_execution_time` strictly greater than it, your reverse proxy / Caddy `servers.timeouts.write` greater than PHP, and (under FrankenPHP) a `max_wait_time` so requests do not queue forever for a busy thread. Raise them together. The demo values are listed in [DEMO-FRANKENPHP.md](DEMO-FRANKENPHP.md#timeout-hierarchy).
 
 ## html
 

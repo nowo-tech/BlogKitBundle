@@ -227,8 +227,8 @@ final class BlogCommentControllerTest extends TestCase
     public function indexSkipsCommentsWithoutIdentifierWhenBuildingForms(): void
     {
         $request = Request::create('/admin/blog/comments?status=pending', 'GET');
-        $comment = (new BlogComment())
-            ->setArticle((new BlogArticle())->setSlug('post')->setPublished(true))
+        $comment = new BlogComment()
+            ->setArticle(new BlogArticle()->setSlug('post')->setPublished(true))
             ->setAuthorName('Author')
             ->setBody('Body')
             ->setStatus(BlogCommentStatus::Pending);
@@ -507,11 +507,11 @@ final class BlogCommentControllerTest extends TestCase
 
     private function createComment(int $id, BlogCommentStatus $status): BlogComment
     {
-        $article = (new BlogArticle())
+        $article = new BlogArticle()
             ->setSlug('blog-post')
             ->setPublished(true);
 
-        $comment = (new BlogComment())
+        $comment = new BlogComment()
             ->setArticle($article)
             ->setAuthorName('Author')
             ->setBody('Body')

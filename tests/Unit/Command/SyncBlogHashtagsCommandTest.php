@@ -121,7 +121,7 @@ final class SyncBlogHashtagsCommandTest extends TestCase
     #[Test]
     public function executeSkipsRelinkingWhenResolvedTagSlugsAlreadyMatchCurrentOnes(): void
     {
-        $tag = (new BlogTag())->setSlug('symfony');
+        $tag = new BlogTag()->setSlug('symfony');
         $tag->ensureTranslations();
 
         $article = $this->createArticleWithBody('Original body');
@@ -163,7 +163,7 @@ final class SyncBlogHashtagsCommandTest extends TestCase
     private function createArticleWithBody(string $body): BlogArticle
     {
         $article     = new BlogArticle();
-        $translation = (new BlogArticleTranslation())
+        $translation = new BlogArticleTranslation()
             ->setLocale('es')
             ->setBody($body);
         $article->addTranslation($translation);

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Nowo\BlogKitBundle\Tests\Support;
 
+use Nowo\BlogKitBundle\Locale\BlogLocales;
 use Nowo\FormKitBundle\Form\Constraint\ConstraintDefinitionFactory;
 use Nowo\FormKitBundle\Form\FormOptionsMerger;
 use Nowo\FormKitBundle\Form\FormTypeMap;
@@ -67,11 +68,11 @@ final class FormKitTestSupport
      *
      * @return T
      */
-    public static function createType(string $class, string $defaultProfile = 'blog_kit'): object
+    public static function createType(string $class, string $defaultProfile = 'blog_kit', ?BlogLocales $blogLocales = null): object
     {
         $merger = self::merger($defaultProfile);
         $map    = self::typeMap();
-        $type   = new $class($merger, $map);
+        $type   = $blogLocales instanceof BlogLocales ? new $class($merger, $map, $blogLocales) : new $class($merger, $map);
 
         if (method_exists($type, 'setFormOptionsMerger')) {
             call_user_func([$type, 'setFormOptionsMerger'], $merger);

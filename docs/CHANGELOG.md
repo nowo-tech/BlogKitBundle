@@ -41,6 +41,21 @@ Documentation: wave-1 REQ compliance (README, CONTRIBUTING, issue templates, Spe
 ### Changed
 
 - Documentation: wave-1 REQ compliance — README documentation list order, CONTRIBUTING Cursor Agent queue settings and post-commit co-author check, canonical issue templates, TOCs for long docs, spec-driven ↔ Engram relationship, tailored Spec Kit constitution, baseline success criteria and inventory refresh (153/153).
+- `AbstractBlogFormType` receives the optional `BlogLocales` through its constructor (third argument) instead of the
+  `#[Required]` setter `setBlogLocales()`, so form types hold no mutable state under FrankenPHP workers (Igor clean,
+  REQ-CS-008). See [UPGRADING](UPGRADING.md#to-161).
+- `BlogCommentManager` takes moderation timestamps from the injected PSR-20 clock and logs approve / reject / delete
+  (comment id only) through PSR-3; `StreamCaptchaHttpClient` logs siteverify outcomes (provider host only, never
+  secrets or tokens) (REQ-DI-001, REQ-OBS-001, REQ-CS-007: PSR-3 adopted).
+- Demo: PHP `max_execution_time` 30 s and FrankenPHP `max_wait_time` 30 s complete the timeout hierarchy above the 5 s
+  CAPTCHA deadline (REQ-RUNTIME-001), documented in CONFIGURATION, DEMO-FRANKENPHP and SECURITY (new Logging and
+  Timeouts sections).
+- Tooling: CI runs PHPStan, Rector (dry run) and Igor; Rector targets the PHP 8.4 floor; php-cs-fixer is capped at 2
+  parallel workers; `make help` follows the standard block order; the co-author check accepts git worktrees.
+
+### Fixed
+
+- CI coverage gate is back at 100% (tests for the CAPTCHA client timeout and logging, clock-driven moderation).
 
 ## [1.6.0] - 2026-10-19
 

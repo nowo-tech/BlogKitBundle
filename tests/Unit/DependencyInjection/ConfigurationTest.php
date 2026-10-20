@@ -15,7 +15,7 @@ final class ConfigurationTest extends TestCase
     #[Test]
     public function defaultConfigurationMatchesBundleDefaults(): void
     {
-        $config = (new Processor())->processConfiguration(new Configuration(), [[]]);
+        $config = new Processor()->processConfiguration(new Configuration(), [[]]);
 
         self::assertNull($config['user_class']);
         self::assertSame('es', $config['default_locale']);
@@ -57,7 +57,7 @@ final class ConfigurationTest extends TestCase
     {
         $this->expectException(InvalidConfigurationException::class);
 
-        (new Processor())->processConfiguration(new Configuration(), [[
+        new Processor()->processConfiguration(new Configuration(), [[
             'web_ui' => ['page_size' => 0],
         ]]);
     }
@@ -67,7 +67,7 @@ final class ConfigurationTest extends TestCase
     {
         $this->expectException(InvalidConfigurationException::class);
 
-        (new Processor())->processConfiguration(new Configuration(), [[
+        new Processor()->processConfiguration(new Configuration(), [[
             'web_ui' => ['page_size' => 201],
         ]]);
     }
@@ -77,7 +77,7 @@ final class ConfigurationTest extends TestCase
     {
         $this->expectException(InvalidConfigurationException::class);
 
-        (new Processor())->processConfiguration(new Configuration(), [[
+        new Processor()->processConfiguration(new Configuration(), [[
             'web_ui' => ['css_framework' => 'bulma'],
         ]]);
     }
@@ -87,7 +87,7 @@ final class ConfigurationTest extends TestCase
     {
         $this->expectException(InvalidConfigurationException::class);
 
-        (new Processor())->processConfiguration(new Configuration(), [[
+        new Processor()->processConfiguration(new Configuration(), [[
             'web_ui' => ['icon_set' => 'fontawesome'],
         ]]);
     }
@@ -97,7 +97,7 @@ final class ConfigurationTest extends TestCase
     {
         $this->expectException(InvalidConfigurationException::class);
 
-        (new Processor())->processConfiguration(new Configuration(), [[
+        new Processor()->processConfiguration(new Configuration(), [[
             'web_ui' => ['row_actions_display' => 'hidden'],
         ]]);
     }
@@ -107,7 +107,7 @@ final class ConfigurationTest extends TestCase
     {
         $this->expectException(InvalidConfigurationException::class);
 
-        (new Processor())->processConfiguration(new Configuration(), [[
+        new Processor()->processConfiguration(new Configuration(), [[
             'comments' => ['rate_limit' => ['strategy' => 'burst']],
         ]]);
     }
@@ -117,7 +117,7 @@ final class ConfigurationTest extends TestCase
     {
         $this->expectException(InvalidConfigurationException::class);
 
-        (new Processor())->processConfiguration(new Configuration(), [[
+        new Processor()->processConfiguration(new Configuration(), [[
             'html' => ['sanitize' => ['strategy' => 'bleach']],
         ]]);
     }
@@ -127,7 +127,7 @@ final class ConfigurationTest extends TestCase
     {
         $this->expectException(InvalidConfigurationException::class);
 
-        (new Processor())->processConfiguration(new Configuration(), [[
+        new Processor()->processConfiguration(new Configuration(), [[
             'comments' => ['captcha' => ['strategy' => 'botdetect']],
         ]]);
     }
@@ -137,7 +137,7 @@ final class ConfigurationTest extends TestCase
     {
         $this->expectException(InvalidConfigurationException::class);
 
-        (new Processor())->processConfiguration(new Configuration(), [[
+        new Processor()->processConfiguration(new Configuration(), [[
             'listing' => ['mode' => 'masonry'],
         ]]);
     }
@@ -147,7 +147,7 @@ final class ConfigurationTest extends TestCase
     {
         $this->expectException(InvalidConfigurationException::class);
 
-        (new Processor())->processConfiguration(new Configuration(), [[
+        new Processor()->processConfiguration(new Configuration(), [[
             'listing' => ['masonry' => ['strategy' => 'waterfall']],
         ]]);
     }
@@ -157,7 +157,7 @@ final class ConfigurationTest extends TestCase
     {
         $this->expectException(InvalidConfigurationException::class);
 
-        (new Processor())->processConfiguration(new Configuration(), [[
+        new Processor()->processConfiguration(new Configuration(), [[
             'listing' => ['masonry' => ['columns_desktop' => 4]],
         ]]);
     }
@@ -167,7 +167,7 @@ final class ConfigurationTest extends TestCase
     {
         $this->expectException(InvalidConfigurationException::class);
 
-        (new Processor())->processConfiguration(new Configuration(), [[
+        new Processor()->processConfiguration(new Configuration(), [[
             'security' => ['object_access' => ['strategy' => 'acl']],
         ]]);
     }

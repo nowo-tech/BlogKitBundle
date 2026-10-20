@@ -40,7 +40,7 @@ final class BlogTagControllerTest extends TestCase
         $request = Request::create('/admin/blog/tags?slug=php', 'GET');
         $tag     = $this->createTag(3, 'php');
         $unsaved = $this->createTag(0, 'draft');
-        (new ReflectionProperty(BlogTag::class, 'id'))->setValue($unsaved, null);
+        new ReflectionProperty(BlogTag::class, 'id')->setValue($unsaved, null);
 
         $repository = $this->createMock(BlogTagRepository::class);
         $repository->expects(self::once())->method('findFiltered')->with(['slug' => 'php'])->willReturn([$tag, $unsaved]);
@@ -265,7 +265,7 @@ final class BlogTagControllerTest extends TestCase
     {
         $request = Request::create('/admin/blog/tags/6/delete', 'POST');
         $tag     = $this->createTag(6, 'used');
-        $tag->getArticles()->add((new BlogArticle())->setSlug('article'));
+        $tag->getArticles()->add(new BlogArticle()->setSlug('article'));
 
         $form = $this->createConfiguredMock(FormInterface::class, [
             'isSubmitted' => true,
@@ -375,7 +375,7 @@ final class BlogTagControllerTest extends TestCase
 
     private function createTag(int $id, string $slug): BlogTag
     {
-        $tag = (new BlogTag())
+        $tag = new BlogTag()
             ->setSlug($slug)
             ->ensureTranslations();
 

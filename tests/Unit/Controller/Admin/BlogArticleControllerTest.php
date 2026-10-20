@@ -159,7 +159,7 @@ final class BlogArticleControllerTest extends TestCase
     public function newAssignsCurrentUserAsCreatedBy(): void
     {
         $request = Request::create('/admin/blog/new', 'POST');
-        $user    = (new TestUser())->setId(9)->setEmail('editor@example.test');
+        $user    = new TestUser()->setId(9)->setEmail('editor@example.test');
         $form    = $this->createConfiguredMock(FormInterface::class, [
             'isSubmitted' => true,
             'isValid'     => true,
@@ -561,7 +561,7 @@ final class BlogArticleControllerTest extends TestCase
 
     private function createArticle(int $id, string $slug): BlogArticle
     {
-        $article = (new BlogArticle())
+        $article = new BlogArticle()
             ->setSlug($slug)
             ->ensureTranslations();
 

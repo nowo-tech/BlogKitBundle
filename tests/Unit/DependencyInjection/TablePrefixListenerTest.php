@@ -22,7 +22,7 @@ final class TablePrefixListenerTest extends TestCase
         $event = $this->createMock(LoadClassMetadataEventArgs::class);
         $event->method('getClassMetadata')->willReturn($metadata);
 
-        (new TablePrefixListener(''))->loadClassMetadata($event);
+        new TablePrefixListener('')->loadClassMetadata($event);
     }
 
     #[Test]
@@ -35,7 +35,7 @@ final class TablePrefixListenerTest extends TestCase
         $event = $this->createMock(LoadClassMetadataEventArgs::class);
         $event->method('getClassMetadata')->willReturn($metadata);
 
-        (new TablePrefixListener('bk_'))->loadClassMetadata($event);
+        new TablePrefixListener('bk_')->loadClassMetadata($event);
     }
 
     #[Test]
@@ -51,6 +51,6 @@ final class TablePrefixListenerTest extends TestCase
         $event = $this->createMock(LoadClassMetadataEventArgs::class);
         $event->method('getClassMetadata')->willReturn($metadata);
 
-        (new TablePrefixListener('bk_'))->loadClassMetadata($event);
+        new TablePrefixListener('bk_')->loadClassMetadata($event);
     }
 }

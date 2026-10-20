@@ -45,7 +45,7 @@ final class NowoBlogKitExtensionTest extends TestCase
     {
         $container = new ContainerBuilder();
 
-        (new NowoBlogKitExtension())->load([[
+        new NowoBlogKitExtension()->load([[
             'security' => ['allow_unauthenticated' => true],
         ]], $container);
 
@@ -74,7 +74,10 @@ final class NowoBlogKitExtensionTest extends TestCase
         self::assertSame(2, $container->getParameter('nowo_blog_kit.listing.masonry.columns_desktop'));
         self::assertTrue($container->hasDefinition(BlogProtection::class));
         self::assertTrue($container->hasDefinition(PublicBlogCommentCaptchaTypeExtension::class));
-        self::assertSame([null, 5.0], $container->getDefinition(StreamCaptchaHttpClient::class)->getArguments());
+        $arguments = $container->getDefinition(StreamCaptchaHttpClient::class)->getArguments();
+        self::assertSame([null, 5.0], [$arguments[0], $arguments[1]]);
+        self::assertInstanceOf(Reference::class, $arguments[2]);
+        self::assertSame('logger', (string) $arguments[2]);
     }
 
     #[Test]
@@ -82,7 +85,7 @@ final class NowoBlogKitExtensionTest extends TestCase
     {
         $container = new ContainerBuilder();
 
-        (new NowoBlogKitExtension())->load([[
+        new NowoBlogKitExtension()->load([[
             'security' => ['allow_unauthenticated' => true],
             'comments' => ['captcha' => ['timeout_seconds' => 2.5]],
         ]], $container);
@@ -95,7 +98,7 @@ final class NowoBlogKitExtensionTest extends TestCase
     {
         $container = new ContainerBuilder();
 
-        (new NowoBlogKitExtension())->load([[
+        new NowoBlogKitExtension()->load([[
             'security' => ['allow_unauthenticated' => true],
             'listing'  => ['mode' => 'infinite'],
         ]], $container);
@@ -108,7 +111,7 @@ final class NowoBlogKitExtensionTest extends TestCase
     {
         $container = new ContainerBuilder();
 
-        (new NowoBlogKitExtension())->load([[
+        new NowoBlogKitExtension()->load([[
             'security' => ['allow_unauthenticated' => true],
             'listing'  => [
                 'masonry' => [
@@ -134,7 +137,7 @@ final class NowoBlogKitExtensionTest extends TestCase
         $this->expectException(LogicException::class);
         $this->expectExceptionMessage('requires symfony/security-bundle');
 
-        (new NowoBlogKitExtension())->load([[]], $container);
+        new NowoBlogKitExtension()->load([[]], $container);
     }
 
     #[Test]
@@ -143,7 +146,7 @@ final class NowoBlogKitExtensionTest extends TestCase
         $container = new ContainerBuilder();
         $container->setParameter('kernel.bundles', ['SecurityBundle' => SecurityBundle::class]);
 
-        (new NowoBlogKitExtension())->load([[]], $container);
+        new NowoBlogKitExtension()->load([[]], $container);
 
         self::assertSame('es', $container->getParameter('nowo_blog_kit.default_locale'));
         self::assertSame(
@@ -157,7 +160,7 @@ final class NowoBlogKitExtensionTest extends TestCase
     {
         $container = new ContainerBuilder();
 
-        (new NowoBlogKitExtension())->load([[
+        new NowoBlogKitExtension()->load([[
             'security' => ['allow_unauthenticated' => true],
         ]], $container);
 
@@ -183,7 +186,7 @@ final class NowoBlogKitExtensionTest extends TestCase
         $container = new ContainerBuilder();
         $container->registerExtension($this->createExtension('security'));
 
-        (new NowoBlogKitExtension())->load([[
+        new NowoBlogKitExtension()->load([[
             'security' => [
                 'access_checker' => 'app.blog_access_checker',
             ],
@@ -199,7 +202,7 @@ final class NowoBlogKitExtensionTest extends TestCase
         $container = new ContainerBuilder();
         $container->registerExtension($this->createExtension('security'));
 
-        (new NowoBlogKitExtension())->load([[]], $container);
+        new NowoBlogKitExtension()->load([[]], $container);
 
         $definition = $container->getDefinition('nowo_blog_kit.access_checker.default');
 
@@ -229,7 +232,7 @@ final class NowoBlogKitExtensionTest extends TestCase
         $container = new ContainerBuilder();
         $container->registerExtension($this->createExtension('security'));
 
-        (new NowoBlogKitExtension())->load([[
+        new NowoBlogKitExtension()->load([[
             'security' => [
                 'object_access' => ['strategy' => 'owner'],
             ],
@@ -254,7 +257,7 @@ final class NowoBlogKitExtensionTest extends TestCase
         $container = new ContainerBuilder();
         $container->registerExtension($this->createExtension('security'));
 
-        (new NowoBlogKitExtension())->load([[
+        new NowoBlogKitExtension()->load([[
             'security' => [
                 'object_access' => [
                     'strategy' => 'service',
@@ -279,7 +282,7 @@ final class NowoBlogKitExtensionTest extends TestCase
         $this->expectException(LogicException::class);
         $this->expectExceptionMessage('object_access.service is required');
 
-        (new NowoBlogKitExtension())->load([[
+        new NowoBlogKitExtension()->load([[
             'security' => [
                 'object_access' => [
                     'strategy' => 'service',
@@ -294,7 +297,7 @@ final class NowoBlogKitExtensionTest extends TestCase
     {
         $container = new ContainerBuilder();
 
-        (new NowoBlogKitExtension())->load([[
+        new NowoBlogKitExtension()->load([[
             'security' => [
                 'allow_unauthenticated' => true,
                 'object_access'         => ['strategy' => 'owner'],
@@ -315,7 +318,7 @@ final class NowoBlogKitExtensionTest extends TestCase
         $container = new ContainerBuilder();
         $container->setParameter('kernel.bundles', ['SecurityBundle' => SecurityBundle::class]);
 
-        (new NowoBlogKitExtension())->load([[
+        new NowoBlogKitExtension()->load([[
             'comments' => [
                 'rate_limit' => [
                     'strategy' => 'service',
@@ -346,7 +349,7 @@ final class NowoBlogKitExtensionTest extends TestCase
         $container = new ContainerBuilder();
         $container->setParameter('kernel.bundles', ['SecurityBundle' => SecurityBundle::class]);
 
-        (new NowoBlogKitExtension())->load([[
+        new NowoBlogKitExtension()->load([[
             'comments' => [
                 'rate_limit' => ['service' => ''],
                 'captcha'    => ['service' => ''],
@@ -367,7 +370,7 @@ final class NowoBlogKitExtensionTest extends TestCase
     {
         $container = new ContainerBuilder();
 
-        (new NowoBlogKitExtension())->load([[
+        new NowoBlogKitExtension()->load([[
             'security' => ['allow_unauthenticated' => true],
             'doctrine' => ['table_prefix' => 'bk_'],
         ]], $container);
@@ -390,7 +393,7 @@ final class NowoBlogKitExtensionTest extends TestCase
         $container = new ContainerBuilder();
         $container->registerExtension($this->createExtension('nowo_form_kit'));
 
-        (new NowoBlogKitExtension())->prepend($container);
+        new NowoBlogKitExtension()->prepend($container);
 
         $configs = $container->getExtensionConfig('nowo_form_kit');
         self::assertNotEmpty($configs);
@@ -417,7 +420,7 @@ final class NowoBlogKitExtensionTest extends TestCase
             ],
         ]);
 
-        (new NowoBlogKitExtension())->prepend($container);
+        new NowoBlogKitExtension()->prepend($container);
 
         $configs = $container->getExtensionConfig('nowo_form_kit');
         $merged  = array_replace_recursive(...array_reverse($configs));
@@ -439,7 +442,7 @@ final class NowoBlogKitExtensionTest extends TestCase
             ],
         ]);
 
-        (new NowoBlogKitExtension())->prepend($container);
+        new NowoBlogKitExtension()->prepend($container);
 
         $configs = $container->getExtensionConfig('nowo_form_kit');
         $merged  = array_replace_recursive(...array_reverse($configs));
@@ -464,7 +467,7 @@ final class NowoBlogKitExtensionTest extends TestCase
             ],
         ]);
 
-        (new NowoBlogKitExtension())->prepend($container);
+        new NowoBlogKitExtension()->prepend($container);
 
         $configs = $container->getExtensionConfig('nowo_form_kit');
         $merged  = array_replace_recursive(...array_reverse($configs));
@@ -485,7 +488,7 @@ final class NowoBlogKitExtensionTest extends TestCase
             'user_class' => 'App\\Entity\\User',
         ]);
 
-        (new NowoBlogKitExtension())->prepend($container);
+        new NowoBlogKitExtension()->prepend($container);
 
         self::assertSame([
             [
@@ -508,7 +511,7 @@ final class NowoBlogKitExtensionTest extends TestCase
             'user_class' => '',
         ]);
 
-        (new NowoBlogKitExtension())->prepend($container);
+        new NowoBlogKitExtension()->prepend($container);
 
         self::assertSame([], $container->getExtensionConfig('doctrine'));
     }
@@ -526,7 +529,7 @@ final class NowoBlogKitExtensionTest extends TestCase
             ],
         ]);
 
-        (new NowoBlogKitExtension())->prepend($container);
+        new NowoBlogKitExtension()->prepend($container);
 
         $configs = $container->getExtensionConfig('nowo_ui_kit');
         self::assertNotEmpty($configs);
@@ -556,7 +559,7 @@ final class NowoBlogKitExtensionTest extends TestCase
             ],
         ]);
 
-        (new NowoBlogKitExtension())->prepend($container);
+        new NowoBlogKitExtension()->prepend($container);
 
         $configs = $container->getExtensionConfig('nowo_ui_kit');
 
@@ -572,7 +575,7 @@ final class NowoBlogKitExtensionTest extends TestCase
         $container = new ContainerBuilder();
         $container->registerExtension($this->createExtension('framework'));
 
-        (new NowoBlogKitExtension())->prepend($container);
+        new NowoBlogKitExtension()->prepend($container);
 
         $frameworkConfig = $container->getExtensionConfig('framework');
         self::assertCount(1, $frameworkConfig);

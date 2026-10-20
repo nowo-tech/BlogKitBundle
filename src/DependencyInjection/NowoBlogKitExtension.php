@@ -364,7 +364,7 @@ final class NowoBlogKitExtension extends Extension implements PrependExtensionIn
         $container->register(StreamCaptchaHttpClient::class)
             ->setAutowired(false)
             ->setAutoconfigured(false)
-            ->setArguments([null, (float) $captcha['timeout_seconds']]);
+            ->setArguments([null, (float) $captcha['timeout_seconds'], new Reference('logger', ContainerInterface::NULL_ON_INVALID_REFERENCE)]);
         $container->setAlias(CaptchaHttpClientInterface::class, StreamCaptchaHttpClient::class);
 
         $container->register(BlogProtectionConfig::class)

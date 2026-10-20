@@ -10,11 +10,15 @@ use Nowo\BlogKitBundle\Entity\BlogComment;
 use Nowo\BlogKitBundle\Entity\BlogCommentStatus;
 use Nowo\BlogKitBundle\Repository\BlogCommentRepository;
 use Nowo\BlogKitBundle\Service\BlogCommentManager;
+use Nowo\BlogKitBundle\Tests\Support\RecordingLogger;
 use Nowo\BlogKitBundle\Tests\Support\TestUser;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Clock\MockClock;
 use Symfony\Component\HttpFoundation\Request;
+
+use const JSON_THROW_ON_ERROR;
 
 final class BlogCommentManagerTest extends TestCase
 {
@@ -27,6 +31,34 @@ final class BlogCommentManagerTest extends TestCase
         $this->entityManager = $this->createMock(EntityManagerInterface::class);
         $this->repository    = $this->createMock(BlogCommentRepository::class);
         $this->manager       = new BlogCommentManager($this->entityManager, $this->repository);
+    }
+
+    #[Test]
+    public function itUsesTheInjectedClockAndLogsModerationWithoutPersonalData(): void
+    {
+        $clock   = new MockClock('2026-10-20 12:00:00');
+        $logger  = new RecordingLogger();
+        $manager = new BlogCommentManager($this->entityManager, $this->repository, $clock, $logger);
+        $user    = new TestUser()->setEmail('mod@example.com');
+        $comment = new BlogComment()->setArticle(new BlogArticle())->setAuthorEmail('secret@example.com');
+
+        $manager->approve($comment, $user);
+        self::assertEquals($clock->now(), $comment->getModeratedAt());
+
+        $clock->modify('+1 hour');
+        $manager->reject($comment, $user);
+        self::assertEquals($clock->now(), $comment->getModeratedAt());
+
+        $reply = $manager->createStaffReply($comment, $user, 'Hi');
+        self::assertEquals($clock->now(), $reply->getModeratedAt());
+
+        $manager->delete($comment);
+
+        self::assertSame(['comment_approved', 'comment_rejected', 'comment_deleted'], array_map(
+            static fn (array $record): mixed => $record['context']['action'],
+            $logger->records,
+        ));
+        self::assertStringNotContainsString('secret@example.com', json_encode($logger->records, JSON_THROW_ON_ERROR));
     }
 
     #[Test]
@@ -66,8 +98,8 @@ final class BlogCommentManagerTest extends TestCase
     #[Test]
     public function itCreatesStaffReplyUsingDisplayNameFromEmail(): void
     {
-        $parent = (new BlogComment())->setArticle(new BlogArticle());
-        $user   = (new TestUser())->setEmail('hector.franco@example.com');
+        $parent = new BlogComment()->setArticle(new BlogArticle());
+        $user   = new TestUser()->setEmail('hector.franco@example.com');
 
         $this->entityManager->expects(self::once())->method('persist');
         $this->entityManager->expects(self::once())->method('flush');
@@ -86,8 +118,8 @@ final class BlogCommentManagerTest extends TestCase
     #[Test]
     public function itFallsBackToEquipoWhenStaffEmailHasNoLocalPart(): void
     {
-        $parent = (new BlogComment())->setArticle(new BlogArticle());
-        $user   = (new TestUser())->setEmail('@only-domain.example');
+        $parent = new BlogComment()->setArticle(new BlogArticle());
+        $user   = new TestUser()->setEmail('@only-domain.example');
 
         $this->entityManager->expects(self::once())->method('persist');
         $this->entityManager->expects(self::once())->method('flush');
@@ -101,7 +133,7 @@ final class BlogCommentManagerTest extends TestCase
     public function itApprovesRejectsAndDeletesComments(): void
     {
         $comment = new BlogComment();
-        $user    = (new TestUser())->setEmail('mod@example.com');
+        $user    = new TestUser()->setEmail('mod@example.com');
 
         $this->entityManager->expects(self::exactly(3))->method('flush');
         $this->entityManager->expects(self::once())->method('remove')->with($comment);
@@ -122,7 +154,7 @@ final class BlogCommentManagerTest extends TestCase
     public function itReturnsApprovedCommentsForArticle(): void
     {
         $article  = new BlogArticle();
-        $comments = [(new BlogComment())->setArticle($article)];
+        $comments = [new BlogComment()->setArticle($article)];
 
         $this->repository->expects(self::once())
             ->method('findApprovedRootCommentsByArticle')

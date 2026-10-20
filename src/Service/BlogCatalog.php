@@ -15,17 +15,17 @@ use function count;
 /**
  * Read-only public blog catalog (list, detail, sidebars).
  */
-final class BlogCatalog
+final readonly class BlogCatalog
 {
     public function __construct(
-        private readonly RequestStack $requestStack,
-        private readonly BlogArticleRepository $blogArticleRepository,
-        private readonly BlogTagRepository $blogTagRepository,
-        private readonly BlogSettingsProvider $blogSettingsProvider,
-        private readonly BlogHashtagProcessor $blogHashtagProcessor,
-        private readonly BlogArticleBodyEnhancer $blogArticleBodyEnhancer,
-        private readonly BlogLocalesLocaleResolver $localeResolver,
-        private readonly ?BlogProtection $blogProtection = null,
+        private RequestStack $requestStack,
+        private BlogArticleRepository $blogArticleRepository,
+        private BlogTagRepository $blogTagRepository,
+        private BlogSettingsProvider $blogSettingsProvider,
+        private BlogHashtagProcessor $blogHashtagProcessor,
+        private BlogArticleBodyEnhancer $blogArticleBodyEnhancer,
+        private BlogLocalesLocaleResolver $localeResolver,
+        private ?BlogProtection $blogProtection = null,
     ) {
     }
 

@@ -84,10 +84,9 @@ final class BlogPublicController extends AbstractController
             ]);
         }
 
-        $blogMeta = $this->blogIndexMetaProvider?->meta() ?? [
-            'title'       => $this->translator->trans('page.blog.heading', [], 'NowoBlogKitBundle'),
-            'description' => $this->translator->trans('page.blog.intro', [], 'NowoBlogKitBundle'),
-        ];
+        $blogMeta = $this->blogIndexMetaProvider instanceof BlogIndexMetaProviderInterface
+            ? $this->blogIndexMetaProvider->meta()
+            : $this->defaultBlogMeta();
         $sidebar = $this->blogCatalog->blogSidebar(
             $search !== '' ? $search : null,
             $tag !== '' ? $tag : null,
@@ -232,6 +231,19 @@ final class BlogPublicController extends AbstractController
                 ],
             ],
         ]);
+    }
+
+    /**
+     * Index meta used when the host does not register a {@see BlogIndexMetaProviderInterface}.
+     *
+     * @return array{title: string, description: string}
+     */
+    private function defaultBlogMeta(): array
+    {
+        return [
+            'title'       => $this->translator->trans('page.blog.heading', [], 'NowoBlogKitBundle'),
+            'description' => $this->translator->trans('page.blog.intro', [], 'NowoBlogKitBundle'),
+        ];
     }
 
     /**

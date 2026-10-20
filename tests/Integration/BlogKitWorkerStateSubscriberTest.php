@@ -105,7 +105,7 @@ final class BlogKitWorkerStateSubscriberTest extends DoctrineTestCase
         $dispatcher->expects(self::never())->method('dispatch');
         $this->publishedSubscriber = new BlogArticlePublishedDoctrineSubscriber($dispatcher);
 
-        $this->entityManager->persist((new BlogArticle())->setSlug('rolled-back')->setPublished(true));
+        $this->entityManager->persist(new BlogArticle()->setSlug('rolled-back')->setPublished(true));
         $this->publishedSubscriber->onFlush(new OnFlushEventArgs($this->entityManager));
         $this->clearEntityManager();
 

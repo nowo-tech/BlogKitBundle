@@ -21,8 +21,8 @@ final class OwnerBlogKitResourceAccessCheckerTest extends TestCase
     #[Test]
     public function configureRoleBypassesOwnershipAndListingFilter(): void
     {
-        $article = $this->articleOwnedBy((new TestUser())->setId(1));
-        $checker = $this->createOwnerChecker(configure: true, user: (new TestUser())->setId(99));
+        $article = $this->articleOwnedBy(new TestUser()->setId(1));
+        $checker = $this->createOwnerChecker(configure: true, user: new TestUser()->setId(99));
 
         self::assertTrue($checker->canManageArticle($article));
         self::assertNull($checker->articleListingCreatedById());
@@ -31,8 +31,8 @@ final class OwnerBlogKitResourceAccessCheckerTest extends TestCase
     #[Test]
     public function editorCanManageOwnAndUnownedArticlesOnly(): void
     {
-        $editor  = (new TestUser())->setId(7)->setEmail('editor@example.test');
-        $other   = (new TestUser())->setId(8)->setEmail('other@example.test');
+        $editor  = new TestUser()->setId(7)->setEmail('editor@example.test');
+        $other   = new TestUser()->setId(8)->setEmail('other@example.test');
         $own     = $this->articleOwnedBy($editor);
         $foreign = $this->articleOwnedBy($other);
         $legacy  = new BlogArticle();
@@ -50,7 +50,7 @@ final class OwnerBlogKitResourceAccessCheckerTest extends TestCase
     #[Test]
     public function missingTokenStorageIsAnonymous(): void
     {
-        $article = $this->articleOwnedBy((new TestUser())->setId(1));
+        $article = $this->articleOwnedBy(new TestUser()->setId(1));
         $checker = new OwnerBlogKitResourceAccessChecker($this->accessChecker(false));
 
         self::assertFalse($checker->canManageArticle($article));
@@ -60,7 +60,7 @@ final class OwnerBlogKitResourceAccessCheckerTest extends TestCase
     #[Test]
     public function missingUserYieldsEmptyListingAndDeniesOwnedArticles(): void
     {
-        $article = $this->articleOwnedBy((new TestUser())->setId(1));
+        $article = $this->articleOwnedBy(new TestUser()->setId(1));
         $checker = new OwnerBlogKitResourceAccessChecker(
             $this->accessChecker(false),
             $this->tokenStorage(null),
@@ -79,7 +79,7 @@ final class OwnerBlogKitResourceAccessCheckerTest extends TestCase
         $storage->method('getToken')->willReturn($token);
 
         $checker = new OwnerBlogKitResourceAccessChecker($this->accessChecker(false), $storage);
-        $article = $this->articleOwnedBy((new TestUser())->setId(1));
+        $article = $this->articleOwnedBy(new TestUser()->setId(1));
 
         self::assertFalse($checker->canManageArticle($article));
         self::assertSame('', $checker->articleListingCreatedById());
@@ -88,8 +88,8 @@ final class OwnerBlogKitResourceAccessCheckerTest extends TestCase
     #[Test]
     public function identifierFallbackMatchesUsersWithoutIds(): void
     {
-        $owner   = (new TestUser())->setId(null)->setEmail('owner@example.test');
-        $same    = (new TestUser())->setId(null)->setEmail('owner@example.test');
+        $owner   = new TestUser()->setId(null)->setEmail('owner@example.test');
+        $same    = new TestUser()->setId(null)->setEmail('owner@example.test');
         $article = $this->articleOwnedBy($owner);
 
         $checker = $this->createOwnerChecker(configure: false, user: $same);

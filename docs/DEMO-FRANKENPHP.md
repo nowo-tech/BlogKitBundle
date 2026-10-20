@@ -9,6 +9,7 @@ This document describes how the bundle's demo application runs under **FrankenPH
 - [Development configuration](#development-configuration)
 - [Production configuration](#production-configuration)
 - [Switching classic vs worker (`FRANKENPHP_MODE`)](#switching-classic-vs-worker-frankenphp_mode)
+- [Timeout hierarchy](#timeout-hierarchy)
 - [Reproducing in another bundle](#reproducing-in-another-bundle)
 - [Troubleshooting](#troubleshooting)
 
@@ -107,6 +108,21 @@ docker compose up -d
 ```
 
 Do not bake `FRANKENPHP_MODE` as a Dockerfile `ENV`. Symfony 8 demos use the newest FrankenPHP PHP tag compatible with the demo `require.php` (currently PHP 8.5).
+
+---
+
+## Timeout hierarchy
+
+REQ-RUNTIME-001: the innermost deadline fires first so a stuck CAPTCHA provider cannot pin a FrankenPHP thread.
+
+| Layer | Demo value | Where |
+|-------|-----------|-------|
+| Remote CAPTCHA verification (`StreamCaptchaHttpClient`) | 5 s (`comments.captcha.timeout_seconds`) | bundle config |
+| PHP `max_execution_time` / `max_input_time` | 30 s | `demo/symfony8/Dockerfile` (`conf.d/90-timeouts.ini`) |
+| FrankenPHP `max_wait_time` (wait for a free PHP thread) | 30 s → 504 | `docker/frankenphp/Caddyfile` and `Caddyfile.dev` global `frankenphp` block |
+| Caddy `servers.timeouts.write` | not set | The demo serves long-lived Mercure / hot-reload SSE streams, which a server-wide write timeout would cut. Production hosts without SSE should set it strictly greater than `max_execution_time`. |
+
+When you raise `timeout_seconds`, raise `max_execution_time` (and the proxy write timeout) in the same change.
 
 ---
 

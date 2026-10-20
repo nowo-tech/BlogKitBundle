@@ -33,7 +33,7 @@ final class BlogArticleType extends AbstractBlogFormType
         private readonly ?BlogLocales $blogLocales = null,
         private readonly ?RequestStack $requestStack = null,
     ) {
-        parent::__construct($formOptionsMerger, $formTypeMap);
+        parent::__construct($formOptionsMerger, $formTypeMap, $blogLocales);
     }
 
     public function buildForm(FormBuilderInterface $builder, array $options): void

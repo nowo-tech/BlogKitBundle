@@ -357,7 +357,7 @@ final class PublicCommentControllerTest extends TestCase
 
     private function createArticle(int $id, string $slug, bool $published): BlogArticle
     {
-        $article = (new BlogArticle())
+        $article = new BlogArticle()
             ->setSlug($slug)
             ->setPublished($published);
 
@@ -369,7 +369,7 @@ final class PublicCommentControllerTest extends TestCase
 
     private function createComment(int $id, BlogArticle $article): BlogComment
     {
-        $comment = (new BlogComment())
+        $comment = new BlogComment()
             ->setArticle($article)
             ->setAuthorName('Author')
             ->setBody('Comment')

@@ -82,7 +82,7 @@ abstract class DoctrineTestCase extends TestCase
 
     protected function createUser(string $email): MappedTestUser
     {
-        $user = (new MappedTestUser())->setEmail($email);
+        $user = new MappedTestUser()->setEmail($email);
         $this->entityManager->persist($user);
         $this->entityManager->flush();
 
@@ -111,7 +111,7 @@ abstract class DoctrineTestCase extends TestCase
         ?string $metaTitleEs = null,
         ?string $metaDescriptionEs = null,
     ): BlogArticle {
-        $article = (new BlogArticle())
+        $article = new BlogArticle()
             ->setSlug($slug)
             ->setPublished($published)
             ->setPosition($position)
@@ -135,7 +135,7 @@ abstract class DoctrineTestCase extends TestCase
             $article->setUpdatedAt($publishedAt ?? new DateTimeImmutable('2026-01-01T00:00:00+00:00'));
         }
 
-        $translationEs = (new BlogArticleTranslation())
+        $translationEs = new BlogArticleTranslation()
             ->setLocale('es')
             ->setTitle($titleEs ?? strtoupper(str_replace('-', ' ', $slug)) . ' ES')
             ->setMetaTitle($metaTitleEs ?? 'Meta ' . $slug . ' ES')
@@ -145,7 +145,7 @@ abstract class DoctrineTestCase extends TestCase
         $article->addTranslation($translationEs);
 
         if ($titleEn !== null) {
-            $translationEn = (new BlogArticleTranslation())
+            $translationEn = new BlogArticleTranslation()
                 ->setLocale('en')
                 ->setTitle($titleEn)
                 ->setMetaTitle('Meta ' . $slug . ' EN')
@@ -160,7 +160,7 @@ abstract class DoctrineTestCase extends TestCase
         }
 
         foreach ($resources as $resourceData) {
-            $resource = (new BlogArticleResource())
+            $resource = new BlogArticleResource()
                 ->setTitle($resourceData['title'] ?? null)
                 ->setImage($resourceData['image'])
                 ->setPosition($resourceData['position'] ?? 0);
@@ -180,7 +180,7 @@ abstract class DoctrineTestCase extends TestCase
         ?MappedTestUser $createdBy = null,
         ?MappedTestUser $updatedBy = null,
     ): BlogTag {
-        $tag = (new BlogTag())->setSlug($slug);
+        $tag = new BlogTag()->setSlug($slug);
 
         if (method_exists($tag, 'setCreatedBy')) {
             $tag->setCreatedBy($createdBy);
@@ -198,13 +198,13 @@ abstract class DoctrineTestCase extends TestCase
             $tag->setUpdatedAt(new DateTimeImmutable('2026-01-01T00:00:00+00:00'));
         }
 
-        $translationEs = (new BlogTagTranslation())
+        $translationEs = new BlogTagTranslation()
             ->setLocale('es')
             ->setName($nameEs ?? strtoupper(str_replace('-', ' ', $slug)) . ' ES');
         $tag->addTranslation($translationEs);
 
         if ($nameEn !== null) {
-            $translationEn = (new BlogTagTranslation())
+            $translationEn = new BlogTagTranslation()
                 ->setLocale('en')
                 ->setName($nameEn);
             $tag->addTranslation($translationEn);
@@ -227,7 +227,7 @@ abstract class DoctrineTestCase extends TestCase
         ?string $authorEmail = null,
         ?DateTimeImmutable $createdAt = null,
     ): BlogComment {
-        $comment = (new BlogComment())
+        $comment = new BlogComment()
             ->setArticle($article)
             ->setAuthorName($authorName)
             ->setAuthorEmail($authorEmail)

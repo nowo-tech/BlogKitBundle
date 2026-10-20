@@ -19,7 +19,7 @@ final class NowoBlogKitBundleTest extends TestCase
     {
         $container = new ContainerBuilder();
 
-        (new NowoBlogKitBundle())->build($container);
+        new NowoBlogKitBundle()->build($container);
 
         $passes  = $container->getCompiler()->getPassConfig()->getPasses();
         $classes = array_map(static fn (object $pass): string => $pass::class, $passes);

@@ -123,6 +123,51 @@ final class BlogPublicControllerTest extends TestCase
     }
 
     #[Test]
+    public function indexUsesTheHostMetaProviderWhenRegistered(): void
+    {
+        $request = Request::create('/blog', 'GET');
+        $catalog = $this->createMock(BlogCatalog::class);
+        $catalog->method('blogSettings')->willReturn($this->createSettingsProvider());
+        $catalog->method('blogListingMode')->willReturn('paginated');
+        $catalog->method('blogPerPage')->willReturn(6);
+        $catalog->method('blogMasonryStrategy')->willReturn('grid');
+        $catalog->method('blogMasonryColumns')->willReturn(['mobile' => 1, 'tablet' => 2, 'desktop' => 3]);
+        $catalog->method('blogArticlesPage')->willReturn([
+            'articles'   => [],
+            'pagination' => ['page' => 1, 'per_page' => 6, 'total' => 0, 'total_pages' => 1],
+            'filters'    => ['q' => '', 'tag' => ''],
+        ]);
+        $catalog->method('blogSidebar')->willReturn(['latest' => [], 'related_tags' => []]);
+        $catalog->method('blogTags')->willReturn([]);
+
+        $metaProvider = $this->createMock(BlogIndexMetaProviderInterface::class);
+        $metaProvider->expects(self::once())->method('meta')->willReturn(['title' => 'Host blog', 'description' => 'Host intro']);
+
+        $translator = $this->createMock(TranslatorInterface::class);
+        $translator->expects(self::never())->method('trans');
+
+        $twig = $this->createMock(Environment::class);
+        $twig->expects(self::once())
+            ->method('render')
+            ->with(
+                '@NowoBlogKitBundle/public/index.html.twig',
+                self::callback(static fn (array $parameters): bool => $parameters['page_title'] === 'Host blog'
+                    && $parameters['page_description'] === 'Host intro'),
+            )
+            ->willReturn('index-host-meta');
+
+        $controller = $this->createController(
+            request: $request,
+            catalog: $catalog,
+            translator: $translator,
+            metaProvider: $metaProvider,
+            twig: $twig,
+        );
+
+        self::assertSame('index-host-meta', $controller->index($request)->getContent());
+    }
+
+    #[Test]
     public function indexRendersPartialItemsWhenRequested(): void
     {
         $request  = Request::create('/blog?partial=1', 'GET');
@@ -477,7 +522,7 @@ final class BlogPublicControllerTest extends TestCase
             'resources'        => [],
         ];
         $articleEntity    = $this->createArticle(9, 'article-title', true);
-        $commentWithoutId = (new BlogComment())
+        $commentWithoutId = new BlogComment()
             ->setArticle($articleEntity)
             ->setAuthorName('Pending')
             ->setBody('Comment')
@@ -600,7 +645,7 @@ final class BlogPublicControllerTest extends TestCase
 
     private function createArticle(int $id, string $slug, bool $published): BlogArticle
     {
-        $article = (new BlogArticle())
+        $article = new BlogArticle()
             ->setSlug($slug)
             ->setPublished($published);
 
@@ -612,7 +657,7 @@ final class BlogPublicControllerTest extends TestCase
 
     private function createComment(int $id, BlogArticle $article): BlogComment
     {
-        $comment = (new BlogComment())
+        $comment = new BlogComment()
             ->setArticle($article)
             ->setAuthorName('Author')
             ->setBody('Comment')
