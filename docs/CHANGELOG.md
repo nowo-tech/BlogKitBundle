@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Table of contents
 
 - [[Unreleased]](#unreleased)
+- [[1.6.3] - 2026-10-24](#163---2026-10-24)
 - [[1.6.2] - 2026-10-21](#162---2026-10-21)
 - [[1.6.1] - 2026-10-20](#161---2026-10-20)
 - [[1.6.0] - 2026-10-19](#160---2026-10-19)
@@ -34,6 +35,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [[1.0.0] - 2026-08-18](#100---2026-08-18)
 
 ## [Unreleased]
+
+## [1.6.3] - 2026-10-24
+
+Bundle views render form bodies through the child loop (REQ-TWIG-003). See [UPGRADING](UPGRADING.md#to-163).
 
 ### Changed
 
@@ -361,7 +366,8 @@ Initial public release of **Blog Kit Bundle** (`nowo-tech/blog-kit-bundle`).
 - CSRF-protected admin mutations and public comment forms; deletes go through native confirm dialogs
 - Comment bodies escaped in Twig; article HTML documented as trusted-editor `|raw`
 
-[Unreleased]: https://github.com/nowo-tech/BlogKitBundle/compare/v1.6.2...HEAD
+[Unreleased]: https://github.com/nowo-tech/BlogKitBundle/compare/v1.6.3...HEAD
+[1.6.3]: https://github.com/nowo-tech/BlogKitBundle/compare/v1.6.2...v1.6.3
 [1.6.2]: https://github.com/nowo-tech/BlogKitBundle/compare/v1.6.1...v1.6.2
 [1.6.1]: https://github.com/nowo-tech/BlogKitBundle/compare/v1.6.0...v1.6.1
 [1.6.0]: https://github.com/nowo-tech/BlogKitBundle/compare/v1.5.3...v1.6.0
