@@ -35,6 +35,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Twig (REQ-TWIG-003):** `admin/settings.html.twig` renders each settings tab through the child loop (`{% for child in form %}` + `form_row(child)`) instead of one `form_row(form.x)` per field (the form already builds only the tab's fields); section headings and the article sub-headings are kept, `form_end` no longer passes `render_rest: false`.
+
 ## [1.6.2] - 2026-10-21
 
 Dependency refresh (bundle and demos). See [UPGRADING](UPGRADING.md#to-162).
