@@ -322,6 +322,26 @@ does this in `demo/symfony8/templates/layouts/`):
 {% endblock %}
 ```
 
+CSS stacks (UI-001 keys, set once in UiKit; the bundle markup only uses `nowo-ui-*` / `blog-*` classes and theme
+slots, so switching never requires forking a page):
+
+```yaml
+# Bootstrap 5 (load Bootstrap + Bootstrap Icons in the host layouts)
+nowo_ui_kit: { css_framework: bootstrap5, icon_set: bootstrap-icons, row_actions_display: icon }
+
+# Tailwind (load Tailwind in the host layouts)
+nowo_ui_kit: { css_framework: tailwind, icon_set: none, row_actions_display: text }
+
+# Foundation
+nowo_ui_kit: { css_framework: foundation, icon_set: svg_inline, row_actions_display: icon_text }
+
+# Own CSS: semantic nowo-ui-* / blog-* only
+nowo_ui_kit: { css_framework: custom, icon_set: svg_inline, row_actions_display: text }
+```
+
+`nowo_blog_kit.web_ui.css_framework` / `icon_set` / `row_actions_display` still accept the same values (validated) but
+are deprecated: they are only copied to UiKit when `nowo_ui_kit` has no value of its own.
+
 Theme the look once in `nowo_ui_kit.theme` (class / attribute maps, `--nowo-ui-*` tokens, exceptions under
 `theme.bundles.NowoBlogKitBundle`) and with `--nowo-blog-*` / `blog-*` CSS for the public cards, instead of copying
 `public/index.html.twig`. `web_ui.layout_template` / `public_layout_template` remain per-bundle overrides; 1.x layouts
