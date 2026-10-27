@@ -1,0 +1,7 @@
+{#
+  Meta description of the public pages (page_description). Skipped under the 1.x layout bridge, where the host layout
+  prints it from its own `meta_description` block.
+#}
+{% if page_description|default('') is not empty and nowo_blog_kit_legacy_public_layout|default(null) is null %}
+    <meta name="description" content="{{ page_description }}">
+{% endif %}

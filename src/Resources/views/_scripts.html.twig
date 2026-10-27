@@ -1,0 +1,5 @@
+{#
+  Bundle runtime (named asset package nowo_blog_kit): infinite scroll and the article resources collection. Pages
+  stack it in nowo_ui_scripts after {{ parent() }} (the UiKit runtimes come from the layout).
+#}
+<script src="{{ asset('blog-kit.js', 'nowo_blog_kit') }}" defer></script>

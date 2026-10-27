@@ -54,7 +54,9 @@ Only **published** articles with a non-empty body are visible on `blog_show`.
 | `admin_blog_comments_*` | `/admin/blog/comments` | `canModerate()` + `BlogKitAccessDenied` on mutations |
 | `admin_blog_settings` | `/admin/blog/settings` | `canConfigure()` |
 
-List screens are paginated (`web_ui.page_size`). Deletes open a native `<dialog>` confirm with POST + CSRF in the footer.
+The admin screens are UiKit scaffolds (list, form, settings) with the blog area nav (Articles | Tags | Comments |
+Settings, also published as `nowo_ui_area_nav('blog_kit')` for DashboardMenu). The articles list is paginated
+(`web_ui.page_size`). Deletes open the UiKit confirm `<dialog>` with POST + CSRF.
 
 ## Comments
 
@@ -157,25 +159,41 @@ Admin CRUD, public search, comment POST, and CSRF-only actions (delete / approve
 {{ form_end(form) }}
 ```
 
-Do **not** reintroduce raw `<form>` / `<input>` tags in host overrides. Delete confirms use a native `<dialog>` (`@NowoUiKitBundle/partials/_confirm.html.twig`) with the CSRF form in the footer. The inline CMS editor is a native `<dialog>` with header / content / actions (`admin/_modal_form.html.twig`).
+Do **not** reintroduce raw `<form>` / `<input>` tags in host overrides. Delete confirms are the UiKit confirm contract (`View\Action` + `View\Confirm`: native `<dialog>`, CSRF form in the footer). The inline CMS editor is the UiKit `dialog` partial (`admin/_modal_form.html.twig`).
 
 ## Twig overrides
 
-Application templates under `templates/bundles/NowoBlogKitBundle/` override the bundle copy for the same relative path (REQ-TWIG-001).
+The bundle pages are on the UiKit page contract (REQ-UI-003): theme them once in `nowo_ui_kit` (layouts, `theme`
+slots and tokens) and, for a bundle-specific need, use `web_ui.templates.<page>` with a thin
+`{% extends '@!NowoBlogKitBundle/...' %}` overriding one data block. [TEMPLATES](TEMPLATES.md) lists every page,
+scaffold, data block and overridable `<subpath>`.
 
-Common override targets:
+Full-file overrides (REQ-TWIG-001) remain available: an application file at
+`templates/bundles/NowoBlogKitBundle/<subpath>` (same relative path as under `src/Resources/views/`) **always wins**,
+because `TwigPathsPass` registers the application directory before the bundle views.
 
-- `templates/bundles/NowoBlogKitBundle/public/index.html.twig`
-- `templates/bundles/NowoBlogKitBundle/public/show.html.twig`
-- `templates/bundles/NowoBlogKitBundle/public/base.html.twig`
-- `templates/bundles/NowoBlogKitBundle/public/layout.html.twig`
-- `templates/bundles/NowoBlogKitBundle/admin/base.html.twig`
-- `templates/bundles/NowoBlogKitBundle/admin/layout.html.twig`
-- `templates/bundles/NowoBlogKitBundle/admin/index.html.twig`
-- `templates/bundles/NowoBlogKitBundle/admin/_delete_confirm.html.twig`
-- `templates/bundles/NowoBlogKitBundle/admin/_modal_form.html.twig`
+**Freeze rule:** an application file at the override path always wins and will not pick up vendor changes for that
+path until you remove or merge it. Prefer, in this order: `nowo_ui_kit.layouts` / `theme` and translations (no Twig
+fork, upgrades apply automatically); `web_ui.templates.<page>` or a single partial (only that block / partial is
+frozen); a full-file copy (that `<subpath>` is frozen) only for deep redesigns.
 
-This precedence is installed by `TwigPathsPass` before the bundle view path is added.
+**Procedure:** pick the `<subpath>` in [TEMPLATES — Overriding templates](TEMPLATES.md#overriding-templates-req-twig-001),
+create `templates/bundles/NowoBlogKitBundle/<subpath>`, run `php bin/console cache:clear` in dev, and treat the file
+as a fork.
+
+**Recovering upstream after a freeze:** delete (or rename aside) the application file, clear the Twig cache, then
+re-apply only surgical customisations. Diff against `vendor/nowo-tech/blog-kit-bundle/src/Resources/views/<subpath>`
+before re-copying.
+
+| `<subpath>` | Purpose |
+| --- | --- |
+| `admin/index.html.twig`, `admin/tags/index.html.twig`, `admin/comments/index.html.twig` | Articles / tags / comments lists (list scaffold) |
+| `admin/form.html.twig`, `admin/tags/form.html.twig` | Article / tag forms (form scaffold) |
+| `admin/settings.html.twig` | Blog settings (settings scaffold) |
+| `admin/_form_body.html.twig` | Locale tabs + child loop of the forms and the inline CMS dialog |
+| `admin/_modal_form.html.twig` | Inline CMS editor fragment |
+| `public/index.html.twig`, `public/show.html.twig` | Public index / article (unique pages, guest layout) |
+| `public/_items.html.twig`, `public/_search.html.twig`, `public/_comments.html.twig`, `public/_aside_*.html.twig` | Public partials |
 
 Twig namespace: `@NowoBlogKitBundle/...` (REQ-TWIG-002).
 
@@ -197,9 +215,12 @@ Published files (after `assets:install` / `make assets`):
 - `asset('blog.css', 'nowo_blog_kit')`
 - `asset('blog-kit.js', 'nowo_blog_kit')`
 
-Admin and public pages extend `@NowoBlogKitBundle/admin/base.html.twig` and `@NowoBlogKitBundle/public/base.html.twig`. Those bases call `{{ parent() }}` then load bundle CSS/JS in nested `nowo_ui_styles` / `nowo_ui_scripts` (REQ-UI-001). Point `layout_template` / `public_layout_template` at the host layout and set `css_framework` to `bootstrap5`, `tailwind`, `foundation`, or `custom`. Set `icon_set` and `row_actions_display` without copying list templates. Do not copy every page template.
+Pages stack them in `nowo_ui_styles` / `nowo_ui_scripts` after `{{ parent() }}` (`_stylesheets.html.twig`,
+`_scripts.html.twig`); the CSS framework, icon set and row-action display come from `nowo_ui_kit`. The layouts are
+`nowo_ui_kit.layouts.admin` / `guest` (or `web_ui.layout_template` / `public_layout_template`). Do not copy page
+templates to add CSS / JS.
 
-`nowo_blog_kit_container_class()` adds the host container class (`container` / `grid-container`) next to the semantic `blog-container` wrapper.
+`nowo_blog_kit_container_class()` is deprecated (1.7): the bundle pages use the semantic `blog-container` only.
 
 `blog-kit.js` boots:
 
@@ -211,7 +232,7 @@ No host Stimulus application is required. TypeScript sources live in `src/Resour
 Admin translation tabs (articles, tags, the inline CMS modal) are FormKit `locale_tabs` (mode `entries`) rendered
 through UiKit's `locale_tabs` partial: one tab per `nowo_blog_kit.locales` entry, the default locale first and marked
 required, invalid tabs marked and opened, keyboard navigation and the `nowo-ui:tabs:change` event from
-`nowo-ui-tabs.js` (loaded by `admin/base.html.twig` through UiKit's `scripts` partial). See [TEMPLATES](TEMPLATES.md).
+`nowo-ui-tabs.js` (UiKit `scripts` partial, printed by the layout in `nowo_ui_scripts`). See [TEMPLATES](TEMPLATES.md).
 
 ## Rich text notes
 

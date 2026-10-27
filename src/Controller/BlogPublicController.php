@@ -14,6 +14,7 @@ use Nowo\BlogKitBundle\Repository\BlogArticleRepository;
 use Nowo\BlogKitBundle\Security\BlogKitAccessCheckerInterface;
 use Nowo\BlogKitBundle\Service\BlogCatalog;
 use Nowo\BlogKitBundle\Service\BlogCommentManager;
+use Nowo\BlogKitBundle\Ui\BlogKitPageFactory;
 use Nowo\RoutingKitBundle\Attribute\Routable;
 use Nowo\RoutingKitBundle\Attribute\RouteParam;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -36,6 +37,7 @@ final class BlogPublicController extends AbstractController
         private readonly BlogCommentManager $blogCommentManager,
         private readonly BlogKitAccessCheckerInterface $accessChecker,
         private readonly TranslatorInterface $translator,
+        private readonly BlogKitPageFactory $pageFactory,
         private readonly ?BlogIndexMetaProviderInterface $blogIndexMetaProvider = null,
         private readonly ?BlogBrandNameProviderInterface $blogBrandNameProvider = null,
     ) {
@@ -97,7 +99,9 @@ final class BlogPublicController extends AbstractController
             'tags'   => 'index_aside_tags',
         ]);
 
-        return $this->render('@NowoBlogKitBundle/public/index.html.twig', [
+        return $this->render($this->pageFactory->template('public_index', '@NowoBlogKitBundle/public/index.html.twig'), $this->pageFactory->publicContext([
+            'header'            => $this->pageFactory->publicIndexHeader(),
+            'pager'             => $this->pageFactory->publicPager($blog['pagination'], $blog['filters']),
             'page_title'        => $blogMeta['title'],
             'page_description'  => $blogMeta['description'],
             'seo_page_key'      => $blogMeta['page_key'] ?? '',
@@ -121,7 +125,7 @@ final class BlogPublicController extends AbstractController
                 ['route' => 'home', 'label_key' => 'nav.home'],
                 ['route' => 'blog_index', 'label_key' => 'nav.blog'],
             ],
-        ]);
+        ]));
     }
 
     #[Route('/blog/{slug}', name: 'blog_show', requirements: ['slug' => '[a-z0-9-]+'], methods: ['GET'])]
@@ -199,7 +203,8 @@ final class BlogPublicController extends AbstractController
             ? $metaTitle
             : ($brandName !== '' ? $article['title'] . ' | ' . $brandName : (string) $article['title']);
 
-        return $this->render('@NowoBlogKitBundle/public/show.html.twig', [
+        return $this->render($this->pageFactory->template('public_show', '@NowoBlogKitBundle/public/show.html.twig'), $this->pageFactory->publicContext([
+            'header'                => $this->pageFactory->publicArticleHeader((string) $article['title'], trim((string) ($article['excerpt'] ?? ''))),
             'page_title'            => $title,
             'page_description'      => $metaDescription !== '' ? $metaDescription : ($article['excerpt'] ?: $article['title']),
             'current_route'         => 'blog_show',
@@ -230,7 +235,7 @@ final class BlogPublicController extends AbstractController
                     'params' => ['slug' => $slug],
                 ],
             ],
-        ]);
+        ]));
     }
 
     /**

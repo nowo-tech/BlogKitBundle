@@ -17,6 +17,9 @@ use Symfony\Component\Config\Definition\Builder\ArrayNodeDefinition;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
 
+use function array_key_exists;
+use function is_array;
+
 /**
  * Validates and normalizes `nowo_blog_kit` configuration.
  */
@@ -43,23 +46,51 @@ final class Configuration implements ConfigurationInterface
                 ->end()
                 ->arrayNode('security')
                     ->addDefaultsIfNotSet()
+                    ->beforeNormalization()
+                        ->ifArray()
+                        ->then(static fn (array $security): array => self::mapDeprecatedRoleKeys($security))
+                    ->end()
                     ->children()
                         ->arrayNode('access_roles')
                             ->scalarPrototype()->end()
                             ->defaultValue(['ROLE_ADMIN'])
                             ->info('Grants every admin capability when any listed role is held (REQ-UI-002).')
                         ->end()
-                        ->arrayNode('manage_roles')
-                            ->scalarPrototype()->end()
-                            ->defaultValue(['ROLE_EDITOR'])
+                        ->arrayNode('roles')
+                            ->addDefaultsIfNotSet()
+                            ->info('Extra roles per admin action (REQ-UI-003 vocabulary), on top of access_roles.')
+                            ->children()
+                                ->arrayNode('manage')
+                                    ->scalarPrototype()->end()
+                                    ->defaultValue(['ROLE_EDITOR'])
+                                    ->info('Articles and tags CRUD.')
+                                ->end()
+                                ->arrayNode('moderate')
+                                    ->scalarPrototype()->end()
+                                    ->defaultValue(['ROLE_MODERATOR'])
+                                    ->info('Comment moderation.')
+                                ->end()
+                                ->arrayNode('configure')
+                                    ->scalarPrototype()->end()
+                                    ->defaultValue(['ROLE_ADMIN'])
+                                    ->info('Blog settings.')
+                                ->end()
+                            ->end()
                         ->end()
-                        ->arrayNode('moderate_roles')
-                            ->scalarPrototype()->end()
-                            ->defaultValue(['ROLE_MODERATOR'])
+                        ->variableNode('manage_roles')
+                            ->defaultNull()
+                            ->info('Deprecated since 1.7: use security.roles.manage.')
+                            ->setDeprecated('nowo-tech/blog-kit-bundle', '1.7', 'The "%node%" option at "%path%" is deprecated, use "security.roles.manage" instead.')
                         ->end()
-                        ->arrayNode('configure_roles')
-                            ->scalarPrototype()->end()
-                            ->defaultValue(['ROLE_ADMIN'])
+                        ->variableNode('moderate_roles')
+                            ->defaultNull()
+                            ->info('Deprecated since 1.7: use security.roles.moderate.')
+                            ->setDeprecated('nowo-tech/blog-kit-bundle', '1.7', 'The "%node%" option at "%path%" is deprecated, use "security.roles.moderate" instead.')
+                        ->end()
+                        ->variableNode('configure_roles')
+                            ->defaultNull()
+                            ->info('Deprecated since 1.7: use security.roles.configure.')
+                            ->setDeprecated('nowo-tech/blog-kit-bundle', '1.7', 'The "%node%" option at "%path%" is deprecated, use "security.roles.configure" instead.')
                         ->end()
                         ->scalarNode('access_checker')->defaultNull()->end()
                         ->booleanNode('allow_unauthenticated')->defaultFalse()->end()
@@ -84,22 +115,44 @@ final class Configuration implements ConfigurationInterface
                     ->addDefaultsIfNotSet()
                     ->children()
                         ->scalarNode('layout_template')
-                            ->defaultValue('@NowoBlogKitBundle/admin/layout.html.twig')
+                            ->beforeNormalization()
+                                ->ifInArray(self::LEGACY_DEFAULT_LAYOUTS)
+                                ->then(static fn (): ?string => null)
+                            ->end()
+                            ->defaultNull()
+                            ->info('Admin layout of the UiKit page scaffolds (REQ-UI-003); null = nowo_ui_kit.layouts.admin. A 1.x layout (no UiKit canonical blocks) is wrapped by a deprecated bridge.')
                         ->end()
                         ->scalarNode('public_layout_template')
-                            ->defaultValue('@NowoBlogKitBundle/public/layout.html.twig')
+                            ->beforeNormalization()
+                                ->ifInArray(self::LEGACY_DEFAULT_LAYOUTS)
+                                ->then(static fn (): ?string => null)
+                            ->end()
+                            ->defaultNull()
+                            ->info('Layout of the public blog pages; null = nowo_ui_kit.layouts.guest. A 1.x layout (block body) is wrapped by a deprecated bridge.')
+                        ->end()
+                        ->arrayNode('templates')
+                            ->info('Per-page template overrides (page id => template), e.g. article_index: "admin/blog/articles.html.twig" extending the bundle page.')
+                            ->useAttributeAsKey('page')
+                            ->scalarPrototype()->end()
+                            ->defaultValue([])
                         ->end()
                         ->enumNode('css_framework')
-                            ->values(CssFramework::values())
-                            ->defaultValue(CssFramework::Bootstrap5->value)
+                            ->values([...CssFramework::values(), null])
+                            ->defaultNull()
+                            ->info('Deprecated since 1.7: set nowo_ui_kit.css_framework. When set (and nowo_ui_kit.css_framework is not), it is copied to UiKit.')
+                            ->setDeprecated('nowo-tech/blog-kit-bundle', '1.7', 'The "%node%" option at "%path%" is deprecated, set "nowo_ui_kit.css_framework" instead.')
                         ->end()
                         ->enumNode('icon_set')
-                            ->values(IconSet::values())
-                            ->defaultValue(IconSet::BootstrapIcons->value)
+                            ->values([...IconSet::values(), null])
+                            ->defaultNull()
+                            ->info('Deprecated since 1.7: set nowo_ui_kit.icon_set.')
+                            ->setDeprecated('nowo-tech/blog-kit-bundle', '1.7', 'The "%node%" option at "%path%" is deprecated, set "nowo_ui_kit.icon_set" instead.')
                         ->end()
                         ->enumNode('row_actions_display')
-                            ->values(RowActionsDisplay::values())
-                            ->defaultValue(RowActionsDisplay::Icon->value)
+                            ->values([...RowActionsDisplay::values(), null])
+                            ->defaultNull()
+                            ->info('Deprecated since 1.7: set nowo_ui_kit.row_actions_display.')
+                            ->setDeprecated('nowo-tech/blog-kit-bundle', '1.7', 'The "%node%" option at "%path%" is deprecated, set "nowo_ui_kit.row_actions_display" instead.')
                         ->end()
                         ->integerNode('page_size')
                             ->min(1)
@@ -232,5 +285,34 @@ final class Configuration implements ConfigurationInterface
             ->end();
 
         return $treeBuilder;
+    }
+
+    /** 1.x default layouts: mapped to null (UiKit layouts). */
+    public const array LEGACY_DEFAULT_LAYOUTS = [
+        '@NowoBlogKitBundle/admin/layout.html.twig',
+        '@NowoBlogKitBundle/public/layout.html.twig',
+    ];
+
+    /**
+     * Copies the deprecated `security.*_roles` keys into `security.roles.*` when the canonical key is not set.
+     *
+     * @param array<mixed> $security
+     *
+     * @return array<mixed>
+     */
+    private static function mapDeprecatedRoleKeys(array $security): array
+    {
+        $roles = is_array($security['roles'] ?? null) ? $security['roles'] : [];
+        foreach (['manage', 'moderate', 'configure'] as $action) {
+            $legacy = $security[$action . '_roles'] ?? null;
+            if ($legacy !== null && !array_key_exists($action, $roles)) {
+                $roles[$action] = $legacy;
+            }
+        }
+        if ($roles !== []) {
+            $security['roles'] = $roles;
+        }
+
+        return $security;
     }
 }

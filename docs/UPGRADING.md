@@ -3,6 +3,8 @@
 ## Table of contents
 
 - [Unreleased](#unreleased)
+  - [Template contract](#template-contract)
+  - [Upgrade steps to the page contract](#upgrade-steps-to-the-page-contract)
 - [To 1.6.3](#to-163)
 - [To 1.6.2](#to-162)
 - [To 1.6.1](#to-161)
@@ -33,6 +35,50 @@
 - [Future releases](#future-releases)
 
 ## Unreleased
+
+From **1.6.3**:
+
+```bash
+composer update nowo-tech/blog-kit-bundle nowo-tech/ui-kit-bundle
+```
+
+The admin and public pages move to the UiKit page contract (REQ-UI-003); UiKit **2.15.3** or later is required.
+
+### Template contract
+
+| 1.6 | Now |
+| --- | --- |
+| Pages extend `admin/base.html.twig` → `web_ui.layout_template` (block `admin`) | Admin pages extend `@NowoUiKit/page/list`, `page/form` or `page/settings` → `nowo_ui_kit.layouts.admin` (or `web_ui.layout_template`) |
+| Public pages extend `public/base.html.twig` → `web_ui.public_layout_template` (block `body`) | Unique pages on `nowo_ui_kit.layouts.guest` (or `web_ui.public_layout_template`): `nowo_ui_page_header`, `nowo_ui_content` |
+| Content block `admin` / `body`, `title`, `stylesheets`, `javascripts` | Canonical blocks `nowo_ui_document_title`, `nowo_ui_head`, `nowo_ui_styles`, `nowo_ui_navigation`, `nowo_ui_page_header`, `nowo_ui_flashes`, `nowo_ui_content`, `nowo_ui_modals`, `nowo_ui_scripts` |
+| Bundle data in page markup | Data blocks `nowo_ui_list_row` (lists), `nowo_ui_form_body` (forms), `nowo_ui_settings_section` (settings); view model `page` |
+| `admin/_pagination`, `_delete_confirm`, `_csrf_action_form`, `_row_actions`, `_list_filters`, `_nav_tabs`, `_area_nav`, `_settings_section_tabs`, `_audit_table_*`, `admin/_form` | Removed: UiKit partials (`pagination`, `confirm`, `action`, `list_filters`, `tabs`), `admin/_audit_cells.html.twig`, `admin/_form_body.html.twig` |
+| `admin/_modal_form.html.twig`: `<dialog class="nowo-ui-modal">` | UiKit `dialog` partial, same `#blog-kit-cms-modal` id, `cms-locale` tabs and form id |
+
+1.x variables stay in the page context (`page_title`, `items`, `pagination`, `filters`, `filter_form`, `delete_forms`,
+`action_forms`, `reply_forms`, `form`, `edit_section`, …) for host templates.
+
+### Upgrade steps to the page contract
+
+1. **Layouts.** Point `nowo_ui_kit.layouts.admin` / `guest` at layouts that render the UiKit canonical blocks (the
+   `@NowoUiKit/layout/_bridge.html.twig` one-file bridge on top of your base layout, see
+   [CONFIGURATION](CONFIGURATION.md#examples)) and drop `web_ui.layout_template` / `public_layout_template` (or point
+   them at those layouts). Until then a 1.x layout still works through a deprecated bridge (`admin` / `body` block),
+   and the former defaults `@NowoBlogKitBundle/admin/layout.html.twig` / `public/layout.html.twig` mean the UiKit layouts.
+2. **CSS stack.** Move `web_ui.css_framework` / `icon_set` / `row_actions_display` to `nowo_ui_kit` (deprecated; still
+   copied when UiKit has no value).
+3. **Roles.** Rename `security.manage_roles` / `moderate_roles` / `configure_roles` to
+   `security.roles.manage` / `moderate` / `configure` (the old keys are mapped, deprecated).
+4. **Overrides.** Delete application copies of the removed partials and of `admin/*` pages under
+   `templates/bundles/NowoBlogKitBundle/`; theme UiKit once (`nowo_ui_kit.theme`, scaffold overrides under
+   `templates/bundles/NowoUiKitBundle/`) or use `web_ui.templates.<page>` with a data-block override
+   ([TEMPLATES](TEMPLATES.md#per-page-overrides)).
+5. **Form classes.** The prepended FormKit `blog_kit` profile no longer adds `form-control` / `mb-2`: Bootstrap hosts
+   get them from `bootstrap_5_layout.html.twig` in `twig.form_themes` (or set them in `nowo_form_kit.profiles.blog_kit`).
+6. **Twig globals.** Stop reading `nowo_blog_kit_layout`, `nowo_blog_kit_public_layout`,
+   `nowo_blog_kit_css_framework`, `nowo_blog_kit_icon_set`, `nowo_blog_kit_row_actions_display` and
+   `nowo_blog_kit_container_class()` (deprecated; the CSS / icon globals are `null` unless the deprecated keys are set).
+7. `php bin/console cache:clear` and `assets:install`.
 
 ## To 1.6.3
 

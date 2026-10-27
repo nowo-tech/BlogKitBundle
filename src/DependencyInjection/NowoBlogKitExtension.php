@@ -106,14 +106,18 @@ final class NowoBlogKitExtension extends Extension implements PrependExtensionIn
         $webUi    = $config['web_ui'];
         $defaults = [];
 
-        if (!$hostHasCssFramework) {
-            $defaults['css_framework'] = (string) ($webUi['css_framework'] ?? 'bootstrap5');
-        }
-        if (!$hostHasIconSet) {
-            $defaults['icon_set'] = (string) ($webUi['icon_set'] ?? 'bootstrap-icons');
-        }
-        if (!$hostHasRowActionsDisplay) {
-            $defaults['row_actions_display'] = (string) ($webUi['row_actions_display'] ?? 'icon');
+        // Deprecated per-bundle keys (REQ-UI-003: the CSS stack is inherited from nowo_ui_kit): copied to UiKit only
+        // when the host set them and UiKit does not have its own value.
+        $copy = [
+            'css_framework'       => !$hostHasCssFramework,
+            'icon_set'            => !$hostHasIconSet,
+            'row_actions_display' => !$hostHasRowActionsDisplay,
+        ];
+        foreach ($copy as $key => $missing) {
+            $value = $webUi[$key] ?? null;
+            if ($missing && is_string($value) && $value !== '') {
+                $defaults[$key] = $value;
+            }
         }
 
         if ($defaults === []) {
@@ -177,8 +181,8 @@ final class NowoBlogKitExtension extends Extension implements PrependExtensionIn
                 'alias'              => 'blog_kit',
                 'translation_domain' => 'NowoBlogKitBundle',
                 'defaults'           => [
-                    'attr'     => ['class' => 'nowo-ui-input form-control'],
-                    'row_attr' => ['class' => 'mb-2'],
+                    'attr'     => ['class' => 'nowo-ui-input'],
+                    'row_attr' => [],
                 ],
             ];
         }
@@ -220,15 +224,17 @@ final class NowoBlogKitExtension extends Extension implements PrependExtensionIn
         $container->setParameter('nowo_blog_kit.doctrine.table_prefix', $config['doctrine']['table_prefix']);
         $container->setParameter('nowo_blog_kit.doctrine.connection', $config['doctrine']['connection']);
         $container->setParameter('nowo_blog_kit.security.access_roles', $config['security']['access_roles']);
-        $container->setParameter('nowo_blog_kit.security.manage_roles', $config['security']['manage_roles']);
-        $container->setParameter('nowo_blog_kit.security.moderate_roles', $config['security']['moderate_roles']);
-        $container->setParameter('nowo_blog_kit.security.configure_roles', $config['security']['configure_roles']);
+        $container->setParameter('nowo_blog_kit.security.roles', $config['security']['roles']);
+        $container->setParameter('nowo_blog_kit.security.manage_roles', $config['security']['roles']['manage']);
+        $container->setParameter('nowo_blog_kit.security.moderate_roles', $config['security']['roles']['moderate']);
+        $container->setParameter('nowo_blog_kit.security.configure_roles', $config['security']['roles']['configure']);
         $container->setParameter('nowo_blog_kit.security.access_checker', $config['security']['access_checker']);
         $container->setParameter('nowo_blog_kit.security.allow_unauthenticated', $config['security']['allow_unauthenticated']);
         $container->setParameter('nowo_blog_kit.security.object_access.strategy', (string) $config['security']['object_access']['strategy']);
         $container->setParameter('nowo_blog_kit.security.object_access.service', $config['security']['object_access']['service']);
         $container->setParameter('nowo_blog_kit.web_ui.layout_template', $config['web_ui']['layout_template']);
         $container->setParameter('nowo_blog_kit.web_ui.public_layout_template', $config['web_ui']['public_layout_template']);
+        $container->setParameter('nowo_blog_kit.web_ui.templates', $config['web_ui']['templates']);
         $container->setParameter('nowo_blog_kit.web_ui.css_framework', $config['web_ui']['css_framework']);
         $container->setParameter('nowo_blog_kit.web_ui.icon_set', $config['web_ui']['icon_set']);
         $container->setParameter('nowo_blog_kit.web_ui.row_actions_display', $config['web_ui']['row_actions_display']);
@@ -272,9 +278,7 @@ final class NowoBlogKitExtension extends Extension implements PrependExtensionIn
      * @param array{
      *     access_checker: ?string,
      *     access_roles: list<string>,
-     *     manage_roles: list<string>,
-     *     moderate_roles: list<string>,
-     *     configure_roles: list<string>,
+     *     roles: array{manage: list<string>, moderate: list<string>, configure: list<string>},
      *     allow_unauthenticated: bool,
      *     object_access: array{strategy: string, service: ?string}
      * } $security
@@ -299,9 +303,9 @@ final class NowoBlogKitExtension extends Extension implements PrependExtensionIn
         $id         = 'nowo_blog_kit.access_checker.default';
         $definition = new Definition(ConfigurableBlogKitAccessChecker::class);
         $definition->setArgument('$accessRoles', $security['access_roles']);
-        $definition->setArgument('$manageRoles', $security['manage_roles']);
-        $definition->setArgument('$moderateRoles', $security['moderate_roles']);
-        $definition->setArgument('$configureRoles', $security['configure_roles']);
+        $definition->setArgument('$manageRoles', $security['roles']['manage']);
+        $definition->setArgument('$moderateRoles', $security['roles']['moderate']);
+        $definition->setArgument('$configureRoles', $security['roles']['configure']);
         $definition->setArgument('$authorizationChecker', new Reference('security.authorization_checker'));
         $container->setDefinition($id, $definition);
         $container->setAlias(BlogKitAccessCheckerInterface::class, $id);

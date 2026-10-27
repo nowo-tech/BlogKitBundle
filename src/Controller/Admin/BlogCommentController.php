@@ -13,6 +13,7 @@ use Nowo\BlogKitBundle\Model\BlogUserInterface;
 use Nowo\BlogKitBundle\Repository\BlogCommentRepository;
 use Nowo\BlogKitBundle\Security\BlogKitAccessDenied;
 use Nowo\BlogKitBundle\Service\BlogCommentManager;
+use Nowo\BlogKitBundle\Ui\BlogKitPageFactory;
 use Nowo\FormKitBundle\Form\CsrfOnlyFormFactory;
 use Nowo\FormKitBundle\Form\GetFilterFormFactory;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -43,6 +44,7 @@ final class BlogCommentController extends AbstractController
         private readonly CsrfOnlyFormFactory $csrfOnlyFormFactory,
         private readonly GetFilterFormFactory $filterFormFactory,
         private readonly BlogKitAccessDenied $accessDenied,
+        private readonly BlogKitPageFactory $pageFactory,
     ) {
     }
 
@@ -50,11 +52,7 @@ final class BlogCommentController extends AbstractController
     public function index(Request $request): Response
     {
         $statusFilter = $request->query->getString('status', 'pending');
-        if (!in_array($statusFilter, [
-            'pending',
-            'approved',
-            'rejected',
-            'all'], true)) {
+        if (!in_array($statusFilter, BlogKitPageFactory::COMMENT_STATUSES, true)) {
             $statusFilter = 'pending';
         }
 
@@ -67,11 +65,7 @@ final class BlogCommentController extends AbstractController
 
         if ($filterForm->isSubmitted() && $filterForm->has('status')) {
             $fromForm = trim((string) ($filterForm->get('status')->getData() ?? ''));
-            if ($fromForm !== '' && in_array($fromForm, [
-                'pending',
-                'approved',
-                'rejected',
-                'all'], true)) {
+            if ($fromForm !== '' && in_array($fromForm, BlogKitPageFactory::COMMENT_STATUSES, true)) {
                 $statusFilter = $fromForm;
             }
         }
@@ -116,16 +110,20 @@ final class BlogCommentController extends AbstractController
             ];
         }
 
-        return $this->render('@NowoBlogKitBundle/admin/comments/index.html.twig', [
+        $filterView   = $filterForm->createView();
+        $pendingCount = $this->blogCommentRepository->countPending();
+
+        return $this->render($this->pageFactory->template('comment_index', '@NowoBlogKitBundle/admin/comments/index.html.twig'), $this->pageFactory->context([
+            'page'          => $this->pageFactory->commentIndex($items, $filterView, $filters, $statusFilter, $pendingCount, $actionForms),
             'page_title'    => 'admin.comments.title',
             'items'         => $items,
             'filters'       => $filters,
             'filter'        => $statusFilter,
-            'filter_form'   => $filterForm->createView(),
-            'pending_count' => $this->blogCommentRepository->countPending(),
+            'filter_form'   => $filterView,
+            'pending_count' => $pendingCount,
             'reply_forms'   => $replyForms,
             'action_forms'  => $actionForms,
-        ]);
+        ]));
     }
 
     #[Route('/admin/blog/comments/{id}/approve', name: 'admin_blog_comment_approve', requirements: ['id' => '\d+'], methods: ['POST'])]

@@ -15,6 +15,7 @@ use Nowo\BlogKitBundle\Security\BlogKitAccessDenied;
 use Nowo\BlogKitBundle\Security\BlogKitResourceAccessCheckerInterface;
 use Nowo\BlogKitBundle\Tests\Support\ControllerTestHelper;
 use Nowo\BlogKitBundle\Tests\Support\LocaleTestSupport;
+use Nowo\BlogKitBundle\Tests\Support\PageFixtures;
 use Nowo\FormKitBundle\Form\CsrfOnlyFormFactory;
 use Nowo\FormKitBundle\Form\GetFilterFormFactory;
 use PHPUnit\Framework\Attributes\Test;
@@ -347,6 +348,7 @@ final class BlogTagControllerTest extends TestCase
             $filterFormFactory ?? ControllerTestHelper::filterFormFactory(),
             LocaleTestSupport::create(),
             $accessDenied ?? new BlogKitAccessDenied(new AllowAllBlogKitResourceAccessChecker()),
+            PageFixtures::factory(),
         );
 
         ControllerTestHelper::bind($controller, $request, array_filter([

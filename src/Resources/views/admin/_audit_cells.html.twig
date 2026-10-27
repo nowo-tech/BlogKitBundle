@@ -1,0 +1,9 @@
+{#
+  Audit cells of the articles list (updated at / by), priority 2 / 3 columns of the list scaffold.
+  Variables: item (BlogArticle), bundle.
+#}
+{% trans_default_domain 'NowoBlogKitBundle' %}
+{% set _cell = nowo_ui_class('table_cell', bundle|default(null)) %}
+{% set _muted = nowo_ui_class('table_cell_muted', bundle|default(null)) %}
+<td class="{{ _cell }}{{ item.updatedAt ? '' : ' ' ~ _muted }}" data-label="{{ 'admin.audit.updated_at'|trans }}" data-nowo-ui-priority="2">{{ item.updatedAt ? item.updatedAt|date('Y-m-d H:i') : '—' }}</td>
+<td class="{{ _cell }}{{ item.updatedBy ? '' : ' ' ~ _muted }}" data-label="{{ 'admin.audit.updated_by'|trans }}" data-nowo-ui-priority="3">{{ item.updatedBy ? item.updatedBy.userIdentifier : '—' }}</td>

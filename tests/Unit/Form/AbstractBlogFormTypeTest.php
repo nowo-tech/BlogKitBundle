@@ -57,7 +57,7 @@ final class AbstractBlogFormTypeTest extends TestCase
                 self::callback(
                     // placeholder:false is consumed by FormOptionsMerger (clears attr.placeholder).
                     static fn (array $options): bool => !isset($options['attr']['placeholder'])
-                    && ($options['attr']['class'] ?? '') === 'nowo-ui-input form-control',
+                    && ($options['attr']['class'] ?? '') === 'nowo-ui-input',
                 ),
             )
             ->willReturnSelf();

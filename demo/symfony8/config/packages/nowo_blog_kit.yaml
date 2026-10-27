@@ -4,18 +4,16 @@ nowo_blog_kit:
     locales: [en, es]
     security:
         access_roles: [ROLE_ADMIN]
-        manage_roles: [ROLE_ADMIN]
-        moderate_roles: [ROLE_ADMIN]
-        configure_roles: [ROLE_ADMIN]
+        roles:
+            manage: [ROLE_ADMIN]
+            moderate: [ROLE_ADMIN]
+            configure: [ROLE_ADMIN]
         allow_unauthenticated: false
         # object_access:
         #     strategy: owner
+    # Layouts, CSS stack and row actions come from nowo_ui_kit (layouts.admin / layouts.guest), REQ-UI-003.
     web_ui:
-        layout_template: admin/layout.html.twig
-        public_layout_template: base.html.twig
-        css_framework: bootstrap5
-        icon_set: bootstrap-icons
-        row_actions_display: icon
+        page_size: 20
     listing:
         mode: infinite
         masonry:

@@ -15,6 +15,7 @@ use Nowo\BlogKitBundle\Security\BlogKitResourceAccessCheckerInterface;
 use Nowo\BlogKitBundle\Service\BlogCommentManager;
 use Nowo\BlogKitBundle\Tests\Support\ControllerTestHelper;
 use Nowo\BlogKitBundle\Tests\Support\LocaleTestSupport;
+use Nowo\BlogKitBundle\Tests\Support\PageFixtures;
 use Nowo\BlogKitBundle\Tests\Support\TestUser;
 use Nowo\FormKitBundle\Form\CsrfOnlyFormFactory;
 use Nowo\FormKitBundle\Form\GetFilterFormFactory;
@@ -462,6 +463,7 @@ final class BlogCommentControllerTest extends TestCase
             $csrfOnlyFormFactory ?? ControllerTestHelper::csrfOnlyFormFactory(),
             $filterFormFactory ?? ControllerTestHelper::filterFormFactory(),
             $accessDenied ?? new BlogKitAccessDenied(new AllowAllBlogKitResourceAccessChecker()),
+            PageFixtures::factory(),
         );
 
         ControllerTestHelper::bind($controller, $request, array_filter([

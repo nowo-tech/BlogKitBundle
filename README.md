@@ -44,7 +44,7 @@ Blog Kit Bundle gives Symfony applications a reusable blog domain backed by Doct
 - LinkedIn hashtag formatting command `nowo:blog:sync-hashtags`
 - `BlogArticlePublishedEvent` after an article becomes published
 - Configurable access: `access_roles`, manage / moderate / configure roles, custom `access_checker`, and object-level publication rules (`security.object_access`: `none` / `owner` / host `service`) via `BlogKitAccessDenied`
-- Host CSS stack via `web_ui.css_framework` (`bootstrap5`, `tailwind`, `foundation`, `custom`), `icon_set`, and `row_actions_display` without forking page templates
+- UiKit page contract (REQ-UI-003): admin pages on the UiKit list / form / settings scaffolds, public pages on the guest layout; one host layout pair and theme (`nowo_ui_kit.layouts`, `nowo_ui_kit.theme`) for every bundle, no page forks
 - Twig namespace `NowoBlogKitBundle` with host override precedence
 - Symfony Flex recipe and FrankenPHP demo in `demo/symfony8`
 
@@ -63,18 +63,21 @@ nowo_blog_kit:
     locales: [es, en]
     security:
         access_roles: [ROLE_ADMIN]
-        manage_roles: [ROLE_EDITOR]
-        moderate_roles: [ROLE_MODERATOR]
-        configure_roles: [ROLE_ADMIN]
+        roles:
+            manage: [ROLE_EDITOR]
+            moderate: [ROLE_MODERATOR]
+            configure: [ROLE_ADMIN]
         allow_unauthenticated: false
         # object_access:
         #     strategy: owner
-    web_ui:
-        layout_template: admin/layout.html.twig
-        public_layout_template: base.html.twig
-        css_framework: bootstrap5
-        icon_set: bootstrap-icons
-        row_actions_display: icon
+
+# config/packages/nowo_ui_kit.yaml — layouts and CSS stack shared by every nowo-tech bundle (REQ-UI-003)
+nowo_ui_kit:
+    css_framework: bootstrap5
+    icon_set: bootstrap-icons
+    layouts:
+        admin: layouts/admin.html.twig
+        guest: layouts/guest.html.twig
 ```
 
 ```yaml

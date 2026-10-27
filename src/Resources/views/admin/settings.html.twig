@@ -1,53 +1,41 @@
+{#
+  Blog settings (REQ-UI-003): UiKit settings scaffold. Variables: page (View\SettingsPage from BlogSettingsController:
+  header admin.settings.title / admin.settings.lead with the blog area nav as tabs; one SettingsSection per settings
+  section — listing, cards, index-aside, article, comments — with its href (section tabs), current = this section,
+  which carries the BlogSettingsType form of that section, its lead as intro and the submit admin.action.save), and the
+  1.x variables page_title, form, edit_section.
+  Data block filled: nowo_ui_settings_section (the article section groups its fields under two sub-headings, then the
+  REQ-TWIG-003 child loop and the submit row through the UiKit `section_form` contract).
+#}
+{% extends '@NowoUiKit/page/settings.html.twig' %}
 {% trans_default_domain 'NowoBlogKitBundle' %}
-{% import '@NowoUiKitBundle/macros/ui.html.twig' as ui %}
-{% set _css_fw = nowo_blog_kit_css_framework|default('bootstrap5') %}
-{% extends '@NowoBlogKitBundle/admin/base.html.twig' %}
 
-{% block title %}{{ page_title|trans }}{% endblock %}
+{% block nowo_ui_styles %}
+    {{ parent() }}
+    {{ include('@NowoBlogKitBundle/_stylesheets.html.twig') }}
+{% endblock %}
 
-{% set edit_section = edit_section|default('listing') %}
-
-{% block admin %}
-<div class="{{ ui.page_header(_css_fw) }}">
-  <div>
-    <h1>{{ page_title|trans }}</h1>
-    <p>{{ 'admin.settings.lead'|trans }}</p>
-  </div>
-</div>
-
-{{ include('@NowoBlogKitBundle/admin/_area_nav.html.twig') }}
-{{ include('@NowoBlogKitBundle/admin/_settings_section_tabs.html.twig', {edit_section: edit_section}) }}
-
-<div class="{{ ui.card(_css_fw) }}">
-  {{ form_start(form, {attr: {class: 'nowo-ui-form'}}) }}
-    {# Each tab builds only its own fields (BlogSettingsType "section" option); the child loop renders them in FormType order. #}
-    {% set _section_headings = {
-      listing: ['admin.settings.sections.listing'|trans, 'admin.settings.sections.listing_lead'|trans],
-      cards: ['admin.settings.sections.cards'|trans, 'admin.settings.sections.cards_lead'|trans],
-      'index-aside': ['admin.settings.sections.index_aside'|trans, 'admin.settings.sections.index_aside_lead'|trans],
-      article: ['admin.settings.sections.article'|trans, 'admin.settings.sections.article_lead'|trans],
-      comments: ['admin.settings.sections.comments'|trans, 'admin.settings.sections.comments_lead'|trans],
-    } %}
-    {% if _section_headings[edit_section] is defined %}
-      <h2>{{ _section_headings[edit_section][0] }}</h2>
-      <p>{{ _section_headings[edit_section][1] }}</p>
+{% block nowo_ui_settings_section %}
+    {% set _b = page.bundle %}
+    {% set _form = section.form %}
+    {% if _form %}
+        <div class="blog-settings-section" data-testid="blog-kit-settings-{{ section.id }}">
+            {{ form_start(_form, {attr: {class: nowo_ui_class('form', _b), 'data-nowo-ui-region': 'form'}}) }}
+                {% if section.id == 'article' %}
+                    <h3 class="{{ nowo_ui_class('card_title', _b) }} blog-settings-section__group">{{ 'admin.settings.sections.article_aside'|trans }}</h3>
+                {% endif %}
+                {% for child in _form %}
+                    {% if not child.rendered %}
+                        {% if section.id == 'article' and child.vars.name == 'showShare' %}
+                            <h3 class="{{ nowo_ui_class('card_title', _b) }} blog-settings-section__group">{{ 'admin.settings.sections.article_display'|trans }}</h3>
+                        {% endif %}
+                        {{ form_row(child) }}
+                    {% endif %}
+                {% endfor %}
+                <div class="{{ nowo_ui_class('form_actions', _b) }}"{{ nowo_ui_attrs('form_actions', _b) }}>
+                    <button type="submit" class="{{ nowo_ui_class('btn_primary', _b) }}">{{ section.submitLabel|nowo_ui_trans }}</button>
+                </div>
+            {{ form_end(_form) }}
+        </div>
     {% endif %}
-    {% if edit_section == 'article' %}
-      <h3>{{ 'admin.settings.sections.article_aside'|trans }}</h3>
-    {% endif %}
-    {% for child in form %}
-      {% if not child.rendered %}
-        {% if edit_section == 'article' and child.vars.name == 'showShare' %}
-          <h3>{{ 'admin.settings.sections.article_display'|trans }}</h3>
-        {% endif %}
-        {{ form_row(child) }}
-      {% endif %}
-    {% endfor %}
-
-    <div class="nowo-ui-form-actions">
-      <button type="submit" class="{{ ui.btn('primary', null, _css_fw) }}">{{ 'admin.action.save'|trans }}</button>
-      <a href="{{ path('admin_blog_index') }}" class="{{ ui.btn('secondary', null, _css_fw) }}">{{ 'admin.action.cancel'|trans }}</a>
-    </div>
-  {{ form_end(form) }}
-</div>
 {% endblock %}

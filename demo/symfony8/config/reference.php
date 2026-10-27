@@ -1301,9 +1301,14 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *     locales?: list<scalar|Param|null>,
  *     security?: array{
  *         access_roles?: list<scalar|Param|null>,
- *         manage_roles?: list<scalar|Param|null>,
- *         moderate_roles?: list<scalar|Param|null>,
- *         configure_roles?: list<scalar|Param|null>,
+ *         roles?: array{ // Extra roles per admin action (REQ-UI-003 vocabulary), on top of access_roles.
+ *             manage?: list<scalar|Param|null>,
+ *             moderate?: list<scalar|Param|null>,
+ *             configure?: list<scalar|Param|null>,
+ *         },
+ *         manage_roles?: mixed, // Deprecated: The "manage_roles" option at "nowo_blog_kit.security.manage_roles" is deprecated, use "security.roles.manage" instead. // Deprecated since 1.7: use security.roles.manage. // Default: null
+ *         moderate_roles?: mixed, // Deprecated: The "moderate_roles" option at "nowo_blog_kit.security.moderate_roles" is deprecated, use "security.roles.moderate" instead. // Deprecated since 1.7: use security.roles.moderate. // Default: null
+ *         configure_roles?: mixed, // Deprecated: The "configure_roles" option at "nowo_blog_kit.security.configure_roles" is deprecated, use "security.roles.configure" instead. // Deprecated since 1.7: use security.roles.configure. // Default: null
  *         access_checker?: scalar|Param|null, // Default: null
  *         allow_unauthenticated?: bool|Param, // Default: false
  *         object_access?: array{ // Object-level checks after roles (e.g. editors only manage their publications).
@@ -1312,11 +1317,12 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *         },
  *     },
  *     web_ui?: array{
- *         layout_template?: scalar|Param|null, // Default: "@NowoBlogKitBundle/admin/layout.html.twig"
- *         public_layout_template?: scalar|Param|null, // Default: "@NowoBlogKitBundle/public/layout.html.twig"
- *         css_framework?: "bootstrap"|"bootstrap4"|"bootstrap5"|"tabler"|"tailwind"|"foundation"|"custom"|"none"|Param, // Default: "bootstrap5"
- *         icon_set?: "bootstrap-icons"|"tabler-icons"|"ux_icon"|"svg_inline"|"none"|Param, // Default: "bootstrap-icons"
- *         row_actions_display?: "icon"|"text"|"icon_text"|Param, // Default: "icon"
+ *         layout_template?: scalar|Param|null, // Admin layout of the UiKit page scaffolds (REQ-UI-003); null = nowo_ui_kit.layouts.admin. A 1.x layout (no UiKit canonical blocks) is wrapped by a deprecated bridge. // Default: null
+ *         public_layout_template?: scalar|Param|null, // Layout of the public blog pages; null = nowo_ui_kit.layouts.guest. A 1.x layout (block body) is wrapped by a deprecated bridge. // Default: null
+ *         templates?: array<string, scalar|Param|null>,
+ *         css_framework?: "bootstrap"|"bootstrap4"|"bootstrap5"|"tabler"|"tailwind"|"foundation"|"custom"|"none"|Param|null, // Deprecated: The "css_framework" option at "nowo_blog_kit.web_ui.css_framework" is deprecated, set "nowo_ui_kit.css_framework" instead. // Deprecated since 1.7: set nowo_ui_kit.css_framework. When set (and nowo_ui_kit.css_framework is not), it is copied to UiKit. // Default: null
+ *         icon_set?: "bootstrap-icons"|"tabler-icons"|"ux_icon"|"svg_inline"|"none"|Param|null, // Deprecated: The "icon_set" option at "nowo_blog_kit.web_ui.icon_set" is deprecated, set "nowo_ui_kit.icon_set" instead. // Deprecated since 1.7: set nowo_ui_kit.icon_set. // Default: null
+ *         row_actions_display?: "icon"|"text"|"icon_text"|Param|null, // Deprecated: The "row_actions_display" option at "nowo_blog_kit.web_ui.row_actions_display" is deprecated, set "nowo_ui_kit.row_actions_display" instead. // Deprecated since 1.7: set nowo_ui_kit.row_actions_display. // Default: null
  *         page_size?: int|Param, // Default: 20
  *         privacy_url?: scalar|Param|null, // Default: "#"
  *     },
@@ -1439,6 +1445,7 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *         tokens_dark?: array<string, mixed>,
  *         confirm_message_in_header?: bool|Param, // Confirm dialogs and the full-page confirm render the message inside the header, under the title (hosts whose dialog header is title + message). View\Confirm::messageInHeader wins when set. // Default: false
  *         popover_menus?: bool|Param, // 2.4: menu / kebab / row-action menus render their panel as a native [popover] (browser top layer: never clipped by table scrollers or cards; nowo-ui-popover.js places it). The partial option `popover` wins. // Default: false
+ *         form_errors_after_widget?: bool|Param, // 2.10: the UiKit form theme (form/nowo_ui_layout.html.twig) prints a field's errors after its widget (and before the help), instead of Symfony's order (label, errors, widget, help). // Default: false
  *         bundles?: array<string, array{ // Default: []
  *             framework_defaults?: bool|Param, // Override of theme.framework_defaults for this bundle (unset = inherit).
  *             classes?: array<string, mixed>,
@@ -1458,6 +1465,35 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *             attributes?: array<string, array<string, mixed>>,
  *             header_actions_in_filters?: bool|Param, // list only: render the page-header actions at the end of the filter row instead of the page header (ListPage::headerActionsInFilters wins when set; unset = false).
  *         }>,
+ *     },
+ *     error_pages?: array{ // Kit error pages (2.6): templates/bundles/TwigBundle/Exception/error.html.twig = {% extends '@NowoUiKit/error/status.html.twig' %}.
+ *         layout_template?: scalar|Param|null, // Document the status template extends: the kit layout, or a host template extending it (own <head> assets, brand, chat dock…). // Default: "@NowoUiKit/error/layout.html.twig"
+ *         translation_domain?: scalar|Param|null, // Domain of the page texts (e.g. messages). Keys missing there fall back to UiKit's own NowoUiKitBundle error.* texts. // Default: "NowoUiKitBundle"
+ *         translation_prefix?: scalar|Param|null, // Key prefix: <prefix>.<code>.title|lead|hint|image_alt, <prefix>.generic.*, <prefix>.home|retry|back|retry_after|auto_retry|skip_to_content. // Default: "error"
+ *         home_path?: scalar|Param|null, // Href of the "Back to home" button. // Default: "/"
+ *         illustrations?: array<string, Param|string|array{ // Default: []
+ *             path?: scalar|Param|null,
+ *             width?: int|Param, // Default: null
+ *             height?: int|Param, // Default: null
+ *             webp?: bool|Param|null, // Default: null
+ *             extension?: scalar|Param|null, // Default: null
+ *         }>,
+ *         illustration_width?: int|Param, // Default intrinsic width of the illustrations. // Default: 1024
+ *         illustration_height?: int|Param, // Default intrinsic height of the illustrations. // Default: 683
+ *         webp?: bool|Param, // Illustrations ship a .webp next to the fallback image (<source type="image/webp">). // Default: true
+ *         retry_statuses?: list<int|Param>,
+ *         back_link_statuses?: list<int|Param>,
+ *         auto_retry_seconds?: int|Param, // A 5xx on GET reloads itself after this many seconds (REQ-ERROR-001 item 10; 0 = never). Never on POST. // Default: 600
+ *         theme_storage?: scalar|Param|null, // localStorage key of the theme (data-nowo-ui-theme-storage on <html> and the toggle), e.g. the host's beacon-theme. // Default: "nowo-ui-theme"
+ *         theme_toggle?: bool|Param, // Render the light / dark toggle in the top controls. // Default: true
+ *         html_attributes?: array<string, mixed>,
+ *     },
+ *     shell?: array{ // Signed-in app shell (2.6, @NowoUiKit/shell/_open|_close|_shell|_burger.html.twig; Twig global nowo_ui_kit_shell).
+ *         kit_styles?: bool|Param, // Add the kit shell classes (nowo-ui-shell, nowo-ui-header, nowo-ui-aside…) painted by nowo-ui.css and driven by nowo-ui-shell.js. false: only the app_* slot classes (host shell CSS / JS). // Default: true
+ *         sidebar_cookie?: scalar|Param|null, // Cookie holding the desktop aside mode (e.g. beacon_sidebar), read server-side so the first paint is already collapsed / rail; null = expanded unless the template passes collapsed. // Default: null
+ *         sidebar_hidden_value?: scalar|Param|null, // Cookie value of the hidden aside. // Default: "collapsed"
+ *         sidebar_rail_value?: scalar|Param|null, // Cookie value of the icons-only rail. // Default: "rail"
+ *         sidebar_storage?: scalar|Param|null, // localStorage key of the aside mode (data-nowo-ui-sidebar-storage on the shell root; kit_styles + rail only). // Default: null
  *     },
  * }
  * @psalm-type NowoFormKitConfig = array{

@@ -31,6 +31,7 @@ admin:
     date: Datum
     name: Naam
     position: Positie
+    reply: Reageren
     slug: Slug
     status: Status
     title: Titel

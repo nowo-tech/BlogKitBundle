@@ -1,0 +1,29 @@
+{#
+  Demo host admin layout (REQ-UI-003, nowo_ui_kit.layouts.admin): the demo shell (base.html.twig: masthead, Bootstrap
+  5) with the UiKit canonical blocks through the UiKit bridge. Every BlogKit admin page renders here.
+#}
+{% extends 'base.html.twig' %}
+{% use '@NowoUiKit/layout/_bridge.html.twig' %}
+{% set nowo_ui_document_title_suffix = 'Nowo · Blog kit' %}
+
+{% block title %}{{ block('nowo_ui_bridge_title') }}{% endblock %}
+{% block body_class %} demo-shell--admin{% endblock %}
+
+{% block stylesheets %}
+    {{ include('layouts/_ui_assets.html.twig') }}
+    {{ block('nowo_ui_bridge_assets') }}
+{% endblock %}
+
+{% block demo_nav %}
+    <a href="{{ path('blog_index') }}">Blog</a>
+    <a href="{{ path('admin_blog_index') }}" aria-current="page">Admin</a>
+{% endblock %}
+
+{% block body %}
+    <div class="demo-admin">{{ block('nowo_ui_bridge_body') }}</div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ include(nowo_ui_partial('scripts', nowo_ui_bundle|default(null))) }}
+    {{ block('nowo_ui_bridge_end') }}
+{% endblock %}

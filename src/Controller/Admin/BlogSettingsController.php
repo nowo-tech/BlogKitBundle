@@ -7,6 +7,8 @@ namespace Nowo\BlogKitBundle\Controller\Admin;
 use Doctrine\ORM\EntityManagerInterface;
 use Nowo\BlogKitBundle\Form\BlogSettingsType;
 use Nowo\BlogKitBundle\Repository\BlogSettingsRepository;
+use Nowo\BlogKitBundle\Ui\BlogKitAreaNav;
+use Nowo\BlogKitBundle\Ui\BlogKitPageFactory;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -18,18 +20,10 @@ use Symfony\Component\Routing\Attribute\Route;
  */
 final class BlogSettingsController extends AbstractController
 {
-    /** @var array<string, string> */
-    private const array SECTION_ROUTES = [
-        BlogSettingsType::SECTION_LISTING     => 'admin_blog_settings_listing',
-        BlogSettingsType::SECTION_CARDS       => 'admin_blog_settings_cards',
-        BlogSettingsType::SECTION_INDEX_ASIDE => 'admin_blog_settings_index_aside',
-        BlogSettingsType::SECTION_ARTICLE     => 'admin_blog_settings_article',
-        BlogSettingsType::SECTION_COMMENTS    => 'admin_blog_settings_comments',
-    ];
-
     public function __construct(
         private readonly BlogSettingsRepository $blogSettingsRepository,
         private readonly EntityManagerInterface $entityManager,
+        private readonly BlogKitPageFactory $pageFactory,
     ) {
     }
 
@@ -72,7 +66,7 @@ final class BlogSettingsController extends AbstractController
     private function handleSection(Request $request, string $section): Response
     {
         $blogSettings = $this->blogSettingsRepository->getSingleton();
-        $route        = self::SECTION_ROUTES[$section];
+        $route        = BlogKitAreaNav::SETTINGS_SECTIONS[$section];
         $form         = $this->createForm(BlogSettingsType::class, $blogSettings, [
             BlogSettingsType::OPTION_SECTION => $section,
         ]);
@@ -86,10 +80,13 @@ final class BlogSettingsController extends AbstractController
             return $this->redirectToRoute($route);
         }
 
-        return $this->render('@NowoBlogKitBundle/admin/settings.html.twig', [
+        $view = $form->createView();
+
+        return $this->render($this->pageFactory->template('settings', '@NowoBlogKitBundle/admin/settings.html.twig'), $this->pageFactory->context([
+            'page'         => $this->pageFactory->settings($section, $view),
             'page_title'   => 'admin.settings.title',
-            'form'         => $form,
+            'form'         => $view,
             'edit_section' => $section,
-        ]);
+        ]));
     }
 }

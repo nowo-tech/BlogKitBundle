@@ -18,6 +18,7 @@ use Nowo\BlogKitBundle\Service\BlogCommentManager;
 use Nowo\BlogKitBundle\Service\BlogSettingsProvider;
 use Nowo\BlogKitBundle\Tests\Support\ControllerTestHelper;
 use Nowo\BlogKitBundle\Tests\Support\LocaleTestSupport;
+use Nowo\BlogKitBundle\Tests\Support\PageFixtures;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use ReflectionProperty;
@@ -606,6 +607,7 @@ final class BlogPublicControllerTest extends TestCase
             $commentManager ?? $this->createMock(BlogCommentManager::class),
             $accessChecker ?? $this->createMock(BlogKitAccessCheckerInterface::class),
             $translator ?? $this->createMock(TranslatorInterface::class),
+            PageFixtures::factory(),
             $metaProvider,
             $brandNameProvider,
         );

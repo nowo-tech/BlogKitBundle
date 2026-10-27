@@ -51,7 +51,7 @@ As an administrator, I edit singleton settings at `/admin/blog/settings`.
 
 As an integrator, I set `user_class`, locales, layouts, security, listing, comment protection, and sanitizer from `nowo_blog_kit`.
 
-**Acceptance:** Flex recipe or manual YAML boots the bundle. Twig Extra is required. Bootstrap hosts load framework CSS in `layout_template` / `public_layout_template` and may register FormKit `form_themes`.
+**Acceptance:** Flex recipe or manual YAML boots the bundle. Twig Extra is required. Bootstrap hosts load framework CSS in the UiKit host layouts (`nowo_ui_kit.layouts.admin` / `guest`) and may register FormKit `form_themes`.
 
 ### US-08 — Run demo and CI (Priority: P3)
 

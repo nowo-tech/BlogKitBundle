@@ -24,15 +24,15 @@ final class BlogKitExtension extends AbstractExtension implements GlobalsInterfa
      * @param list<string> $locales
      */
     public function __construct(
-        private readonly string $layoutTemplate,
-        private readonly string $publicLayoutTemplate,
-        private readonly string $cssFramework,
+        private readonly ?string $layoutTemplate,
+        private readonly ?string $publicLayoutTemplate,
+        private readonly ?string $cssFramework,
         private readonly string $defaultLocale,
         private readonly array $locales,
         private readonly string $privacyUrl,
         private readonly BlogKitAccessCheckerInterface $accessChecker,
-        private readonly string $iconSet = 'bootstrap-icons',
-        private readonly string $rowActionsDisplay = 'icon',
+        private readonly ?string $iconSet = null,
+        private readonly ?string $rowActionsDisplay = null,
         private readonly ?BlogProtection $protection = null,
         private readonly ?BlogKitResourceAccessCheckerInterface $resourceAccess = null,
     ) {
@@ -73,12 +73,13 @@ final class BlogKitExtension extends AbstractExtension implements GlobalsInterfa
     /**
      * Semantic width wrapper plus the host framework container class when it exists.
      *
-     * Hosts still load Bootstrap / Foundation / Tailwind themselves; this only adds
-     * compatible class names so public templates stay fork-free (REQ-UI-001).
+     * Deprecated since 1.7: the bundle pages no longer call it (REQ-UI-003: no framework classes in bundle markup;
+     * the page width comes from the UiKit layout). Kept for host templates; returns `blog-container` unless the
+     * deprecated `web_ui.css_framework` is set.
      */
     public function containerClass(): string
     {
-        $framework = CssFramework::tryFrom($this->cssFramework) ?? CssFramework::Custom;
+        $framework = CssFramework::tryFrom((string) $this->cssFramework) ?? CssFramework::Custom;
 
         return match ($framework) {
             CssFramework::Bootstrap,
@@ -120,6 +121,10 @@ final class BlogKitExtension extends AbstractExtension implements GlobalsInterfa
     }
 
     /**
+     * Deprecated since 1.7 (REQ-UI-003): `nowo_blog_kit_layout` / `nowo_blog_kit_public_layout` (the pages resolve the
+     * layout through BlogKitPages), `nowo_blog_kit_css_framework` / `_icon_set` / `_row_actions_display` (null unless
+     * the deprecated `web_ui.*` keys are set; read `nowo_ui_kit_*`).
+     *
      * The `nowo_blog_kit_can_*` globals are deprecated: Twig resolves globals once per environment,
      * so in long-running workers without `services_resetter` they keep the first user's flags.
      * Use the `nowo_blog_kit_can_manage()` / `_moderate()` / `_configure()` functions instead.

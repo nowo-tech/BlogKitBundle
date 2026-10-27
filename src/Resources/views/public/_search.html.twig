@@ -1,10 +1,9 @@
 {% trans_default_domain 'NowoBlogKitBundle' %}
-{% import '@NowoUiKitBundle/macros/ui.html.twig' as ui %}
-{% set _css_fw = nowo_blog_kit_css_framework|default('bootstrap5') %}
+{% set _b = 'NowoBlogKitBundle' %}
 {% set compact = compact|default(false) %}
 {{ form_start(search_form, {attr: {class: 'blog-search' ~ (compact ? ' blog-search--aside' : ''), role: 'search'}}) }}
     {% if search_form.q is defined %}
-        <label class="sr-only" for="{{ search_form.q.vars.id }}">{{ 'page.blog.search_label'|trans }}</label>
+        <label class="visually-hidden" for="{{ search_form.q.vars.id }}">{{ 'page.blog.search_label'|trans }}</label>
         {{ form_widget(search_form.q) }}
     {% endif %}
     {% for child in search_form %}
@@ -13,9 +12,9 @@
         {% endif %}
     {% endfor %}
     <div class="blog-search__actions">
-        <button type="submit" class="{{ ui.btn('primary', 'sm', _css_fw) }}">{{ 'page.blog.search_submit'|trans }}</button>
+        <button type="submit" class="{{ nowo_ui_class('btn_primary', _b) }} {{ nowo_ui_class('btn_sm', _b) }}">{{ 'page.blog.search_submit'|trans }}</button>
         {% if filters.q or filters.tag %}
-            <a href="{{ path('blog_index') }}" class="{{ ui.btn('secondary', 'sm', _css_fw) }}">{{ 'page.blog.search_clear'|trans }}</a>
+            <a href="{{ path('blog_index') }}" class="{{ nowo_ui_class('btn_secondary', _b) }} {{ nowo_ui_class('btn_sm', _b) }}">{{ 'page.blog.search_clear'|trans }}</a>
         {% endif %}
     </div>
 {{ form_end(search_form) }}

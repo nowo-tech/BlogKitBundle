@@ -36,6 +36,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Admin and public pages on the UiKit page contract (REQ-UI-003, UiKit 2.15). See [UPGRADING](UPGRADING.md#unreleased).
+
+### Added
+
+- **UiKit page contract (REQ-UI-003):** `Ui\BlogKitPageFactory` builds the UiKit view models (`ListPage`, `FormPage`, `SettingsPage`, `PageHeader`, `Action`, `Confirm`, `Pagination`, `EmptyState`) for every admin page; `Ui\BlogKitPages` resolves the layouts and the per-page overrides; `Ui\BlogKitAreaNav` publishes the blog navigation to the UiKit area-nav registry (`nowo_ui_area_nav('blog_kit')`, `'blog_kit_settings'`) for DashboardMenu.
+- `web_ui.templates.<page>` per-page template overrides (`article_index`, `article_form`, `tag_index`, `tag_form`, `comment_index`, `settings`, `public_index`, `public_show`).
+- `security.roles.{manage,moderate,configure}` (canonical REQ-UI-003 access keys).
+- UiKit `PageContractTestCase` contract test (`tests/Integration/Contract/PageContractTest.php`: every admin page, both public pages, strict missing-translation rule) and a render test of the 1.x layout bridges.
+- Translation key `admin.column.reply` (7 locales).
+- Demo: UiKit host layouts (`templates/layouts/admin.html.twig` / `guest.html.twig` on `@NowoUiKit/layout/_bridge.html.twig`), Playwright e2e of the admin pages (lists, delete confirm dialog, settings, article form tabs) and refreshed WebP screenshots.
+
+### Changed
+
+- **Template contract:** the admin pages extend the UiKit scaffolds — `admin/index.html.twig`, `admin/tags/index.html.twig`, `admin/comments/index.html.twig` → `page/list` (data block `nowo_ui_list_row`), `admin/form.html.twig`, `admin/tags/form.html.twig` → `page/form` (`nowo_ui_form_body`), `admin/settings.html.twig` → `page/settings` (`nowo_ui_settings_section`); the public `public/index.html.twig` / `public/show.html.twig` are unique pages on the UiKit guest layout (`nowo_ui_page_header`, `nowo_ui_content`). Header actions, row actions, filters, pagination, empty states, delete confirms and the section tabs come from UiKit; the blog area nav is a page-header tab bar.
+- `web_ui.layout_template` / `public_layout_template` default to `null` (`nowo_ui_kit.layouts.admin` / `guest`); the former defaults map to `null`; a 1.x layout without the UiKit canonical blocks keeps working through the deprecated bridges `admin/_legacy_layout.html.twig` / `public/_legacy_layout.html.twig`.
+- The inline CMS editor (`admin/_modal_form.html.twig`) is the UiKit `dialog` partial (`#blog-kit-cms-modal`, tabs id `cms-locale` unchanged); its form body is the shared `admin/_form_body.html.twig`.
+- Bundle markup carries no framework utility classes: buttons, muted text, badges and the comment form use UiKit theme slots (`nowo_ui_class()` / `nowo_ui_attrs()`); `sr-only` → `visually-hidden`; the prepended FormKit `blog_kit` profile no longer adds `form-control` / `mb-2` (the host form theme does).
+- `nowo-tech/ui-kit-bundle` constraint raised to `^2.15.3`; `symfony/deprecation-contracts` required explicitly; `phpunit/phpunit` 13.4.5 (dev, advisory PKSA-qhjm-rpqc-qkn6).
+- Demo: `nowo_blog_kit` config on `security.roles` and `nowo_ui_kit.layouts`; the stray Flex `compose.override.yaml` (published database port) removed.
+
+### Deprecated
+
+- `web_ui.css_framework`, `web_ui.icon_set`, `web_ui.row_actions_display` (default now `null`; inherited from `nowo_ui_kit`, still copied to UiKit when set) and `security.manage_roles` / `moderate_roles` / `configure_roles` (mapped to `security.roles.*`); removed in 2.0.
+- Twig globals `nowo_blog_kit_layout`, `nowo_blog_kit_public_layout`, `nowo_blog_kit_css_framework`, `nowo_blog_kit_icon_set`, `nowo_blog_kit_row_actions_display` and the function `nowo_blog_kit_container_class()`.
+- 1.x layouts (no UiKit canonical blocks) through `web_ui.layout_template` / `public_layout_template`.
+
+### Removed
+
+- Local chrome templates replaced by UiKit: `admin/layout.html.twig`, `admin/base.html.twig`, `public/layout.html.twig`, `public/base.html.twig`, `admin/_pagination.html.twig`, `admin/_delete_confirm.html.twig`, `admin/_csrf_action_form.html.twig`, `admin/_row_actions.html.twig`, `admin/_list_filters.html.twig`, `admin/_nav_tabs.html.twig`, `admin/_area_nav.html.twig`, `admin/_settings_section_tabs.html.twig`, `admin/_audit_table_heads.html.twig`, `admin/_audit_table_cells.html.twig` (→ `admin/_audit_cells.html.twig`), `admin/_form.html.twig` (→ `admin/_form_body.html.twig`).
+
+### Documentation
+
+- `docs/TEMPLATES.md` rewritten (pages → scaffolds, data blocks, view models, unique pages, per-page overrides, navigation, layout bridges); REQ-TWIG-001 freeze rule, upgrade-safe alternatives, recovery procedure and `<subpath>` table in `docs/TEMPLATES.md` and `docs/USAGE.md`; CONFIGURATION / INSTALLATION / README / SECURITY on `nowo_ui_kit.layouts` and `security.roles`.
+
 ## [1.6.3] - 2026-10-24
 
 Bundle views render form bodies through the child loop (REQ-TWIG-003). See [UPGRADING](UPGRADING.md#to-163).

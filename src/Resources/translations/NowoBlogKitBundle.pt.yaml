@@ -31,6 +31,7 @@ admin:
     date: Data
     name: Nome
     position: Posição
+    reply: Responder
     slug: Slug
     status: Estado
     title: Título

@@ -76,18 +76,17 @@ nowo_blog_kit:
     locales: [es, en]
     security:
         access_roles: [ROLE_ADMIN]
-        manage_roles: [ROLE_EDITOR]
-        moderate_roles: [ROLE_MODERATOR]
-        configure_roles: [ROLE_ADMIN]
+        roles:
+            manage: [ROLE_EDITOR]
+            moderate: [ROLE_MODERATOR]
+            configure: [ROLE_ADMIN]
         allow_unauthenticated: false
         object_access:
             strategy: none
     web_ui:
-        layout_template: '@NowoBlogKitBundle/admin/layout.html.twig'
-        public_layout_template: '@NowoBlogKitBundle/public/layout.html.twig'
-        css_framework: bootstrap5
-        icon_set: bootstrap-icons
-        row_actions_display: icon
+        layout_template: null          # null = nowo_ui_kit.layouts.admin
+        public_layout_template: null   # null = nowo_ui_kit.layouts.guest
+        page_size: 20
     listing:
         mode: paginated
         masonry:
@@ -193,7 +192,7 @@ Run `php bin/console assets:install` so `blog.css` and `blog-kit.js` are availab
 
 Rebuild frontend with `make assets` (Vite + pnpm).
 
-The bundle does **not** ship Bootstrap, Tailwind, or Foundation CSS. Set `web_ui.css_framework` to match the host (`bootstrap5`, `tailwind`, `foundation`, `custom`) and load that stack in both `layout_template` (admin) and `public_layout_template`. Public markup stays on semantic `blog-*` classes plus UiKit buttons. For Bootstrap hosts, register `twig.form_themes` with `@NowoFormKitBundle/form/static_blocks.html.twig` then `bootstrap_5_layout.html.twig`, and load Bootstrap Icons if `icon_set: bootstrap-icons`.
+The bundle does **not** ship Bootstrap, Tailwind, or Foundation CSS. Set `nowo_ui_kit.css_framework` to match the host (`bootstrap5`, `tailwind`, `foundation`, `custom`) and load that stack in the host layouts (`nowo_ui_kit.layouts.admin` / `guest`, see [CONFIGURATION](CONFIGURATION.md)). Public markup stays on semantic `blog-*` classes plus UiKit buttons. For Bootstrap hosts, register `twig.form_themes` with `@NowoFormKitBundle/form/static_blocks.html.twig` then `bootstrap_5_layout.html.twig`, and load Bootstrap Icons if `icon_set: bootstrap-icons`.
 
 ## Verify
 

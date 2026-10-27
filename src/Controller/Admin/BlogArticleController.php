@@ -14,6 +14,7 @@ use Nowo\BlogKitBundle\Locale\BlogLocales;
 use Nowo\BlogKitBundle\Model\BlogUserInterface;
 use Nowo\BlogKitBundle\Repository\BlogArticleRepository;
 use Nowo\BlogKitBundle\Security\BlogKitAccessDenied;
+use Nowo\BlogKitBundle\Ui\BlogKitPageFactory;
 use Nowo\FormKitBundle\Form\CsrfOnlyFormFactory;
 use Nowo\FormKitBundle\Form\GetFilterFormFactory;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -42,6 +43,7 @@ final class BlogArticleController extends AbstractController
         private readonly BlogKitAccessDenied $accessDenied,
         #[Autowire('%nowo_blog_kit.web_ui.page_size%')]
         private readonly int $pageSize,
+        private readonly BlogKitPageFactory $pageFactory,
     ) {
     }
 
@@ -78,14 +80,17 @@ final class BlogArticleController extends AbstractController
             )->createView();
         }
 
-        return $this->render('@NowoBlogKitBundle/admin/index.html.twig', [
+        $filterView = $filterForm->createView();
+
+        return $this->render($this->pageFactory->template('article_index', '@NowoBlogKitBundle/admin/index.html.twig'), $this->pageFactory->context([
+            'page'         => $this->pageFactory->articleIndex($result['items'], $result, $filterView, $filters, $deleteForms),
             'page_title'   => 'admin.articles.title',
             'items'        => $result['items'],
             'pagination'   => $result,
             'filters'      => $filters,
-            'filter_form'  => $filterForm->createView(),
+            'filter_form'  => $filterView,
             'delete_forms' => $deleteForms,
-        ]);
+        ]));
     }
 
     #[Route('/admin/blog/new', name: 'admin_blog_new')]
@@ -110,10 +115,7 @@ final class BlogArticleController extends AbstractController
             return $this->redirectToRoute('admin_blog_index');
         }
 
-        return $this->render('@NowoBlogKitBundle/admin/form.html.twig', [
-            'page_title' => 'admin.articles.new',
-            'form'       => $form,
-        ]);
+        return $this->renderForm($form, 'admin.articles.new');
     }
 
     #[Route('/admin/blog/{id}/edit', name: 'admin_blog_edit', requirements: ['id' => '\d+'])]
@@ -131,11 +133,7 @@ final class BlogArticleController extends AbstractController
             return $this->redirectToRoute('admin_blog_index');
         }
 
-        return $this->render('@NowoBlogKitBundle/admin/form.html.twig', [
-            'page_title' => 'admin.articles.edit',
-            'form'       => $form,
-            'article'    => $blogArticle,
-        ]);
+        return $this->renderForm($form, 'admin.articles.edit', ['article' => $blogArticle]);
     }
 
     #[Route('/admin/blog/{id}/edit-modal', name: 'admin_blog_edit_modal', requirements: ['id' => '\d+'], methods: ['GET'])]
@@ -171,6 +169,23 @@ final class BlogArticleController extends AbstractController
         $this->addFlash('success', 'admin.flash.article_deleted');
 
         return $this->redirectToRoute('admin_blog_index');
+    }
+
+    /**
+     * Article create / edit page (UiKit form scaffold).
+     *
+     * @param FormInterface<mixed> $form
+     * @param array<string, mixed> $vars extra 1.x page variables
+     */
+    private function renderForm(FormInterface $form, string $title, array $vars = []): Response
+    {
+        $view = $form->createView();
+
+        return $this->render($this->pageFactory->template('article_form', '@NowoBlogKitBundle/admin/form.html.twig'), $this->pageFactory->context([
+            'page'       => $this->pageFactory->articleForm($view, $title),
+            'page_title' => $title,
+            'form'       => $view,
+        ] + $vars));
     }
 
     private function renderInlineModal(BlogArticle $blogArticle, Request $request): Response

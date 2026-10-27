@@ -21,16 +21,20 @@ final class ConfigurationTest extends TestCase
         self::assertSame('es', $config['default_locale']);
         self::assertSame(['es', 'en'], $config['locales']);
         self::assertSame(['ROLE_ADMIN'], $config['security']['access_roles']);
-        self::assertSame(['ROLE_EDITOR'], $config['security']['manage_roles']);
-        self::assertSame(['ROLE_MODERATOR'], $config['security']['moderate_roles']);
-        self::assertSame(['ROLE_ADMIN'], $config['security']['configure_roles']);
+        self::assertSame(['manage' => ['ROLE_EDITOR'], 'moderate' => ['ROLE_MODERATOR'], 'configure' => ['ROLE_ADMIN']], $config['security']['roles']);
+        self::assertNull($config['security']['manage_roles']);
+        self::assertNull($config['security']['moderate_roles']);
+        self::assertNull($config['security']['configure_roles']);
         self::assertNull($config['security']['access_checker']);
         self::assertFalse($config['security']['allow_unauthenticated']);
         self::assertSame('none', $config['security']['object_access']['strategy']);
         self::assertNull($config['security']['object_access']['service']);
-        self::assertSame('bootstrap5', $config['web_ui']['css_framework']);
-        self::assertSame('bootstrap-icons', $config['web_ui']['icon_set']);
-        self::assertSame('icon', $config['web_ui']['row_actions_display']);
+        self::assertNull($config['web_ui']['layout_template']);
+        self::assertNull($config['web_ui']['public_layout_template']);
+        self::assertSame([], $config['web_ui']['templates']);
+        self::assertNull($config['web_ui']['css_framework']);
+        self::assertNull($config['web_ui']['icon_set']);
+        self::assertNull($config['web_ui']['row_actions_display']);
         self::assertSame(20, $config['web_ui']['page_size']);
         self::assertSame('#', $config['web_ui']['privacy_url']);
         self::assertSame('paginated', $config['listing']['mode']);
@@ -170,5 +174,50 @@ final class ConfigurationTest extends TestCase
         new Processor()->processConfiguration(new Configuration(), [[
             'security' => ['object_access' => ['strategy' => 'acl']],
         ]]);
+    }
+
+    #[Test]
+    public function deprecatedRoleKeysMapToSecurityRoles(): void
+    {
+        $this->expectUserDeprecationMessageMatches('/security\.roles\.manage/');
+
+        $config = new Processor()->processConfiguration(new Configuration(), [[
+            'security' => [
+                'manage_roles'   => ['ROLE_WRITER'],
+                'moderate_roles' => ['ROLE_MOD'],
+                'roles'          => ['moderate' => ['ROLE_CANONICAL']],
+            ],
+        ]]);
+
+        self::assertSame(['ROLE_WRITER'], $config['security']['roles']['manage']);
+        self::assertSame(['ROLE_CANONICAL'], $config['security']['roles']['moderate'], 'the canonical key wins');
+        self::assertSame(['ROLE_ADMIN'], $config['security']['roles']['configure']);
+    }
+
+    #[Test]
+    public function legacyDefaultLayoutsMapToTheUiKitLayouts(): void
+    {
+        $config = new Processor()->processConfiguration(new Configuration(), [[
+            'web_ui' => [
+                'layout_template'        => '@NowoBlogKitBundle/admin/layout.html.twig',
+                'public_layout_template' => '@NowoBlogKitBundle/public/layout.html.twig',
+                'templates'              => ['article_index' => 'admin/blog/articles.html.twig'],
+            ],
+        ]]);
+
+        self::assertNull($config['web_ui']['layout_template']);
+        self::assertNull($config['web_ui']['public_layout_template']);
+        self::assertSame(['article_index' => 'admin/blog/articles.html.twig'], $config['web_ui']['templates']);
+    }
+
+    #[Test]
+    public function hostLayoutsAreKept(): void
+    {
+        $config = new Processor()->processConfiguration(new Configuration(), [[
+            'web_ui' => ['layout_template' => 'admin/layout.html.twig', 'public_layout_template' => 'base.html.twig'],
+        ]]);
+
+        self::assertSame('admin/layout.html.twig', $config['web_ui']['layout_template']);
+        self::assertSame('base.html.twig', $config['web_ui']['public_layout_template']);
     }
 }

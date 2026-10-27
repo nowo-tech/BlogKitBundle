@@ -130,7 +130,7 @@ test.describe('BlogKit screenshots (full demo context)', () => {
     await fitViewport(page);
     await page.goto('/admin/blog');
     await expect(page.locator('header.demo-masthead')).toBeVisible();
-    await expect(page.locator('.demo-admin, .nowo-blog-kit-admin-tabs').first()).toBeVisible({
+    await expect(page.locator('[data-testid="blog-kit-articles"] table tbody tr').first()).toBeVisible({
       timeout: 15000,
     });
     await waitProfiler(page);
