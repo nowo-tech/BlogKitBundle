@@ -17,6 +17,7 @@ use Nowo\BlogKitBundle\Ui\BlogKitPageFactory;
 use Nowo\FormKitBundle\Form\CsrfOnlyFormFactory;
 use Nowo\FormKitBundle\Form\GetFilterFormFactory;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Form\FormView;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -33,6 +34,13 @@ final class BlogCommentController extends AbstractController
     use AdminListFilterTrait;
     use RequiresValidFormTrait;
 
+    /** One CSRF token id per action (the comment id is in the URL), not one per comment (SEC-004 L7). */
+    public const string CSRF_APPROVE = 'blog_comment_approve';
+
+    public const string CSRF_REJECT = 'blog_comment_reject';
+
+    public const string CSRF_DELETE = 'blog_comment_delete';
+
     private const array FILTER_KEYS = [
         'author',
         'article',
@@ -45,6 +53,8 @@ final class BlogCommentController extends AbstractController
         private readonly GetFilterFormFactory $filterFormFactory,
         private readonly BlogKitAccessDenied $accessDenied,
         private readonly BlogKitPageFactory $pageFactory,
+        #[Autowire('%nowo_blog_kit.web_ui.page_size%')]
+        private readonly int $pageSize = 20,
     ) {
     }
 
@@ -77,7 +87,8 @@ final class BlogCommentController extends AbstractController
             default    => BlogCommentStatus::Pending,
         };
 
-        $items = $this->blogCommentRepository->findFiltered($filters, $status);
+        $result = $this->blogCommentRepository->findFilteredPaginated($filters, $status, $request->query->getInt('page', 1), $this->pageSize);
+        $items  = $result['items'];
 
         $queryParams = array_filter(array_merge(['status' => $statusFilter], $filters), static fn (string $v): bool => $v !== '');
 
@@ -97,15 +108,15 @@ final class BlogCommentController extends AbstractController
             $actionForms[$id] = [
                 'approve' => $this->csrfOnlyFormFactory->createNamed(
                     $this->generateUrl('admin_blog_comment_approve', ['id' => $id] + $queryParams),
-                    'approve' . $id,
+                    self::CSRF_APPROVE,
                 )->createView(),
                 'reject' => $this->csrfOnlyFormFactory->createNamed(
                     $this->generateUrl('admin_blog_comment_reject', ['id' => $id] + $queryParams),
-                    'reject' . $id,
+                    self::CSRF_REJECT,
                 )->createView(),
                 'delete' => $this->csrfOnlyFormFactory->createNamed(
                     $this->generateUrl('admin_blog_comment_delete', ['id' => $id] + $queryParams),
-                    'delete' . $id,
+                    self::CSRF_DELETE,
                 )->createView(),
             ];
         }
@@ -114,9 +125,10 @@ final class BlogCommentController extends AbstractController
         $pendingCount = $this->blogCommentRepository->countPending();
 
         return $this->render($this->pageFactory->template('comment_index', '@NowoBlogKitBundle/admin/comments/index.html.twig'), $this->pageFactory->context([
-            'page'          => $this->pageFactory->commentIndex($items, $filterView, $filters, $statusFilter, $pendingCount, $actionForms),
+            'page'          => $this->pageFactory->commentIndex($items, $filterView, $filters, $statusFilter, $pendingCount, $actionForms, $result),
             'page_title'    => 'admin.comments.title',
             'items'         => $items,
+            'pagination'    => $result,
             'filters'       => $filters,
             'filter'        => $statusFilter,
             'filter_form'   => $filterView,
@@ -130,7 +142,7 @@ final class BlogCommentController extends AbstractController
     public function approve(BlogComment $blogComment, Request $request): RedirectResponse
     {
         $this->accessDenied->denyUnlessCanModerateComment($blogComment);
-        $this->requireCsrfAction($request, 'admin_blog_comment_approve', 'approve' . $blogComment->getId(), $blogComment);
+        $this->requireCsrfAction($request, 'admin_blog_comment_approve', self::CSRF_APPROVE, $blogComment);
         $user = $this->requireUser();
 
         $this->blogCommentManager->approve($blogComment, $user);
@@ -143,7 +155,7 @@ final class BlogCommentController extends AbstractController
     public function reject(BlogComment $blogComment, Request $request): RedirectResponse
     {
         $this->accessDenied->denyUnlessCanModerateComment($blogComment);
-        $this->requireCsrfAction($request, 'admin_blog_comment_reject', 'reject' . $blogComment->getId(), $blogComment);
+        $this->requireCsrfAction($request, 'admin_blog_comment_reject', self::CSRF_REJECT, $blogComment);
         $user = $this->requireUser();
 
         $this->blogCommentManager->reject($blogComment, $user);
@@ -187,7 +199,7 @@ final class BlogCommentController extends AbstractController
     public function delete(BlogComment $blogComment, Request $request): RedirectResponse
     {
         $this->accessDenied->denyUnlessCanModerateComment($blogComment);
-        $this->requireCsrfAction($request, 'admin_blog_comment_delete', 'delete' . $blogComment->getId(), $blogComment);
+        $this->requireCsrfAction($request, 'admin_blog_comment_delete', self::CSRF_DELETE, $blogComment);
 
         $this->blogCommentManager->delete($blogComment);
         $this->addFlash('success', 'admin.flash.comment_deleted');

@@ -185,6 +185,14 @@ final class BlogFormTypesTest extends TestCase
         self::assertSame('single_text', $captured['publishedAt'][1]['widget']);
         self::assertSame(8, $captured['tags'][1]['attr']['size']);
 
+        // SEC-004 L1 / I4: the LinkedIn URL (printed in an href) is http(s) only; the slug is URL-safe.
+        $validator = Validation::createValidator();
+        self::assertGreaterThan(0, $validator->validate('javascript:alert(1)', $captured['linkedinUrl'][1]['constraints'])->count());
+        self::assertGreaterThan(0, $validator->validate('data:text/html,x', $captured['linkedinUrl'][1]['constraints'])->count());
+        self::assertSame(0, $validator->validate('https://www.linkedin.com/posts/example', $captured['linkedinUrl'][1]['constraints'])->count());
+        self::assertGreaterThan(0, $validator->validate('../Bad Slug', $captured['slug'][1]['constraints'])->count());
+        self::assertSame(0, $validator->validate('hello-world-2', $captured['slug'][1]['constraints'])->count());
+
         $tag = new BlogTag()->setSlug('php');
         $tag->ensureTranslations();
         $tag->getTranslationOrFallback('es')->setName('PHP');

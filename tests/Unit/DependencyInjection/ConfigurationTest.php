@@ -20,6 +20,7 @@ final class ConfigurationTest extends TestCase
         self::assertNull($config['user_class']);
         self::assertSame('es', $config['default_locale']);
         self::assertSame(['es', 'en'], $config['locales']);
+        self::assertSame('Team', $config['comments']['staff_name']);
         self::assertSame(['ROLE_ADMIN'], $config['security']['access_roles']);
         self::assertSame(['manage' => ['ROLE_EDITOR'], 'moderate' => ['ROLE_MODERATOR'], 'configure' => ['ROLE_ADMIN']], $config['security']['roles']);
         self::assertNull($config['security']['manage_roles']);

@@ -26,11 +26,16 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
+use function mb_substr;
+
 /**
  * Public blog index and article detail.
  */
 final class BlogPublicController extends AbstractController
 {
+    /** Maximum length of the public search term and tag filter. */
+    public const int MAX_QUERY_LENGTH = 200;
+
     public function __construct(
         private readonly BlogCatalog $blogCatalog,
         private readonly BlogArticleRepository $blogArticleRepository,
@@ -47,9 +52,10 @@ final class BlogPublicController extends AbstractController
     #[Routable(name: 'blog_index')]
     public function index(Request $request): Response
     {
-        $page            = max(1, $request->query->getInt('page', 1));
-        $search          = trim((string) $request->query->get('q', ''));
-        $tag             = trim((string) $request->query->get('tag', ''));
+        $page = max(1, $request->query->getInt('page', 1));
+        // Bounded search input (SEC-004 I3): the term feeds LIKE queries.
+        $search          = mb_substr(trim((string) $request->query->get('q', '')), 0, self::MAX_QUERY_LENGTH);
+        $tag             = mb_substr(trim((string) $request->query->get('tag', '')), 0, self::MAX_QUERY_LENGTH);
         $searchForm      = $this->createPublicSearchForm($request, $search, $tag);
         $asideSearchForm = $this->createPublicSearchForm($request, $search, $tag);
         $blogSettings    = $this->blogCatalog->blogSettings();

@@ -218,9 +218,8 @@ final class BlogArticleController extends AbstractController
         $entityManager->flush();
         $this->addFlash('success', 'admin.flash.article_updated');
 
-        $referer = $request->headers->get('Referer');
-
-        return $this->redirect($referer ?: $this->generateUrl('blog_index'));
+        // Back to the public article (never to the Referer header: open redirect, SEC-004 I1).
+        return $this->redirectToRoute('blog_show', ['slug' => $blogArticle->getSlug()]);
     }
 
     /** @return FormInterface<mixed> */

@@ -9,13 +9,16 @@ use Nowo\BlogKitBundle\Controller\PublicCommentController;
 use Nowo\BlogKitBundle\Entity\BlogArticle;
 use Nowo\BlogKitBundle\Entity\BlogComment;
 use Nowo\BlogKitBundle\Entity\BlogCommentStatus;
+use Nowo\BlogKitBundle\Entity\BlogSettings;
 use Nowo\BlogKitBundle\Repository\BlogArticleRepository;
 use Nowo\BlogKitBundle\Repository\BlogCommentRepository;
 use Nowo\BlogKitBundle\Security\BlogKitAccessCheckerInterface;
 use Nowo\BlogKitBundle\Service\BlogCommentManager;
+use Nowo\BlogKitBundle\Service\BlogSettingsProvider;
 use Nowo\BlogKitBundle\Tests\Support\BlogProtectionTestFactory;
 use Nowo\BlogKitBundle\Tests\Support\ControllerTestHelper;
 use Nowo\BlogKitBundle\Tests\Support\LocaleTestSupport;
+use Nowo\BlogKitBundle\Tests\Support\RepositoryTestSupport;
 use Nowo\BlogKitBundle\Tests\Support\TestUser;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
@@ -311,6 +314,19 @@ final class PublicCommentControllerTest extends TestCase
         $controller->staffReply(9, $request);
     }
 
+    #[Test]
+    public function createIsClosedWhenCommentsAreSwitchedOff(): void
+    {
+        // SEC-004 I2: the form is hidden when show_comments is off, so the endpoint must refuse comments too.
+        $settings = new BlogSettingsProvider(RepositoryTestSupport::blogSettingsRepository(new BlogSettings()->setShowComments(false)));
+        $manager  = $this->createMock(BlogCommentManager::class);
+        $manager->expects(self::never())->method('createPublicComment');
+
+        $this->expectException(NotFoundHttpException::class);
+
+        $this->createController(manager: $manager, settings: $settings)->create('post', Request::create('/blog/post/comments', 'POST'));
+    }
+
     private function createController(
         ?Request $request = null,
         ?BlogArticleRepository $articleRepository = null,
@@ -320,6 +336,7 @@ final class PublicCommentControllerTest extends TestCase
         ?FormFactoryInterface $formFactory = null,
         ?TestUser $user = null,
         ?BlogKitAccessCheckerInterface $accessChecker = null,
+        ?BlogSettingsProvider $settings = null,
     ): PublicCommentController {
         $request ??= Request::create('/blog/post/comments', 'POST');
 
@@ -330,6 +347,7 @@ final class PublicCommentControllerTest extends TestCase
             $translator ?? $this->createMock(TranslatorInterface::class),
             BlogProtectionTestFactory::create(['rateLimit' => 0]),
             $accessChecker ?? $this->allowingAccessChecker(),
+            $settings,
         );
 
         ControllerTestHelper::bind($controller, $request, array_filter([

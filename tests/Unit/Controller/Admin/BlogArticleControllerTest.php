@@ -382,10 +382,11 @@ final class BlogArticleControllerTest extends TestCase
     }
 
     #[Test]
-    public function inlineUpdateFlushesAndRedirectsToReferer(): void
+    public function inlineUpdateIgnoresTheRefererAndRedirectsToTheArticle(): void
     {
         $request = Request::create('/admin/blog/4/inline', 'POST');
-        $request->headers->set('Referer', '/admin/blog?page=3');
+        // SEC-004 I1: the Referer header is attacker-controlled (open redirect).
+        $request->headers->set('Referer', 'https://evil.test/phish');
         $article = $this->createArticle(4, 'inline-edit');
         $form    = $this->createConfiguredMock(FormInterface::class, [
             'isSubmitted' => true,
@@ -405,12 +406,12 @@ final class BlogArticleControllerTest extends TestCase
 
         $response = $controller->inlineUpdate($article, $request);
 
-        self::assertSame('/admin/blog?page=3', $response->headers->get('Location'));
+        self::assertSame('/generated/blog_show?slug=inline-edit', $response->headers->get('Location'));
         self::assertSame(['admin.flash.article_updated'], $request->getSession()->getFlashBag()->get('success'));
     }
 
     #[Test]
-    public function inlineUpdateFlushesAndRedirectsToPublicIndexWithoutReferer(): void
+    public function inlineUpdateFlushesAndRedirectsToTheArticleWithoutReferer(): void
     {
         $request = Request::create('/admin/blog/4/inline', 'POST');
         $article = $this->createArticle(4, 'inline-edit');
@@ -432,7 +433,7 @@ final class BlogArticleControllerTest extends TestCase
 
         $response = $controller->inlineUpdate($article, $request);
 
-        self::assertSame('/generated/blog_index', $response->headers->get('Location'));
+        self::assertSame('/generated/blog_show?slug=inline-edit', $response->headers->get('Location'));
         self::assertSame(['admin.flash.article_updated'], $request->getSession()->getFlashBag()->get('success'));
     }
 

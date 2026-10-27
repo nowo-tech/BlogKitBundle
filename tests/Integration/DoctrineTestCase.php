@@ -9,10 +9,12 @@ use Doctrine\Common\EventManager;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
 use Doctrine\ORM\EntityManager;
+use Doctrine\ORM\Events;
 use Doctrine\ORM\Mapping\UnderscoreNamingStrategy;
 use Doctrine\ORM\ORMSetup;
 use Doctrine\ORM\Tools\ResolveTargetEntityListener;
 use Doctrine\ORM\Tools\SchemaTool;
+use Nowo\BlogKitBundle\DependencyInjection\TablePrefixListener;
 use Nowo\BlogKitBundle\Entity\BlogArticle;
 use Nowo\BlogKitBundle\Entity\BlogArticleResource;
 use Nowo\BlogKitBundle\Entity\BlogArticleTranslation;
@@ -70,6 +72,9 @@ abstract class DoctrineTestCase extends TestCase
             [],
         );
         $eventManager->addEventSubscriber($resolveTargetEntityListener);
+        if ($this->tablePrefix() !== '') {
+            $eventManager->addEventListener(Events::loadClassMetadata, new TablePrefixListener($this->tablePrefix()));
+        }
 
         $this->entityManager = new EntityManager($this->connection, $configuration, $eventManager);
         $this->connection->executeStatement('PRAGMA foreign_keys = ON');
@@ -78,6 +83,12 @@ abstract class DoctrineTestCase extends TestCase
         $schemaTool->createSchema($this->entityManager->getMetadataFactory()->getAllMetadata());
 
         $this->registry = new TestManagerRegistry($this->entityManager, $this->connection);
+    }
+
+    /** `nowo_blog_kit.doctrine.table_prefix` of the test schema (empty: the default names). */
+    protected function tablePrefix(): string
+    {
+        return '';
     }
 
     protected function createUser(string $email): MappedTestUser

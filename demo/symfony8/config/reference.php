@@ -1301,7 +1301,7 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *     locales?: list<scalar|Param|null>,
  *     security?: array{
  *         access_roles?: list<scalar|Param|null>,
- *         roles?: array{ // Extra roles per admin action (REQ-UI-003 vocabulary), on top of access_roles.
+ *         roles?: array{ // Roles per admin action (REQ-UI-003 vocabulary), in addition to access_roles. An empty list grants nothing (only access_roles).
  *             manage?: list<scalar|Param|null>,
  *             moderate?: list<scalar|Param|null>,
  *             configure?: list<scalar|Param|null>,
@@ -1331,6 +1331,7 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *         connection?: scalar|Param|null, // Default: "default"
  *     },
  *     comments?: array{
+ *         staff_name?: scalar|Param|null, // Public author name of staff replies when the user does not implement BlogStaffDisplayNameInterface (the login identifier is never shown). // Default: "Team"
  *         rate_limit?: array{ // Public comment POST rate limiting. Requires cache.app except strategy none/service.
  *             strategy?: "none"|"fixed_window"|"per_ip_article"|"sliding_window"|"service"|Param, // Default: "fixed_window"
  *             limit?: int|Param, // Max submissions per interval. 0 disables the limiter. // Default: 5

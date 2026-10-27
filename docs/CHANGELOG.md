@@ -36,7 +36,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Admin and public pages on the UiKit page contract (REQ-UI-003, UiKit 2.15). See [UPGRADING](UPGRADING.md#unreleased).
+Admin and public pages on the UiKit page contract (REQ-UI-003, UiKit 2.15), and the SEC-004 security hardening. See [UPGRADING](UPGRADING.md#unreleased).
+
+### Security
+
+- **M1 — stored XSS past the default allowlist (affects 1.1.0–1.6.3):** the public article body was sanitized *before* the hashtag-link rewrite and the body enhancer, and the regex hashtag rewrite could cut a single-quoted attribute in half, turning editor text into live attributes (`autofocus onfocus=…`) for every visitor. The hashtag links are now rewritten on the DOM and the sanitizer runs **last**, after every rewrite. Regression test with the PoC payload.
+- **M2 — XSS through the `strip` sanitizer (affects 1.1.0–1.6.3):** `strip` decoded entities into a body printed `|raw`, so `&lt;img onerror…&gt;` (or its double-encoded form after a persist + render pass) became live markup. It now outputs plain text escaped as HTML.
+- **M3 — empty role lists granted everybody:** `security.roles.manage` / `moderate` / `configure` (or the deprecated `*_roles`) set to `[]` granted the capability to every visitor, anonymous included. An empty list now grants nothing (only `access_roles`); all lists empty fails at compile time.
+- **L1:** the article LinkedIn URL is http(s) only (form constraint and render-time check): no `javascript:` links on the public article.
+- **L2 / L3:** the admin guard picks the capability by controller class (comments → moderate, settings → configure, articles / tags → manage); the comment actions `admin_blog_comment_approve|reject|reply|delete` required only `canManage()`, and a routing `name_prefix` skipped the guard entirely.
+- **L4:** the HTML sanitizer result on update is persisted (`PreUpdateEventArgs::setNewValue()`); edited bodies used to be stored unsanitized.
+- **L5:** `comments.rate_limit`, `comments.captcha` or `html.sanitize` with strategy `service` and no service id now fail at compile time instead of silently disabling the protection.
+- **L6:** `doctrine.table_prefix` applies to the `content_blog_article_tag` join table and to the repository native SQL (36 statements hard-coded `content_blog_*`).
+- **L7:** the moderation queue is paginated (`web_ui.page_size`) and uses one CSRF token id per action instead of three per comment.
+- Info: the inline CMS update redirects to the article (not to the `Referer`); public comments are refused when `show_comments` is off; page numbers capped (no float `OFFSET`) and search terms capped at 200 characters; article slugs validated (`[a-z0-9-]`); staff replies signed with `comments.staff_name` / `BlogStaffDisplayNameInterface` instead of the login identifier; the deprecated `nowo_blog_kit_can_*` Twig globals fail closed (`false`); IPv6 commenters rate-limited per /64; `privacy_url` escaped in the comment form label.
 
 ### Added
 
@@ -45,6 +58,8 @@ Admin and public pages on the UiKit page contract (REQ-UI-003, UiKit 2.15). See 
 - `security.roles.{manage,moderate,configure}` (canonical REQ-UI-003 access keys).
 - UiKit `PageContractTestCase` contract test (`tests/Integration/Contract/PageContractTest.php`: every admin page, both public pages, strict missing-translation rule) and a render test of the 1.x layout bridges.
 - Translation key `admin.column.reply` (7 locales).
+- `comments.staff_name` and `Model\BlogStaffDisplayNameInterface` (public name of staff replies).
+- `BlogCommentRepository::findFilteredPaginated()`.
 - Demo: UiKit host layouts (`templates/layouts/admin.html.twig` / `guest.html.twig` on `@NowoUiKit/layout/_bridge.html.twig`), Playwright e2e of the admin pages (lists, delete confirm dialog, settings, article form tabs) and refreshed WebP screenshots.
 
 ### Changed
@@ -55,6 +70,8 @@ Admin and public pages on the UiKit page contract (REQ-UI-003, UiKit 2.15). See 
 - Bundle markup carries no framework utility classes: buttons, muted text, badges and the comment form use UiKit theme slots (`nowo_ui_class()` / `nowo_ui_attrs()`); `sr-only` → `visually-hidden`; the prepended FormKit `blog_kit` profile no longer adds `form-control` / `mb-2` (the host form theme does).
 - `nowo-tech/ui-kit-bundle` constraint raised to `^2.15.3`; `symfony/deprecation-contracts` required explicitly; `phpunit/phpunit` 13.4.5 (dev, advisory PKSA-qhjm-rpqc-qkn6).
 - Demo: `nowo_blog_kit` config on `security.roles` and `nowo_ui_kit.layouts`; the stray Flex `compose.override.yaml` (published database port) removed.
+- Flex recipe on the canonical keys (`security.roles.*`, layouts / CSS stack from `nowo_ui_kit`, `comments.staff_name`).
+- `docs/SECURITY.md` threat model refreshed (roles, comment routes, `strip`, empty list = deny, backups / images).
 
 ### Deprecated
 

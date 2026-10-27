@@ -4,17 +4,24 @@ declare(strict_types=1);
 
 namespace Nowo\BlogKitBundle\Service;
 
+use DOMDocument;
+use DOMElement;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 use function array_slice;
 use function count;
 use function in_array;
-use function is_string;
+use function iterator_to_array;
+use function libxml_clear_errors;
+use function libxml_use_internal_errors;
+use function sprintf;
 
 use const ENT_HTML5;
 use const ENT_QUOTES;
 use const ENT_SUBSTITUTE;
+use const LIBXML_HTML_NODEFDTD;
+use const LIBXML_HTML_NOIMPLIED;
 use const PREG_OFFSET_CAPTURE;
 
 /**
@@ -260,6 +267,10 @@ final readonly class BlogHashtagProcessor
 
     /**
      * Rewrites hashtag hrefs for the active locale (tag filter or search).
+     *
+     * Works on the DOM (attributes set through DOMElement::setAttribute and serialized by libxml), never on the raw
+     * markup: a regex rewrite of the attribute string can cut a quoted attribute in half and turn the rest of the
+     * document into attributes (SEC-004 M1).
      */
     public function localizeHashtagLinks(string $html): string
     {
@@ -267,31 +278,36 @@ final readonly class BlogHashtagProcessor
             return $html;
         }
 
-        $result = preg_replace_callback(
-            '#<a\b([^>]*\bblog-hashtag\b[^>]*)>(\#[^<]+)</a>#i',
-            function (array $matches): string {
-                $attrs = $matches[1];
-                $text  = $matches[2];
-                $label = ltrim(html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8'), '#');
+        $document       = new DOMDocument();
+        $internalErrors = libxml_use_internal_errors(true);
+        $document->loadHTML(sprintf('<?xml encoding="UTF-8"><div>%s</div>', $html), LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+        libxml_clear_errors();
+        libxml_use_internal_errors($internalErrors);
 
-                if (preg_match('/\bdata-hashtag="([^"]*)"/i', $attrs, $dataMatch)) {
-                    $label = html_entity_decode($dataMatch[1], ENT_QUOTES | ENT_HTML5, 'UTF-8');
-                }
+        $container = $document->getElementsByTagName('div')->item(0);
+        if (!$container instanceof DOMElement) {
+            return $html; // @codeCoverageIgnore
+        }
 
-                $href      = htmlspecialchars($this->hashtagFilterUrl($label), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-                $attrs     = preg_replace('/\s*href="[^"]*"/i', '', $attrs) ?? $attrs;
-                $safeLabel = htmlspecialchars($label, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        foreach (iterator_to_array($container->getElementsByTagName('a')) as $link) {
+            $classes = preg_split('/\s+/', $link->getAttribute('class')) ?: [];
+            $text    = trim($link->textContent);
+            if (!in_array('blog-hashtag', $classes, true) || !str_starts_with($text, '#')) {
+                continue;
+            }
 
-                if (!preg_match('/\bdata-hashtag=/i', $attrs)) {
-                    $attrs .= ' data-hashtag="' . $safeLabel . '"';
-                }
+            $label = $link->hasAttribute('data-hashtag') ? $link->getAttribute('data-hashtag') : ltrim($text, '#');
+            $link->setAttribute('href', $this->hashtagFilterUrl($label));
+            $link->setAttribute('data-hashtag', $label);
+            $link->textContent = '#' . $label;
+        }
 
-                return '<a href="' . $href . '"' . $attrs . '>#' . $safeLabel . '</a>';
-            },
-            $html,
-        );
+        $result = '';
+        foreach ($container->childNodes as $child) {
+            $result .= $document->saveHTML($child) ?: '';
+        }
 
-        return is_string($result) ? $result : $html;
+        return $result;
     }
 
     public function hashtagFilterUrl(string $label, ?string $locale = null): string

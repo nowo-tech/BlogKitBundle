@@ -39,6 +39,7 @@ use Symfony\Component\DependencyInjection\Reference;
 use function array_key_exists;
 use function is_array;
 use function is_string;
+use function sprintf;
 
 /**
  * Loads BlogKit services and publishes configuration parameters.
@@ -240,6 +241,7 @@ final class NowoBlogKitExtension extends Extension implements PrependExtensionIn
         $container->setParameter('nowo_blog_kit.web_ui.row_actions_display', $config['web_ui']['row_actions_display']);
         $container->setParameter('nowo_blog_kit.web_ui.page_size', $config['web_ui']['page_size']);
         $container->setParameter('nowo_blog_kit.web_ui.privacy_url', $config['web_ui']['privacy_url']);
+        $container->setParameter('nowo_blog_kit.comments.staff_name', (string) $config['comments']['staff_name']);
         $container->setParameter('nowo_blog_kit.listing.mode', (string) $config['listing']['mode']);
         $container->setParameter('nowo_blog_kit.listing.masonry.strategy', (string) $config['listing']['masonry']['strategy']);
         $container->setParameter('nowo_blog_kit.listing.masonry.columns_mobile', (int) $config['listing']['masonry']['columns_mobile']);
@@ -298,6 +300,10 @@ final class NowoBlogKitExtension extends Extension implements PrependExtensionIn
             $container->setAlias(BlogKitAccessCheckerInterface::class, $custom);
 
             return;
+        }
+
+        if ($security['access_roles'] === [] && $security['roles']['manage'] === [] && $security['roles']['moderate'] === [] && $security['roles']['configure'] === []) {
+            throw new LogicException('NowoBlogKitBundle: security.access_roles and every security.roles.* list are empty, so nobody could use the admin UI. Configure at least one role (an empty list denies), or set security.allow_unauthenticated for a trusted demo.');
         }
 
         $id         = 'nowo_blog_kit.access_checker.default';
@@ -364,6 +370,13 @@ final class NowoBlogKitExtension extends Extension implements PrependExtensionIn
         $captcha = $comments['captcha'];
         /** @var array<string, mixed> $html */
         $html = $config['html']['sanitize'];
+
+        // A `service` strategy without its service id used to fall back to a no-op (SEC-004 L5): fail at compile time.
+        foreach (['comments.rate_limit' => $rateLimit, 'comments.captcha' => $captcha, 'html.sanitize' => $html] as $path => $node) {
+            if ($node['strategy'] === 'service' && $this->optionalServiceId($node['service'] ?? null) === null) {
+                throw new LogicException(sprintf('nowo_blog_kit.%s.service is required when strategy is service.', $path));
+            }
+        }
 
         $container->register(StreamCaptchaHttpClient::class)
             ->setAutowired(false)

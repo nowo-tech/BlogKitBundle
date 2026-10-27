@@ -12,16 +12,27 @@ use Symfony\Component\Security\Core\Authorization\AuthorizationCheckerInterface;
 final class ConfigurableBlogKitAccessCheckerTest extends TestCase
 {
     #[Test]
-    public function emptyRoleListsAllowEveryCapability(): void
+    public function emptyRoleListsDenyEveryCapability(): void
     {
+        // SEC-004 M3: an empty list used to grant the capability to every visitor (anonymous included).
         $authorizationChecker = $this->createMock(AuthorizationCheckerInterface::class);
         $authorizationChecker->expects(self::never())->method('isGranted');
 
         $checker = new ConfigurableBlogKitAccessChecker($authorizationChecker, [], [], []);
 
-        self::assertTrue($checker->canManage());
-        self::assertTrue($checker->canModerate());
-        self::assertTrue($checker->canConfigure());
+        self::assertFalse($checker->canManage());
+        self::assertFalse($checker->canModerate());
+        self::assertFalse($checker->canConfigure());
+    }
+
+    #[Test]
+    public function anEmptyCapabilityListFallsBackToTheAccessRolesOnly(): void
+    {
+        $authorizationChecker = $this->createStub(AuthorizationCheckerInterface::class);
+        $authorizationChecker->method('isGranted')->willReturnCallback(static fn (mixed $role): bool => $role === 'ROLE_ADMIN');
+
+        self::assertTrue(new ConfigurableBlogKitAccessChecker($authorizationChecker, [], [], [], ['ROLE_ADMIN'])->canManage());
+        self::assertFalse(new ConfigurableBlogKitAccessChecker($authorizationChecker, [], [], [], ['ROLE_OTHER'])->canConfigure());
     }
 
     #[Test]

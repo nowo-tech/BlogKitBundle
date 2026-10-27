@@ -8,12 +8,14 @@ use Doctrine\ORM\EntityManagerInterface;
 use Nowo\BlogKitBundle\Entity\BlogArticle;
 use Nowo\BlogKitBundle\Entity\BlogComment;
 use Nowo\BlogKitBundle\Entity\BlogCommentStatus;
+use Nowo\BlogKitBundle\Model\BlogStaffDisplayNameInterface;
 use Nowo\BlogKitBundle\Model\BlogUserInterface;
 use Nowo\BlogKitBundle\Repository\BlogCommentRepository;
 use Psr\Clock\ClockInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use Symfony\Component\Clock\NativeClock;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\Request;
 
 /**
@@ -29,6 +31,8 @@ final readonly class BlogCommentManager
         private BlogCommentRepository $blogCommentRepository,
         private ClockInterface $clock = new NativeClock(),
         private LoggerInterface $logger = new NullLogger(),
+        #[Autowire('%nowo_blog_kit.comments.staff_name%')]
+        private string $staffName = 'Team',
     ) {
     }
 
@@ -117,19 +121,15 @@ final readonly class BlogCommentManager
         $this->logger->info('Blog comment moderated.', ['bundle' => 'blog_kit', 'action' => $action, 'comment_id' => $blogComment->getId()]);
     }
 
+    /**
+     * Public author name of a staff reply: the user's {@see BlogStaffDisplayNameInterface} name, else the configured
+     * `comments.staff_name`. The login identifier (often an e-mail) is never published (SEC-004 I5).
+     */
     private function staffDisplayName(BlogUserInterface $user): string
     {
-        $email     = $user->getUserIdentifier();
-        $localPart = strstr($email, '@', true);
+        $name = $user instanceof BlogStaffDisplayNameInterface ? trim($user->getBlogDisplayName()) : '';
 
-        if ($localPart !== false && $localPart !== '') {
-            return ucfirst(str_replace([
-                '.',
-                '_',
-                '-'], ' ', $localPart));
-        }
-
-        return 'Equipo';
+        return $name !== '' ? $name : $this->staffName;
     }
 
     private function hashIp(Request $request): ?string

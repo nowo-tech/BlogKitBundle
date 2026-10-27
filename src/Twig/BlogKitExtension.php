@@ -140,9 +140,11 @@ final class BlogKitExtension extends AbstractExtension implements GlobalsInterfa
             'nowo_blog_kit_privacy_url'         => $this->privacyUrl,
             'nowo_blog_kit_icon_set'            => $this->iconSet,
             'nowo_blog_kit_row_actions_display' => $this->rowActionsDisplay,
-            'nowo_blog_kit_can_manage'          => $this->accessChecker->canManage(),
-            'nowo_blog_kit_can_moderate'        => $this->accessChecker->canModerate(),
-            'nowo_blog_kit_can_configure'       => $this->accessChecker->canConfigure(),
+            // Fail closed (SEC-004 I6): a global is computed once per Twig environment, so in a worker it would keep
+            // the first user's flags. The functions nowo_blog_kit_can_*() are evaluated per call.
+            'nowo_blog_kit_can_manage'    => false,
+            'nowo_blog_kit_can_moderate'  => false,
+            'nowo_blog_kit_can_configure' => false,
         ];
     }
 }

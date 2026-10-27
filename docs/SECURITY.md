@@ -21,19 +21,25 @@ Security considerations for public blog pages, comments, admin CRUD, and CMS HTM
 
 | Risk | Mitigation |
 | --- | --- |
-| Unauthorized editors reach article/tag/settings admin | `access_roles` / `roles.manage` / `roles.moderate` / `roles.configure`, custom `access_checker`, object access (`none` / `owner` / host `service`), Symfony Security |
+| Unauthorized editors reach article/tag/settings admin | `access_roles` / `roles.manage` / `roles.configure`, custom `access_checker`, object access (`none` / `owner` / host `service`), Symfony Security. **An empty role list grants nothing** (only `access_roles` then); every list empty fails at container compile time |
 | IDOR on another editor's publication | `security.object_access.strategy: owner` or a host `BlogKitResourceAccessCheckerInterface`; `BlogKitAccessDenied` on edit/delete/inline |
-| Unauthorized comment moderation | `moderate_roles` and route prefix `admin_blog_comments` |
-| Stored XSS through article HTML | Default Twig auto-escaping; `article.body` uses `\|raw`. Optional `html.sanitize` (`allowlist` / `strip` / host `service`) on persist and render |
-| Stored XSS through comments | Comment bodies are escaped; `\|nl2br` only |
-| CSRF on admin delete/approve/save and public comment POST | Symfony forms and `CsrfOnlyFormFactory` |
-| Comment spam | Pending moderation; configurable rate-limit strategies; configurable CAPTCHA (`honeypot` default) |
+| Unauthorized comment moderation | `roles.moderate` (or `roles.manage`); the guard picks the capability by **controller class** (`BlogCommentController` → moderate), so the queue `admin_blog_comments_index` and the actions `admin_blog_comment_approve\|reject\|reply\|delete` are covered, whatever routing `name_prefix` the host uses |
+| Stored XSS through article HTML | `article.body` is printed `\|raw`: `html.sanitize` (`allowlist` default / `strip` / host `service`) runs on persist, on update (`PreUpdateEventArgs::setNewValue`) and **last** on render, after the hashtag-link and body-enhancer rewrites (hashtag links are rewritten on the DOM). `strip` outputs escaped plain text |
+| `javascript:` links | Article LinkedIn URL: http(s) only (form constraint + render-time check). Image fields (`image`, resource images) are free text printed in `<img src>`: browsers do not run `javascript:` there, but treat them as editor-controlled URLs (no tracking pixels from untrusted editors) |
+| Stored XSS through comments | Comment bodies are escaped; `\|nl2br` only. Staff replies are signed with `comments.staff_name` or `BlogStaffDisplayNameInterface` (the login identifier is never published) |
+| CSRF on admin delete/approve/save and public comment POST | Symfony forms and `CsrfOnlyFormFactory` (one token id per moderation action) |
+| Comment spam | Pending moderation; comments closed when `show_comments` is off; configurable rate-limit strategies (IPv6 counted per /64); configurable CAPTCHA (`honeypot` default). A `service` strategy without its service id fails at compile time |
+| Open redirect | The inline CMS update redirects to the article route, never to the `Referer` header |
+| Resource exhaustion | Admin lists and the moderation queue are paginated (`web_ui.page_size`); page numbers capped; search terms capped at 200 characters |
 | Overly broad demo access | `allow_unauthenticated` defaults to `false` |
-| Shared-database table collisions | Optional `doctrine.table_prefix` |
+| Shared-database table collisions | Optional `doctrine.table_prefix`: primary tables, the `content_blog_article_tag` join table and the repository native SQL |
 
 ## Admin access guard
 
-The bundle protects route names beginning with `admin_blog` (`BlogKitAdminAccessSubscriber`).
+`BlogKitAdminAccessSubscriber` checks the capability before every bundle admin controller: by controller class
+(articles / tags → `canManage()`, comments → `canModerate()`, settings → `canConfigure()`), so renamed routes or a
+routing `name_prefix` cannot skip it; other routes named `admin_blog*` are still guarded by name (`admin_blog_comment*`
+→ moderate, `admin_blog_settings*` → configure, rest → manage). Keep the firewall rules below as defence in depth.
 
 Default configuration:
 
@@ -84,12 +90,21 @@ Admin create/edit/delete, comment approve/reject/reply/delete, settings save, an
 - Rate limiting defaults to `fixed_window` (5 posts / 60s per IP) via `cache.app`. Switch strategy in YAML or admin settings.
 - CAPTCHA defaults to a hidden honeypot. Remote providers (`recaptcha_v2`, `recaptcha_v3`, `hcaptcha`, `turnstile`) need `site_key` / `secret_key` in YAML. When siteverify returns a `hostname`, it must equal the request host (`Request::getHost()`, so configure trusted proxies / hosts behind a reverse proxy); reCAPTCHA v3 tokens must also carry the `blog_comment` action.
 - Public staff replies require `canModerate()`.
+- When `show_comments` is off in the blog settings, `POST /blog/{slug}/comments` answers 404.
+- The rate limiter is a cache read-modify-write (not atomic): a burst of parallel requests can exceed the limit by a
+  few posts. Put a reverse-proxy / `symfony/rate-limiter` limit in front of public POSTs on high-traffic sites.
 
 ## Rich text rendering
 
 `public/show.html.twig` renders editor-authored article HTML with `|raw`. The **default** strategy is `allowlist`. Set `html.sanitize.strategy: none` only for fully trusted editors.
 
 The `allowlist` sanitizer removes executable / raw-text elements (`script`, `style`, `template`, `svg`, `math`, `object`, `embed`, `meta`, `link`, `base`, …) with their content, unwraps other unknown elements and sanitizes their children, and only keeps `http(s)` / `mailto:` / same-origin relative URLs in `href` and image `src` (protocol-relative `//host`, `/\host` and whitespace-split variants are rejected). An `iframe` is kept only when its `src` is an absolute `https://` URL on the YouTube / Vimeo allowlist (no other scheme, no userinfo or backslash in the authority).
+
+`html.sanitize.strategy: strip` removes every tag and outputs plain text **escaped as HTML** (encoded markup such as
+`&lt;img onerror…&gt;`, also double-encoded, can no longer become live HTML through the `\|raw` print).
+
+Backups / imports that write `content_blog_article_translation.body` directly bypass the persist / update sanitizer;
+the render-time pass still runs, but re-save imported articles (or run the sanitizer) after a restore.
 
 ## Infinite scroll HTML
 
@@ -102,7 +117,9 @@ The `allowlist` sanitizer removes executable / raw-text elements (`script`, `sty
 - Pick a comment rate-limit and CAPTCHA strategy for public internet sites. Keep remote CAPTCHA secrets in YAML.
 - Leave `html.sanitize.strategy` at `allowlist` unless article authors are fully trusted.
 - Set a real `web_ui.privacy_url`.
-- Use `doctrine.table_prefix` when multiple applications share one schema.
+- Use `doctrine.table_prefix` when multiple applications share one schema (it now also prefixes the
+  `content_blog_article_tag` join table — see [UPGRADING](UPGRADING.md) before enabling it on existing data).
+- Never leave a role list empty expecting "everyone": an empty list denies.
 - Review demo credentials and never copy demo auth settings into production.
 
 ## Timeouts and resource limits

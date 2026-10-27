@@ -179,8 +179,9 @@ final readonly class BlogKitPageFactory
      * @param list<BlogComment> $items
      * @param array<string, string> $filters active filter values
      * @param array<int, array{approve: FormView, reject: FormView, delete: FormView}> $actionForms comment id => CSRF-only forms (comments the user may moderate)
+     * @param array{page: int, per_page: int, total: int, total_pages: int}|null $pagination page of the queue
      */
-    public function commentIndex(array $items, FormView $filterForm, array $filters, string $status, int $pendingCount, array $actionForms): ListPage
+    public function commentIndex(array $items, FormView $filterForm, array $filters, string $status, int $pendingCount, array $actionForms, ?array $pagination = null): ListPage
     {
         $byId = [];
         foreach ($items as $item) {
@@ -229,6 +230,7 @@ final readonly class BlogKitPageFactory
             rows: $items,
             filters: $filterForm,
             rowActions: static fn (BlogComment $row): array => $actions[$row->getId()] ?? [],
+            pagination: $pagination === null ? null : new Pagination($pagination['page'], $pagination['per_page'], $pagination['total'], $pagination['total_pages'], 'admin_blog_comments_index', ['status' => $status] + $filters),
             empty: new EmptyState(null, BlogKitPages::label('admin.comments.empty')),
             filtersClearHref: $filters !== [] ? $this->url('admin_blog_comments_index', ['status' => $status]) : null,
             bundle: BlogKitPages::BUNDLE,
