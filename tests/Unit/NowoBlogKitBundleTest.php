@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Nowo\BlogKitBundle\Tests\Unit;
 
 use Doctrine\Bundle\DoctrineBundle\DependencyInjection\Compiler\DoctrineOrmMappingsPass;
+use Nowo\BlogKitBundle\DependencyInjection\Compiler\CsrfProtectionPass;
 use Nowo\BlogKitBundle\DependencyInjection\Compiler\TwigPathsPass;
 use Nowo\BlogKitBundle\DependencyInjection\NowoBlogKitExtension;
 use Nowo\BlogKitBundle\NowoBlogKitBundle;
@@ -25,6 +26,7 @@ final class NowoBlogKitBundleTest extends TestCase
         $classes = array_map(static fn (object $pass): string => $pass::class, $passes);
 
         self::assertContains(TwigPathsPass::class, $classes);
+        self::assertContains(CsrfProtectionPass::class, $classes);
         self::assertContains(DoctrineOrmMappingsPass::class, $classes);
     }
 

@@ -37,6 +37,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- CSRF fails closed: new `CsrfProtectionPass` makes the container refuse to compile when form CSRF protection is unavailable (`security.csrf.token_manager` or `form.type_extension.csrf` missing, or `framework.form.csrf_protection: false`). Before, the admin delete / comment moderation actions (FormKit `CsrfOnlyType`) and the admin and public comment forms would accept tokenless cross-site POSTs in that configuration. Pairs with the FormKit CSRF fail-closed fix (`CsrfOnlyType` throws without the extension). See [UPGRADING](UPGRADING.md#unreleased) and [SECURITY](SECURITY.md#csrf).
+
 ## [1.7.0] - 2026-10-27
 
 UiKit page contract (REQ-UI-003) + SEC-004 hardening: stored XSS fixes (sanitize last, DOM hashtag rewrite, escaped strip), empty role list denies, controller-class guard, prefixed native SQL See [UPGRADING](UPGRADING.md#to-170).

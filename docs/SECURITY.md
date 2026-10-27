@@ -27,7 +27,7 @@ Security considerations for public blog pages, comments, admin CRUD, and CMS HTM
 | Stored XSS through article HTML | `article.body` is printed `\|raw`: `html.sanitize` (`allowlist` default / `strip` / host `service`) runs on persist, on update (`PreUpdateEventArgs::setNewValue`) and **last** on render, after the hashtag-link and body-enhancer rewrites (hashtag links are rewritten on the DOM). `strip` outputs escaped plain text |
 | `javascript:` links | Article LinkedIn URL: http(s) only (form constraint + render-time check). Image fields (`image`, resource images) are free text printed in `<img src>`: browsers do not run `javascript:` there, but treat them as editor-controlled URLs (no tracking pixels from untrusted editors) |
 | Stored XSS through comments | Comment bodies are escaped; `\|nl2br` only. Staff replies are signed with `comments.staff_name` or `BlogStaffDisplayNameInterface` (the login identifier is never published) |
-| CSRF on admin delete/approve/save and public comment POST | Symfony forms and `CsrfOnlyFormFactory` (one token id per moderation action) |
+| CSRF on admin delete/approve/save and public comment POST | Symfony forms and `CsrfOnlyFormFactory` (one token id per moderation action). **Fails closed**: `CsrfProtectionPass` refuses to compile the container without the form CSRF extension / token manager or with `framework.form.csrf_protection: false` (a missing extension would otherwise make every form accept tokenless POSTs) |
 | Comment spam | Pending moderation; comments closed when `show_comments` is off; configurable rate-limit strategies (IPv6 counted per /64); configurable CAPTCHA (`honeypot` default). A `service` strategy without its service id fails at compile time |
 | Open redirect | The inline CMS update redirects to the article route, never to the `Referer` header |
 | Resource exhaustion | Admin lists and the moderation queue are paginated (`web_ui.page_size`); page numbers capped; search terms capped at 200 characters |
@@ -82,6 +82,8 @@ Setting `allow_unauthenticated: true` is supported for local demos only.
 ## CSRF
 
 Admin create/edit/delete, comment approve/reject/reply/delete, settings save, and public comment POST all go through Symfony forms. Keep CSRF tokens intact if you override those templates (REQ-SEC-005, REQ-TWIG-005).
+
+Those checks only exist when Symfony's form CSRF extension is registered. `CsrfProtectionPass` therefore makes the container refuse to compile when `security.csrf.token_manager` or `form.type_extension.csrf` is missing, or `framework.form.csrf_protection` is `false` — there is no opt-out. FormKit's `CsrfOnlyType` (used for the delete / moderation actions) also throws at build time without the extension.
 
 ## Public comments
 

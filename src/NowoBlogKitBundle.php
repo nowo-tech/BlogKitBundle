@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Nowo\BlogKitBundle;
 
 use Doctrine\Bundle\DoctrineBundle\DependencyInjection\Compiler\DoctrineOrmMappingsPass;
+use Nowo\BlogKitBundle\DependencyInjection\Compiler\CsrfProtectionPass;
 use Nowo\BlogKitBundle\DependencyInjection\Compiler\TwigPathsPass;
 use Nowo\BlogKitBundle\DependencyInjection\NowoBlogKitExtension;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
@@ -19,6 +20,7 @@ class NowoBlogKitBundle extends Bundle
     public function build(ContainerBuilder $container): void
     {
         $container->addCompilerPass(new TwigPathsPass());
+        $container->addCompilerPass(new CsrfProtectionPass());
 
         $entityDir = __DIR__ . '/Entity';
         if (is_dir($entityDir)) {

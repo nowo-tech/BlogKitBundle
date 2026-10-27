@@ -38,6 +38,10 @@
 
 ## Unreleased
 
+### CSRF protection is now required at compile time
+
+The container no longer compiles when NowoBlogKitBundle is enabled without form CSRF protection: you get a `LogicException` ("require CSRF protection"). Standard Flex hosts (`symfony/security-csrf` installed, `framework.csrf_protection` enabled, `framework.form.csrf_protection` not disabled) need no change. Otherwise run `composer require symfony/security-csrf` and enable `framework.csrf_protection: true` — also in the `test` environment of functional suites that boot the bundle.
+
 ## To 1.7.0
 
 From **1.6.3**:
