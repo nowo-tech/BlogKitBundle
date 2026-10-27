@@ -14,6 +14,7 @@ use Nowo\BlogKitBundle\Repository\BlogCommentRepository;
 use Nowo\BlogKitBundle\Security\BlogKitAccessCheckerInterface;
 use Nowo\BlogKitBundle\Security\BlogProtection;
 use Nowo\BlogKitBundle\Service\BlogCommentManager;
+use Nowo\BlogKitBundle\Service\BlogSettingsProvider;
 use Nowo\RoutingKitBundle\Attribute\Routable;
 use Nowo\RoutingKitBundle\Attribute\RouteParam;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -34,6 +35,7 @@ final class PublicCommentController extends AbstractController
         private readonly TranslatorInterface $translator,
         private readonly BlogProtection $protection,
         private readonly BlogKitAccessCheckerInterface $accessChecker,
+        private readonly ?BlogSettingsProvider $blogSettings = null,
     ) {
     }
 
@@ -43,6 +45,11 @@ final class PublicCommentController extends AbstractController
     ])]
     public function create(string $slug, Request $request): RedirectResponse
     {
+        // Comments switched off in the settings: the form is not rendered, so the endpoint is closed too (SEC-004 I2).
+        if ($this->blogSettings?->bool('show_comments') === false) {
+            throw $this->createNotFoundException();
+        }
+
         $blogArticle = $this->findPublishedArticle($slug);
         $this->protection->rateLimiter()->consume($request, $blogArticle);
         $form = $this->createForm(PublicBlogCommentType::class);

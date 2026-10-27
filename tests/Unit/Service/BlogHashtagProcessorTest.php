@@ -4,11 +4,16 @@ declare(strict_types=1);
 
 namespace Nowo\BlogKitBundle\Tests\Unit\Service;
 
+use DOMDocument;
+use DOMElement;
 use Nowo\BlogKitBundle\Service\BlogHashtagProcessor;
 use Nowo\BlogKitBundle\Service\BlogPostBodyFormatter;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
+
+use const LIBXML_HTML_NODEFDTD;
+use const LIBXML_HTML_NOIMPLIED;
 
 final class BlogHashtagProcessorTest extends TestCase
 {
@@ -65,6 +70,30 @@ final class BlogHashtagProcessorTest extends TestCase
         $out  = $this->processor->localizeHashtagLinks($html);
         self::assertStringContainsString('tag=php', $out);
         self::assertSame('plain', $this->processor->localizeHashtagLinks('plain'));
+    }
+
+    public function testLocalizeHashtagLinksRewritesOnTheDomOnly(): void
+    {
+        // SEC-004 M1: a regex attribute rewrite cut this single-quoted title and turned the next text into attributes.
+        $payload = '<a class="blog-hashtag" title=\'a href="b\' href="https://e.test">#tag</a><p>\' tabindex=1 autofocus onfocus=alert(1) x=</p>';
+        $out     = $this->processor->localizeHashtagLinks($payload);
+
+        $doc = new DOMDocument();
+        @$doc->loadHTML('<?xml encoding="UTF-8"><div>' . $out . '</div>', LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+        $link = $doc->getElementsByTagName('a')->item(0);
+        self::assertInstanceOf(DOMElement::class, $link);
+        self::assertSame('/blog?_locale=es&tag=tag', $link->getAttribute('href'));
+        self::assertSame('a href="b', $link->getAttribute('title'));
+        self::assertSame('tag', $link->getAttribute('data-hashtag'));
+        $paragraph = $doc->getElementsByTagName('p')->item(0);
+        self::assertInstanceOf(DOMElement::class, $paragraph);
+        self::assertFalse($paragraph->hasAttributes());
+        self::assertStringContainsString('onfocus=alert(1)', $paragraph->textContent);
+
+        // Links that are not hashtags (other class, text without #) are left alone.
+        $plain = '<a class="blog-hashtag" href="/x">tag</a><a class="other" href="/y">#tag</a>';
+        self::assertStringContainsString('href="/x"', $this->processor->localizeHashtagLinks($plain));
+        self::assertStringContainsString('href="/y"', $this->processor->localizeHashtagLinks($plain));
     }
 
     public function testHashtagFilterUrlFallsBackToSearch(): void

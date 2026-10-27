@@ -10,6 +10,11 @@ use Nowo\BlogKitBundle\Entity\BlogCommentStatus;
 use Nowo\BlogKitBundle\Repository\BlogCommentRepository;
 use PHPUnit\Framework\Attributes\Test;
 
+use function array_diff_key;
+use function array_map;
+
+use const PHP_INT_MAX;
+
 final class BlogCommentRepositoryTest extends DoctrineTestCase
 {
     private BlogCommentRepository $repository;
@@ -236,5 +241,32 @@ final class BlogCommentRepositoryTest extends DoctrineTestCase
         $this->createComment($article, 'Approved', 'Body', BlogCommentStatus::Approved);
 
         self::assertSame(2, $this->repository->countPending());
+    }
+
+    #[Test]
+    public function theModerationQueueIsPaginated(): void
+    {
+        // SEC-004 L7: the queue used to load (and build forms for) every comment at once.
+        $article = $this->createArticle(slug: 'busy', published: true, position: 1);
+        for ($i = 1; $i <= 5; ++$i) {
+            $this->createComment($article, 'Author ' . $i, 'Body ' . $i, createdAt: new DateTimeImmutable('2026-03-0' . $i . 'T00:00:00+00:00'));
+        }
+        $this->createComment($article, 'Approved', 'Approved body', BlogCommentStatus::Approved);
+
+        $first = $this->repository->findFilteredPaginated([], BlogCommentStatus::Pending, 1, 2);
+        self::assertSame(['total' => 5, 'page' => 1, 'per_page' => 2, 'total_pages' => 3], array_diff_key($first, ['items' => true]));
+        self::assertSame(['Author 5', 'Author 4'], array_map(static fn (BlogComment $c): string => $c->getAuthorName(), $first['items']));
+
+        $last = $this->repository->findFilteredPaginated(['body' => 'body'], BlogCommentStatus::Pending, PHP_INT_MAX, 2);
+        self::assertSame(3, $last['page'], 'page clamped to the last one');
+        self::assertCount(1, $last['items']);
+
+        $all = $this->repository->findFilteredPaginated([], null, -4, 1000);
+        self::assertSame(1, $all['page']);
+        self::assertSame(200, $all['per_page'], 'per page capped');
+        self::assertCount(6, $all['items']);
+
+        $empty = $this->repository->findFilteredPaginated(['author' => 'nobody'], null, 1, 20);
+        self::assertSame(['items' => [], 'total' => 0, 'page' => 1, 'per_page' => 20, 'total_pages' => 1], $empty);
     }
 }

@@ -34,9 +34,10 @@ final class BlogKitExtensionTest extends TestCase
             'nowo_blog_kit_privacy_url'         => '/privacy',
             'nowo_blog_kit_icon_set'            => null,
             'nowo_blog_kit_row_actions_display' => null,
-            'nowo_blog_kit_can_manage'          => true,
-            'nowo_blog_kit_can_moderate'        => false,
-            'nowo_blog_kit_can_configure'       => true,
+            // SEC-004 I6: fail closed (a global is frozen per Twig environment in workers)
+            'nowo_blog_kit_can_manage'    => false,
+            'nowo_blog_kit_can_moderate'  => false,
+            'nowo_blog_kit_can_configure' => false,
         ], $extension->getGlobals());
     }
 

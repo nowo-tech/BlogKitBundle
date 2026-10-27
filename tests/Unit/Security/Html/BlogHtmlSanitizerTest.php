@@ -25,6 +25,24 @@ final class BlogHtmlSanitizerTest extends TestCase
         self::assertSame('Hello', new StripBlogHtmlSanitizer()->sanitize(' <p>Hello</p> '));
     }
 
+    /**
+     * SEC-004 M2: the strip strategy decoded entities and the body is printed |raw, so encoded markup (and the
+     * double-encoded form after a persist + render pass) became live HTML.
+     */
+    #[Test]
+    public function stripOutputIsEscapedTextEvenForEncodedMarkup(): void
+    {
+        $sanitizer = new StripBlogHtmlSanitizer();
+
+        self::assertSame('Hello', $sanitizer->sanitize('Hello &lt;img src=x onerror=alert(1)&gt;'));
+        $stored = $sanitizer->sanitize('Hi &amp;lt;img src=x onerror=alert(2)&amp;gt;');
+        self::assertSame('Hi', $stored);
+        self::assertSame('Hi', $sanitizer->sanitize($stored));
+        self::assertSame('a &lt; b &amp; &quot;c&quot; &apos;d&apos;', $sanitizer->sanitize('<p>a < b & "c" \'d\'</p>'));
+        self::assertSame('a &lt; b &amp; &quot;c&quot; &apos;d&apos;', $sanitizer->sanitize('a &lt; b &amp; &quot;c&quot; &apos;d&apos;'), 'stable on its own output');
+        self::assertStringNotContainsString('<', $sanitizer->sanitize('&amp;amp;amp;amp;amp;amp;lt;script&amp;amp;amp;amp;amp;amp;gt;'));
+    }
+
     #[Test]
     public function allowlistStripsScriptsHandlersAndJavascriptUrls(): void
     {

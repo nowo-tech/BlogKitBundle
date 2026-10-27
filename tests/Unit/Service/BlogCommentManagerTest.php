@@ -8,6 +8,8 @@ use Doctrine\ORM\EntityManagerInterface;
 use Nowo\BlogKitBundle\Entity\BlogArticle;
 use Nowo\BlogKitBundle\Entity\BlogComment;
 use Nowo\BlogKitBundle\Entity\BlogCommentStatus;
+use Nowo\BlogKitBundle\Model\BlogStaffDisplayNameInterface;
+use Nowo\BlogKitBundle\Model\BlogUserInterface;
 use Nowo\BlogKitBundle\Repository\BlogCommentRepository;
 use Nowo\BlogKitBundle\Service\BlogCommentManager;
 use Nowo\BlogKitBundle\Tests\Support\RecordingLogger;
@@ -96,7 +98,7 @@ final class BlogCommentManagerTest extends TestCase
     }
 
     #[Test]
-    public function itCreatesStaffReplyUsingDisplayNameFromEmail(): void
+    public function itSignsStaffRepliesWithTheConfiguredNameNotTheLoginIdentifier(): void
     {
         $parent = new BlogComment()->setArticle(new BlogArticle());
         $user   = new TestUser()->setEmail('hector.franco@example.com');
@@ -109,24 +111,41 @@ final class BlogCommentManagerTest extends TestCase
         self::assertSame($parent, $reply->getParent());
         self::assertSame($user, $reply->getStaffAuthor());
         self::assertSame($user, $reply->getModeratedBy());
-        self::assertSame('Hector franco', $reply->getAuthorName());
+        // SEC-004 I5: the e-mail local part used to be published as the author name.
+        self::assertSame('Team', $reply->getAuthorName());
         self::assertSame(BlogCommentStatus::Approved, $reply->getStatus());
         self::assertSame('Thanks', $reply->getBody());
         self::assertNotNull($reply->getModeratedAt());
     }
 
     #[Test]
-    public function itFallsBackToEquipoWhenStaffEmailHasNoLocalPart(): void
+    public function itUsesTheStaffDisplayNameOfTheUserWhenProvided(): void
     {
         $parent = new BlogComment()->setArticle(new BlogArticle());
-        $user   = new TestUser()->setEmail('@only-domain.example');
+        $named  = new class implements BlogUserInterface, BlogStaffDisplayNameInterface {
+            public string $displayName = 'Editorial desk';
 
-        $this->entityManager->expects(self::once())->method('persist');
-        $this->entityManager->expects(self::once())->method('flush');
+            public function getId(): int
+            {
+                return 7;
+            }
 
-        $reply = $this->manager->createStaffReply($parent, $user, ' Hi ');
+            public function getUserIdentifier(): string
+            {
+                return 'editor@example.com';
+            }
 
-        self::assertSame('Equipo', $reply->getAuthorName());
+            public function getBlogDisplayName(): string
+            {
+                return $this->displayName;
+            }
+        };
+
+        $manager = new BlogCommentManager($this->entityManager, $this->createStub(BlogCommentRepository::class), staffName: 'Redacción');
+
+        self::assertSame('Editorial desk', $manager->createStaffReply($parent, $named, 'Hi')->getAuthorName());
+        $named->displayName = '  ';
+        self::assertSame('Redacción', $manager->createStaffReply($parent, $named, 'Hi')->getAuthorName());
     }
 
     #[Test]

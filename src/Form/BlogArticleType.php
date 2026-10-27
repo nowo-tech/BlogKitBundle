@@ -19,6 +19,9 @@ use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\OptionsResolver\OptionsResolver;
+use Symfony\Component\Validator\Constraints\NotBlank;
+use Symfony\Component\Validator\Constraints\Regex;
+use Symfony\Component\Validator\Constraints\Url;
 
 /**
  * Symfony form type for blog article admin editing.
@@ -41,12 +44,20 @@ final class BlogArticleType extends AbstractBlogFormType
         $tagLabel = $this->tagChoiceLabel();
 
         $this->withBuilder($builder, function () use ($tagLabel): void {
-            $this->addTextField('slug');
+            // The slug is part of the public URL (/blog/{slug}, [a-z0-9-]+): same rule as the tag slug (SEC-004 I4).
+            $this->addTextField('slug', [
+                'constraints' => [
+                    new NotBlank(),
+                    new Regex(pattern: '/^[a-z0-9]+(?:-[a-z0-9]+)*$/', message: 'admin.validation.slug'),
+                ],
+            ]);
             $this->addTextField('image', [
                 'required' => false,
             ]);
             $this->addUrlField('linkedinUrl', [
                 'required' => false,
+                // http(s) only: the URL is printed in an href on the public article (SEC-004 L1, no javascript:)
+                'constraints' => [new Url(protocols: ['http', 'https'], requireTld: true)],
             ]);
             $this->addTypedField('publishedAt', DateType::class, [
                 'required' => false,

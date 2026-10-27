@@ -11,11 +11,18 @@ use Psr\Clock\ClockInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
 
+use function bin2hex;
 use function count;
+use function filter_var;
 use function hash;
 use function in_array;
+use function inet_pton;
 use function is_array;
 use function sprintf;
+use function substr;
+
+use const FILTER_FLAG_IPV6;
+use const FILTER_VALIDATE_IP;
 
 /**
  * Cache-backed comment rate limiter (fixed window, per IP+article, or sliding window).
@@ -47,7 +54,7 @@ final readonly class CacheBlogCommentRateLimiter implements BlogCommentRateLimit
             return;
         }
 
-        $ip  = $request->getClientIp() ?? 'unknown';
+        $ip  = self::clientKey($request->getClientIp());
         $key = $this->cacheKey($ip, $blogArticle);
         $now = $this->clock->now()->getTimestamp();
 
@@ -58,6 +65,25 @@ final readonly class CacheBlogCommentRateLimiter implements BlogCommentRateLimit
         }
 
         $this->consumeFixed($cachePool, $key, $now);
+    }
+
+    /**
+     * Rate-limit subject of a client address: the address for IPv4, the /64 network for IPv6 (one host usually owns a
+     * whole /64, so per-address counting was trivially bypassed, SEC-004 I10).
+     */
+    public static function clientKey(?string $ip): string
+    {
+        if ($ip === null || $ip === '') {
+            return 'unknown';
+        }
+
+        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false) {
+            $packed = (string) inet_pton($ip);
+
+            return bin2hex(substr($packed, 0, 8)) . '::/64';
+        }
+
+        return $ip;
     }
 
     private function cacheKey(string $ip, BlogArticle $blogArticle): string

@@ -19,6 +19,7 @@ use Nowo\BlogKitBundle\Security\Captcha\PublicBlogCommentCaptchaTypeExtension;
 use Nowo\BlogKitBundle\Security\Captcha\StreamCaptchaHttpClient;
 use Nowo\BlogKitBundle\Security\ConfigurableBlogKitAccessChecker;
 use Nowo\BlogKitBundle\Security\OwnerBlogKitResourceAccessChecker;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
@@ -294,6 +295,48 @@ final class NowoBlogKitExtensionTest extends TestCase
                 ],
             ],
         ]], $container);
+    }
+
+    /**
+     * @return iterable<string, array{0: array<string, mixed>, 1: string}>
+     */
+    public static function provideServiceStrategiesWithoutId(): iterable
+    {
+        yield 'rate limit' => [['comments' => ['rate_limit' => ['strategy' => 'service']]], 'comments.rate_limit.service is required'];
+        yield 'captcha' => [['comments' => ['captcha' => ['strategy' => 'service', 'service' => '']]], 'comments.captcha.service is required'];
+        yield 'html sanitizer' => [['html' => ['sanitize' => ['strategy' => 'service']]], 'html.sanitize.service is required'];
+    }
+
+    /**
+     * SEC-004 L5: a `service` strategy without its service id used to compile to a no-op (no sanitizer / captcha /
+     * rate limit).
+     *
+     * @param array<string, mixed> $config
+     */
+    #[Test]
+    #[DataProvider('provideServiceStrategiesWithoutId')]
+    public function loadThrowsWhenAProtectionStrategyIsServiceWithoutServiceId(array $config, string $message): void
+    {
+        $container = new ContainerBuilder();
+        $container->setParameter('kernel.bundles', ['SecurityBundle' => SecurityBundle::class]);
+
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage($message);
+
+        new NowoBlogKitExtension()->load([$config], $container);
+    }
+
+    #[Test]
+    public function loadThrowsWhenEveryRoleListIsEmpty(): void
+    {
+        // SEC-004 M3: empty lists now deny; all of them empty would lock everybody out (or, before, let everybody in).
+        $container = new ContainerBuilder();
+        $container->setParameter('kernel.bundles', ['SecurityBundle' => SecurityBundle::class]);
+
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage('every security.roles.* list are empty');
+
+        new NowoBlogKitExtension()->load([['security' => ['access_roles' => [], 'roles' => ['manage' => [], 'moderate' => [], 'configure' => []]]]], $container);
     }
 
     #[Test]

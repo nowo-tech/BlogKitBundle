@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Nowo\BlogKitBundle\Tests\Unit\Service;
 
+use Dom\HTMLDocument;
 use Nowo\BlogKitBundle\Enum\BlogListingMode;
 use Nowo\BlogKitBundle\Enum\BlogMasonryStrategy;
 use Nowo\BlogKitBundle\Enum\HtmlSanitizeStrategy;
@@ -20,8 +21,13 @@ use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 use function array_slice;
+use function http_build_query;
+
+use const LIBXML_NOERROR;
 
 final class BlogCatalogTest extends TestCase
 {
@@ -306,7 +312,7 @@ final class BlogCatalogTest extends TestCase
             blogArticleBodyEnhancer: $enhancer,
         );
 
-        self::assertSame($article, $catalog->blogArticleBySlug('empty-body'));
+        self::assertSame($article + ['linkedin_url' => null], $catalog->blogArticleBySlug('empty-body'));
     }
 
     #[Test]
@@ -343,38 +349,31 @@ final class BlogCatalogTest extends TestCase
         );
 
         self::assertSame([
-            'slug'  => 'body-post',
-            'body'  => '<div>enhanced</div>',
-            'title' => 'Body post',
+            'slug'         => 'body-post',
+            'body'         => '<div>enhanced</div>',
+            'title'        => 'Body post',
+            'linkedin_url' => null,
         ], $catalog->blogArticleBySlug('body-post'));
     }
 
     #[Test]
-    public function itSanitizesArticleBodyBeforeHashtagsWhenProtectionIsConfigured(): void
+    public function itSanitizesTheArticleBodyLastWhenProtectionIsConfigured(): void
     {
         $article = [
             'slug'  => 'body-post',
-            'body'  => '<p>Hi</p><script>x</script>',
+            'body'  => '<p>Hi</p>',
             'title' => 'Body post',
         ];
 
         $articleRepository = $this->createMock(BlogArticleRepository::class);
-        $articleRepository->expects(self::once())
-            ->method('fetchPublishedDetailBySlug')
-            ->with('body-post', 'es')
-            ->willReturn($article);
+        $articleRepository->method('fetchPublishedDetailBySlug')->willReturn($article);
 
+        // The rewrite passes see the stored body; their output (here: markup they introduce) is sanitized afterwards.
         $processor = $this->createMock(BlogHashtagProcessor::class);
-        $processor->expects(self::once())
-            ->method('localizeHashtagLinks')
-            ->with(self::callback(static fn (string $html): bool => !str_contains($html, 'script')))
-            ->willReturn('<p>Hi</p>');
+        $processor->expects(self::once())->method('localizeHashtagLinks')->with('<p>Hi</p>')->willReturn('<p>Hi</p><script>x</script>');
 
         $enhancer = $this->createMock(BlogArticleBodyEnhancer::class);
-        $enhancer->expects(self::once())
-            ->method('enhance')
-            ->with('<p>Hi</p>')
-            ->willReturn('<p>Hi</p>');
+        $enhancer->expects(self::once())->method('enhance')->with('<p>Hi</p><script>x</script>')->willReturn('<p onclick="x()">Hi</p><script>x</script>');
 
         $catalog = $this->createCatalog(
             blogArticleRepository: $articleRepository,
@@ -384,6 +383,64 @@ final class BlogCatalogTest extends TestCase
         );
 
         self::assertSame('<p>Hi</p>', $catalog->blogArticleBySlug('body-post')['body']);
+    }
+
+    /**
+     * SEC-004 M1 PoC: the old regex hashtag rewrite cut the single-quoted `title` attribute (libxml writes single
+     * quotes when the value contains `"`) after the allowlist ran, so `' tabindex=1 autofocus onfocus=…` became live
+     * attributes for every visitor.
+     */
+    #[Test]
+    public function theHashtagRewritePayloadNeverYieldsEventHandlers(): void
+    {
+        $payload = '<a class="blog-hashtag" title=\'a href="b\' href="https://e.test">#tag</a>'
+            . '<p>\' tabindex=1 autofocus onfocus=alert(document.domain) x=</p>';
+
+        $articleRepository = $this->createMock(BlogArticleRepository::class);
+        $articleRepository->method('fetchPublishedDetailBySlug')->willReturn(['slug' => 'xss', 'body' => $payload]);
+
+        $urls = $this->createStub(UrlGeneratorInterface::class);
+        $urls->method('generate')->willReturnCallback(static fn (string $route, array $params): string => '/blog?' . http_build_query($params));
+        $translator = $this->createStub(TranslatorInterface::class);
+        $translator->method('getLocale')->willReturn('es');
+
+        foreach ([null, BlogProtectionTestFactory::create(['htmlStrategy' => HtmlSanitizeStrategy::Allowlist])] as $protection) {
+            $catalog = $this->createCatalog(
+                blogArticleRepository: $articleRepository,
+                blogHashtagProcessor: new BlogHashtagProcessor($translator, $urls),
+                blogArticleBodyEnhancer: new BlogArticleBodyEnhancer(),
+                blogProtection: $protection,
+            );
+
+            $body = (string) $catalog->blogArticleBySlug('xss')['body'];
+            $doc  = HTMLDocument::createFromString('<!doctype html><body>' . $body, LIBXML_NOERROR);
+            foreach ($doc->querySelectorAll('*') as $element) {
+                foreach ($element->attributes as $attribute) {
+                    self::assertDoesNotMatchRegularExpression('/^(on|autofocus$|tabindex$)/i', $attribute->name, $body);
+                }
+            }
+            self::assertNotNull($doc->querySelector('a.blog-hashtag[href^="/blog?"]'), $body);
+            self::assertStringContainsString('onfocus=alert', $doc->body?->textContent ?? '', 'the payload stays text');
+        }
+    }
+
+    #[Test]
+    public function itDropsNonHttpLinkedinUrls(): void
+    {
+        $articleRepository = $this->createMock(BlogArticleRepository::class);
+        $articleRepository->method('fetchPublishedDetailBySlug')->willReturnOnConsecutiveCalls(
+            ['slug' => 'a', 'body' => '', 'linkedin_url' => 'javascript:alert(1)'],
+            ['slug' => 'b', 'body' => '', 'linkedin_url' => ' https://www.linkedin.com/posts/x '],
+        );
+
+        $catalog = $this->createCatalog(blogArticleRepository: $articleRepository);
+
+        self::assertNull($catalog->blogArticleBySlug('a')['linkedin_url']);
+        self::assertSame('https://www.linkedin.com/posts/x', $catalog->blogArticleBySlug('b')['linkedin_url']);
+        foreach (['JaVaScRiPt:alert(1)', 'data:text/html,x', '//evil.test', 'https:/x', 'http://\\evil', ''] as $url) {
+            self::assertNull(BlogCatalog::httpUrl($url), $url);
+        }
+        self::assertNull(BlogCatalog::httpUrl(42));
     }
 
     private function createCatalog(

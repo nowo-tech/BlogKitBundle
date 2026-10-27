@@ -3,22 +3,23 @@ nowo_blog_kit:
     default_locale: es
     locales: [es, en]
     security:
+        # Any access role grants every capability; roles.* add per-action roles (an empty list grants nothing).
         access_roles: [ROLE_ADMIN]
-        manage_roles: [ROLE_EDITOR]
-        moderate_roles: [ROLE_MODERATOR]
-        configure_roles: [ROLE_ADMIN]
+        roles:
+            manage: [ROLE_EDITOR]
+            moderate: [ROLE_MODERATOR]
+            configure: [ROLE_ADMIN]
         allow_unauthenticated: false
         object_access:
             strategy: none
             # strategy: owner
             # strategy: service
             # service: App\Security\BlogPublicationAccessChecker
+    # Layouts and CSS stack come from nowo_ui_kit (layouts.admin / layouts.guest, css_framework, icon_set,
+    # row_actions_display) — REQ-UI-003. Set web_ui.layout_template / public_layout_template only to override them.
     web_ui:
-        layout_template: 'admin/layout.html.twig'
-        public_layout_template: 'base.html.twig'
-        css_framework: bootstrap5
-        icon_set: bootstrap-icons
-        row_actions_display: icon
+        page_size: 20
+        privacy_url: '/privacy'
     listing:
         mode: paginated
         masonry:
@@ -27,6 +28,7 @@ nowo_blog_kit:
             columns_tablet: 2
             columns_desktop: 2
     comments:
+        staff_name: 'Team'   # public name of staff replies (or implement BlogStaffDisplayNameInterface)
         rate_limit:
             strategy: fixed_window
             limit: 5

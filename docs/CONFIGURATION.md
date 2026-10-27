@@ -52,6 +52,7 @@ nowo_blog_kit:
             columns_tablet: 2
             columns_desktop: 2
     comments:
+        staff_name: Team
         rate_limit:
             strategy: fixed_window
             limit: 5
@@ -93,7 +94,7 @@ This bundle uses a single configuration tree. It does not expose `default_profil
 | --- | --- | --- |
 | `access_roles` | `[ROLE_ADMIN]` | Canonical REQ-UI-002 key. Any matching role grants **all** admin capabilities (manage, moderate, configure). Empty list adds no extra grant. |
 | `roles.manage` | `[ROLE_EDITOR]` | Article and tag admin access (`admin_blog` except comments/settings). |
-| `roles.moderate` | `[ROLE_MODERATOR]` | Comment moderation (`admin_blog_comments*`). Editors with `roles.manage` also moderate. |
+| `roles.moderate` | `[ROLE_MODERATOR]` | Comment moderation (queue `admin_blog_comments_index` and actions `admin_blog_comment_*`). Editors with `roles.manage` also moderate. An empty `roles.*` list grants nothing (only `access_roles`); every list empty fails at compile time. |
 | `roles.configure` | `[ROLE_ADMIN]` | Settings screen (`admin_blog_settings`). |
 | `manage_roles`, `moderate_roles`, `configure_roles` | `null` | **Deprecated since 1.7** (REQ-UI-003 vocabulary): mapped to `roles.manage` / `roles.moderate` / `roles.configure` when those are not set. |
 | `access_checker` | `null` | Optional service id implementing `BlogKitAccessCheckerInterface`. |
@@ -130,7 +131,11 @@ Public `/blog` index. Admin settings can override with `inherit` (use YAML). Col
 
 ## comments
 
-Public `POST /blog/{slug}/comments` protection. Admin settings (`/admin/blog/settings`) can override the strategies with `inherit` meaning “use YAML”. CAPTCHA `site_key` / `secret_key` are YAML-only.
+Public `POST /blog/{slug}/comments` protection. Admin settings (`/admin/blog/settings`) can override the strategies with `inherit` meaning “use YAML”. CAPTCHA `site_key` / `secret_key` are YAML-only. A `service` strategy requires its `service` id (compile error otherwise).
+
+| Key | Default | Description |
+| --- | --- | --- |
+| `comments.staff_name` | `Team` | Public author name of staff replies when the user does not implement `Nowo\BlogKitBundle\Model\BlogStaffDisplayNameInterface`; the login identifier is never published. |
 
 ### comments.rate_limit
 

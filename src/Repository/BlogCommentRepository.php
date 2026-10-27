@@ -5,11 +5,19 @@ declare(strict_types=1);
 namespace Nowo\BlogKitBundle\Repository;
 
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\QueryBuilder;
+use Doctrine\ORM\Tools\Pagination\Paginator;
 use Doctrine\Persistence\ManagerRegistry;
 use Nowo\BlogKitBundle\Entity\BlogArticle;
 use Nowo\BlogKitBundle\Entity\BlogComment;
 use Nowo\BlogKitBundle\Entity\BlogCommentStatus;
 use SortDirection;
+
+use function ceil;
+use function count;
+use function iterator_to_array;
+use function max;
+use function min;
 
 /**
  * @extends ServiceEntityRepository<BlogComment>
@@ -55,6 +63,37 @@ final class BlogCommentRepository extends ServiceEntityRepository
      */
     public function findFiltered(array $filters, ?BlogCommentStatus $blogCommentStatus = null): array
     {
+        return $this->filteredQueryBuilder($filters, $blogCommentStatus)->getQuery()->getResult();
+    }
+
+    /**
+     * One page of the moderation queue (SEC-004 L7: the queue used to load every comment at once).
+     *
+     * @param array<string, string> $filters Keys: author, article, body
+     *
+     * @return array{items: list<BlogComment>, total: int, page: int, per_page: int, total_pages: int}
+     */
+    public function findFilteredPaginated(array $filters, ?BlogCommentStatus $blogCommentStatus, int $page, int $perPage): array
+    {
+        $perPage   = max(1, min(200, $perPage));
+        $paginator = new Paginator($this->filteredQueryBuilder($filters, $blogCommentStatus)->getQuery(), false);
+        $total     = count($paginator);
+        $pages     = max(1, (int) ceil($total / $perPage));
+        $page      = max(1, min($page, $pages));
+
+        $paginator->getQuery()->setFirstResult(($page - 1) * $perPage)->setMaxResults($perPage);
+
+        /** @var list<BlogComment> $items */
+        $items = iterator_to_array($paginator, false);
+
+        return ['items' => $items, 'total' => $total, 'page' => $page, 'per_page' => $perPage, 'total_pages' => $pages];
+    }
+
+    /**
+     * @param array<string, string> $filters
+     */
+    private function filteredQueryBuilder(array $filters, ?BlogCommentStatus $blogCommentStatus): QueryBuilder
+    {
         $queryBuilder = $this->createQueryBuilder('comment')
             ->leftJoin('comment.blogArticle', 'article')
             ->addSelect('article')
@@ -88,7 +127,7 @@ final class BlogCommentRepository extends ServiceEntityRepository
                 ->setParameter('body', '%' . mb_strtolower($filters['body']) . '%');
         }
 
-        return $queryBuilder->getQuery()->getResult();
+        return $queryBuilder;
     }
 
     public function countPending(): int

@@ -145,4 +145,22 @@ final class CacheBlogCommentRateLimiterTest extends TestCase
     {
         return new CacheBlogCommentRateLimiter(new ArrayAdapter(), new MockClock(), $limit, 60, $strategy);
     }
+
+    #[Test]
+    public function ipv6ClientsAreCountedPerSlash64(): void
+    {
+        // SEC-004 I10: one host usually owns a whole /64, per-address counting was trivially bypassed.
+        self::assertSame('20010db8000000ab::/64', CacheBlogCommentRateLimiter::clientKey('2001:db8:0:ab:1::1'));
+        self::assertSame(CacheBlogCommentRateLimiter::clientKey('2001:db8:0:ab::ffff'), CacheBlogCommentRateLimiter::clientKey('2001:db8:0:ab:dead:beef::1'));
+        self::assertSame('203.0.113.7', CacheBlogCommentRateLimiter::clientKey('203.0.113.7'));
+        self::assertSame('unknown', CacheBlogCommentRateLimiter::clientKey(null));
+        self::assertSame('unknown', CacheBlogCommentRateLimiter::clientKey(''));
+
+        $limiter = new CacheBlogCommentRateLimiter(new ArrayAdapter(), new MockClock(), 1, 60, CommentRateLimitStrategy::FixedWindow);
+        $article = new BlogArticle()->setSlug('post');
+        $limiter->consume(Request::create('/', 'POST', server: ['REMOTE_ADDR' => '2001:db8:0:ab::1']), $article);
+
+        $this->expectException(TooManyRequestsHttpException::class);
+        $limiter->consume(Request::create('/', 'POST', server: ['REMOTE_ADDR' => '2001:db8:0:ab::2']), $article);
+    }
 }

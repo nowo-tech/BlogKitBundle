@@ -31,6 +31,9 @@ class BlogArticleRepository extends ServiceEntityRepository implements ResetInte
     use JoinsTranslationsAndAuditUsers;
     use RunsDocumentedSql;
 
+    /** Page numbers are capped so (page - 1) * perPage stays an int (no float OFFSET, SEC-004 I3). */
+    public const int MAX_PAGE = 100000;
+
     /** @var array<string, list<array{slug: string, name: string}>> */
     private array $tagsByArticleCache = [];
 
@@ -114,7 +117,7 @@ class BlogArticleRepository extends ServiceEntityRepository implements ResetInte
         ?string $search = null,
         ?string $tagSlug = null,
     ): array {
-        $page    = max(1, $page);
+        $page    = max(1, min($page, self::MAX_PAGE));
         $perPage = max(1, $perPage);
         $offset  = ($page - 1) * $perPage;
         $filter  = $this->buildPublishedFilterSql($locale, $search, $tagSlug);
@@ -270,7 +273,7 @@ class BlogArticleRepository extends ServiceEntityRepository implements ResetInte
         ?string $search = null,
         ?string $tagSlug = null,
     ): array {
-        $page    = max(1, $page);
+        $page    = max(1, min($page, self::MAX_PAGE));
         $perPage = max(1, $perPage);
 
         $queryBuilder = $this->createPublishedQueryBuilder('b')
@@ -327,7 +330,7 @@ class BlogArticleRepository extends ServiceEntityRepository implements ResetInte
      */
     public function findFilteredPaginated(array $filters, int $page, int $perPage, int|string|null $createdById = null): array
     {
-        $page    = max(1, $page);
+        $page    = max(1, min($page, self::MAX_PAGE));
         $perPage = max(1, min(200, $perPage));
 
         $queryBuilder = $this->createQueryBuilder('b')

@@ -29,6 +29,8 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 use Twig\Environment;
 
+use function count;
+
 final class BlogCommentControllerTest extends TestCase
 {
     protected function setUp(): void
@@ -44,9 +46,9 @@ final class BlogCommentControllerTest extends TestCase
 
         $repository = $this->createMock(BlogCommentRepository::class);
         $repository->expects(self::once())
-            ->method('findFiltered')
-            ->with(['author' => 'Ana'], BlogCommentStatus::Pending)
-            ->willReturn([$comment]);
+            ->method('findFilteredPaginated')
+            ->with(['author' => 'Ana'], BlogCommentStatus::Pending, 1, 20)
+            ->willReturn($this->page([$comment]));
         $repository->expects(self::once())->method('countPending')->willReturn(3);
 
         $csrfFactory = $this->createMock(CsrfOnlyFormFactory::class);
@@ -94,7 +96,7 @@ final class BlogCommentControllerTest extends TestCase
         $comment = $this->createComment(5, BlogCommentStatus::Pending);
 
         $repository = $this->createMock(BlogCommentRepository::class);
-        $repository->method('findFiltered')->willReturn([$comment]);
+        $repository->method('findFilteredPaginated')->willReturn($this->page([$comment]));
         $repository->method('countPending')->willReturn(1);
 
         $csrfFactory = $this->createMock(CsrfOnlyFormFactory::class);
@@ -129,9 +131,9 @@ final class BlogCommentControllerTest extends TestCase
 
         $repository = $this->createMock(BlogCommentRepository::class);
         $repository->expects(self::once())
-            ->method('findFiltered')
-            ->with([], BlogCommentStatus::Approved)
-            ->willReturn([]);
+            ->method('findFilteredPaginated')
+            ->with([], BlogCommentStatus::Approved, 1, 20)
+            ->willReturn($this->page([]));
         $repository->expects(self::once())->method('countPending')->willReturn(0);
 
         $controller = $this->createController(
@@ -152,9 +154,9 @@ final class BlogCommentControllerTest extends TestCase
 
         $repository = $this->createMock(BlogCommentRepository::class);
         $repository->expects(self::once())
-            ->method('findFiltered')
-            ->with([], BlogCommentStatus::Rejected)
-            ->willReturn([]);
+            ->method('findFilteredPaginated')
+            ->with([], BlogCommentStatus::Rejected, 1, 20)
+            ->willReturn($this->page([]));
         $repository->expects(self::once())->method('countPending')->willReturn(0);
 
         $controller = $this->createController(
@@ -175,9 +177,9 @@ final class BlogCommentControllerTest extends TestCase
 
         $repository = $this->createMock(BlogCommentRepository::class);
         $repository->expects(self::once())
-            ->method('findFiltered')
-            ->with([], null)
-            ->willReturn([]);
+            ->method('findFilteredPaginated')
+            ->with([], null, 1, 20)
+            ->willReturn($this->page([]));
         $repository->expects(self::once())->method('countPending')->willReturn(0);
 
         $controller = $this->createController(
@@ -198,9 +200,9 @@ final class BlogCommentControllerTest extends TestCase
 
         $repository = $this->createMock(BlogCommentRepository::class);
         $repository->expects(self::once())
-            ->method('findFiltered')
-            ->with([], BlogCommentStatus::Pending)
-            ->willReturn([]);
+            ->method('findFilteredPaginated')
+            ->with([], BlogCommentStatus::Pending, 1, 20)
+            ->willReturn($this->page([]));
         $repository->expects(self::once())->method('countPending')->willReturn(0);
 
         $twig = $this->createMock(Environment::class);
@@ -236,9 +238,9 @@ final class BlogCommentControllerTest extends TestCase
 
         $repository = $this->createMock(BlogCommentRepository::class);
         $repository->expects(self::once())
-            ->method('findFiltered')
-            ->with([], BlogCommentStatus::Pending)
-            ->willReturn([$comment]);
+            ->method('findFilteredPaginated')
+            ->with([], BlogCommentStatus::Pending, 1, 20)
+            ->willReturn($this->page([$comment]));
         $repository->expects(self::once())->method('countPending')->willReturn(1);
 
         $csrfFactory = $this->createMock(CsrfOnlyFormFactory::class);
@@ -531,5 +533,15 @@ final class BlogCommentControllerTest extends TestCase
         $checker->method('canModerateComment')->willReturn(false);
 
         return new BlogKitAccessDenied($checker);
+    }
+
+    /**
+     * @param list<BlogComment> $items
+     *
+     * @return array{items: list<BlogComment>, total: int, page: int, per_page: int, total_pages: int}
+     */
+    private function page(array $items): array
+    {
+        return ['items' => $items, 'total' => count($items), 'page' => 1, 'per_page' => 20, 'total_pages' => 1];
     }
 }

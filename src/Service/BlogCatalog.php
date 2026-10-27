@@ -11,6 +11,7 @@ use Symfony\Component\HttpFoundation\RequestStack;
 
 use function array_slice;
 use function count;
+use function is_string;
 
 /**
  * Read-only public blog catalog (list, detail, sidebars).
@@ -194,14 +195,33 @@ final readonly class BlogCatalog
             return null;
         }
 
+        // Stored before the URL constraint existed (or written outside the form): never print a non-http(s) link.
+        $article['linkedin_url'] = self::httpUrl($article['linkedin_url'] ?? null);
+
         $body = (string) ($article['body'] ?? '');
 
         if ($body !== '') {
-            $body            = $this->blogProtection?->htmlSanitizer()->sanitize($body) ?? $body;
+            // Rewrite first, sanitize LAST (SEC-004 M1): the hashtag / enhancer passes rewrite markup, so their output
+            // must go through the sanitizer before it is printed |raw.
             $body            = $this->blogHashtagProcessor->localizeHashtagLinks($body);
-            $article['body'] = $this->blogArticleBodyEnhancer->enhance($body);
+            $body            = $this->blogArticleBodyEnhancer->enhance($body);
+            $article['body'] = $this->blogProtection?->htmlSanitizer()->sanitize($body) ?? $body;
         }
 
         return $article;
+    }
+
+    /**
+     * The URL when it is an absolute http(s) URL, else null (`javascript:`, `data:`, … are dropped, SEC-004 L1).
+     */
+    public static function httpUrl(mixed $url): ?string
+    {
+        if (!is_string($url)) {
+            return null;
+        }
+
+        $url = trim($url);
+
+        return preg_match('#^https?://[^\s/\\\\]#i', $url) === 1 ? $url : null;
     }
 }

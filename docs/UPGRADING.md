@@ -5,6 +5,7 @@
 - [Unreleased](#unreleased)
   - [Template contract](#template-contract)
   - [Upgrade steps to the page contract](#upgrade-steps-to-the-page-contract)
+  - [Security hardening — behaviour changes](#security-hardening--behaviour-changes)
 - [To 1.6.3](#to-163)
 - [To 1.6.2](#to-162)
 - [To 1.6.1](#to-161)
@@ -79,6 +80,32 @@ The admin and public pages move to the UiKit page contract (REQ-UI-003); UiKit *
    `nowo_blog_kit_css_framework`, `nowo_blog_kit_icon_set`, `nowo_blog_kit_row_actions_display` and
    `nowo_blog_kit_container_class()` (deprecated; the CSS / icon globals are `null` unless the deprecated keys are set).
 7. `php bin/console cache:clear` and `assets:install`.
+
+### Security hardening — behaviour changes
+
+1. **Empty role lists deny.** `security.roles.manage` / `moderate` / `configure: []` (or `*_roles: []`) used to grant
+   that capability to **everyone, anonymous included**. They now grant nothing (only `access_roles` then). If you
+   relied on an empty list, list the roles explicitly. With `access_roles` and every `roles.*` empty the container
+   no longer compiles (use `allow_unauthenticated: true` only for a trusted demo).
+2. **`html.sanitize.strategy: strip` outputs escaped text.** Entities are no longer decoded into the `|raw` body: a
+   body like `a &lt; b` renders as the text `a < b`. Stored bodies are re-escaped on render; no migration needed.
+3. **`service` strategies need a service id.** `comments.rate_limit`, `comments.captcha` or `html.sanitize` with
+   `strategy: service` and no `service` now fail at compile time (they used to disable the protection).
+4. **`doctrine.table_prefix` now also prefixes the join table and the native SQL.** With a prefix configured, the
+   article / tag join table becomes `<prefix>content_blog_article_tag` and the public listings read the prefixed
+   tables (they used to read the unprefixed ones). **Migration:** generate a migration
+   (`doctrine:migrations:diff`) and rename the join table instead of letting Doctrine drop / recreate it, e.g.
+   `ALTER TABLE content_blog_article_tag RENAME TO tenant_a_content_blog_article_tag;` (MySQL / SQLite /
+   PostgreSQL). Without a prefix nothing changes.
+5. **Moderation queue paginated** (`web_ui.page_size`, `?page=`); comment action forms use one CSRF token id per
+   action (`blog_comment_approve|reject|delete`) — host templates that build these forms themselves must use them.
+6. **Admin guard by controller class.** The comment action routes now require `canModerate()` (they required
+   `canManage()`); routes of the bundle controllers are guarded whatever their name.
+7. **Smaller changes:** the inline CMS update redirects to the article page (not to the `Referer`); public comments
+   answer 404 when `show_comments` is off; staff replies are signed with `comments.staff_name` (default `Team`) or
+   `BlogStaffDisplayNameInterface::getBlogDisplayName()` instead of the e-mail local part; article slugs must match
+   `[a-z0-9]+(-[a-z0-9]+)*` and the LinkedIn URL must be http(s); the deprecated `nowo_blog_kit_can_*` Twig globals
+   are always `false` (use the `nowo_blog_kit_can_*()` functions); IPv6 commenters share the rate limit of their /64.
 
 ## To 1.6.3
 

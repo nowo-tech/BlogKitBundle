@@ -51,7 +51,7 @@ Only **published** articles with a non-empty body are visible on `blog_show`.
 | `admin_blog_edit_modal` / `admin_blog_inline_update` | inline CMS modal | `canManage()` + `BlogKitAccessDenied` on the article |
 | `admin_blog_delete` | `POST /admin/blog/{id}/delete` | `canManage()` + `BlogKitAccessDenied` on the article |
 | `admin_blog_tags_*` | `/admin/blog/tags` | `canManage()` + `BlogKitAccessDenied` on mutations |
-| `admin_blog_comments_*` | `/admin/blog/comments` | `canModerate()` + `BlogKitAccessDenied` on mutations |
+| `admin_blog_comments_index`, `admin_blog_comment_approve` / `_reject` / `_reply` / `_delete` | `/admin/blog/comments` (paginated, `web_ui.page_size`) | `canModerate()` (guard by controller class) + `BlogKitAccessDenied` on mutations |
 | `admin_blog_settings` | `/admin/blog/settings` | `canConfigure()` |
 
 The admin screens are UiKit scaffolds (list, form, settings) with the blog area nav (Articles | Tags | Comments |

@@ -16,6 +16,7 @@ use Doctrine\ORM\Repository\RepositoryFactory;
 use Doctrine\ORM\Tools\ResolveTargetEntityListener;
 use Doctrine\ORM\Tools\SchemaTool;
 use LogicException;
+use Nowo\BlogKitBundle\Controller\Admin\BlogCommentController;
 use Nowo\BlogKitBundle\Entity\BlogArticle;
 use Nowo\BlogKitBundle\Entity\BlogComment;
 use Nowo\BlogKitBundle\Entity\BlogCommentStatus;
@@ -171,14 +172,14 @@ final class PageFixtures
             $id               = (int) $item->getId();
             $replyForms[$id]  = self::forms()->create(StaffBlogCommentReplyType::class, null, ['action' => '/admin/blog/comments/' . $id . '/reply?status=pending'])->createView();
             $actionForms[$id] = [
-                'approve' => self::csrfForm('/admin/blog/comments/' . $id . '/approve?status=pending', 'approve' . $id),
-                'reject'  => self::csrfForm('/admin/blog/comments/' . $id . '/reject?status=pending', 'reject' . $id),
-                'delete'  => self::csrfForm('/admin/blog/comments/' . $id . '/delete?status=pending', 'delete' . $id),
+                'approve' => self::csrfForm('/admin/blog/comments/' . $id . '/approve?status=pending', BlogCommentController::CSRF_APPROVE),
+                'reject'  => self::csrfForm('/admin/blog/comments/' . $id . '/reject?status=pending', BlogCommentController::CSRF_REJECT),
+                'delete'  => self::csrfForm('/admin/blog/comments/' . $id . '/delete?status=pending', BlogCommentController::CSRF_DELETE),
             ];
         }
 
         return [
-            'page'          => self::factory()->commentIndex($items, $filterForm, [], 'pending', $empty ? 0 : 1, $actionForms),
+            'page'          => self::factory()->commentIndex($items, $filterForm, [], 'pending', $empty ? 0 : 1, $actionForms, ['page' => 1, 'per_page' => 20, 'total' => $empty ? 0 : 45, 'total_pages' => $empty ? 1 : 3]),
             'page_title'    => 'admin.comments.title',
             'items'         => $items,
             'filters'       => [],
