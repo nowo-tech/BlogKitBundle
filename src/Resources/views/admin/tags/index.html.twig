@@ -1,72 +1,23 @@
+{#
+  Tags (REQ-UI-003): UiKit list scaffold. Variables: page (View\ListPage from BlogTagController::index(): header
+  admin.tags.title / admin.tags.lead with the action New tag and the blog area nav as tabs; columns slug, name,
+  articles; rows = list<BlogTag>; row actions Edit / Delete (POST + CSRF FormView behind a Confirm); filters =
+  BlogTagFilterType; EmptyState admin.tags.empty with New tag), article_counts (tag id => published articles), and
+  the 1.x variables page_title, items, filters, filter_form, delete_forms.
+  Data block filled: nowo_ui_list_row (cells).
+#}
+{% extends '@NowoUiKit/page/list.html.twig' %}
 {% trans_default_domain 'NowoBlogKitBundle' %}
-{% import '@NowoUiKitBundle/macros/ui.html.twig' as ui %}
-{% set _css_fw = nowo_blog_kit_css_framework|default('bootstrap5') %}
-{% extends '@NowoBlogKitBundle/admin/base.html.twig' %}
-{% block title %}{{ page_title|trans }}{% endblock %}
-{% block admin %}
-<div class="{{ ui.page_header(_css_fw) }}">
-  <div>
-    <h1>{{ page_title|trans }}</h1>
-    <p>{{ 'admin.tags.lead'|trans }}</p>
-  </div>
-  <div class="{{ ui.toolbar(_css_fw) }}">
-    <a href="{{ path('admin_blog_tags_new') }}" class="{{ ui.btn('primary', null, _css_fw) }}">{{ 'admin.tags.new'|trans }}</a>
-    <a href="{{ path('admin_blog_index') }}" class="{{ ui.btn('secondary', null, _css_fw) }}">{{ 'admin.action.back'|trans }}</a>
-  </div>
-</div>
 
-{{ include('@NowoBlogKitBundle/admin/_list_filters.html.twig', {
-  route: 'admin_blog_tags_index',
-  filter_form: filter_form,
-  filters: filters|default({}),
-}) }}
+{% block nowo_ui_styles %}
+    {{ parent() }}
+    {{ include('@NowoBlogKitBundle/_stylesheets.html.twig') }}
+{% endblock %}
 
-<div class="{{ ui.card(_css_fw) }}">
-  <div class="{{ ui.table_wrap(_css_fw) }}">
-    <table class="{{ ui.table(_css_fw) }}">
-    <thead>
-      <tr>
-        <th scope="col">{{ 'admin.column.slug'|trans }}</th>
-        <th scope="col">{{ 'admin.column.name'|trans }}</th>
-        <th scope="col">{{ 'admin.column.articles'|trans }}</th>
-        <th scope="col"><span class="visually-hidden">{{ 'admin.column.actions'|trans }}</span></th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for item in items %}
-        <tr>
-          <td><code>{{ item.slug }}</code></td>
-          <td>{{ item.name(nowo_blog_kit_default_locale) }}</td>
-          <td>{{ article_counts[item.id]|default(0) }}</td>
-          <td>
-            {% if nowo_blog_kit_can_manage_tag(item) %}
-            {{ include('@NowoBlogKitBundle/admin/_row_actions.html.twig', {actions: [
-              {kind: 'edit', href: path('admin_blog_tags_edit', {id: item.id}), label: 'admin.action.edit'|trans},
-              {
-                kind: 'delete',
-                tag: 'button',
-                confirm_id: 'blog-delete-tag-' ~ item.id,
-                label: 'admin.action.delete'|trans,
-              },
-            ]}) }}
-            {% if delete_forms[item.id] is defined %}
-              {{ include('@NowoBlogKitBundle/admin/_delete_confirm.html.twig', {
-                id: 'blog-delete-tag-' ~ item.id,
-                form: delete_forms[item.id],
-                title: 'admin.confirm.delete_title'|trans,
-                body: 'admin.confirm.delete_tag'|trans,
-              }) }}
-            {% endif %}
-            {% endif %}
-          </td>
-        </tr>
-      {% else %}
-        <tr>
-          <td colspan="4">{{ 'admin.tags.empty'|trans }} <a href="{{ path('admin_blog_tags_new') }}">{{ 'admin.tags.new'|trans }}</a></td>
-        </tr>
-      {% endfor %}
-    </tbody>
-    </table>
-  </div>
-</div>
+{% block nowo_ui_list_row %}
+    {% set _b = page.bundle %}
+    {% set _cell = nowo_ui_class('table_cell', _b) %}
+    <td class="{{ _cell }}" data-label="{{ 'admin.column.slug'|trans }}"><code class="{{ nowo_ui_class('code', _b) }}">{{ row.slug }}</code></td>
+    <td class="{{ _cell }}" data-label="{{ 'admin.column.name'|trans }}" data-required="1">{{ row.name(nowo_blog_kit_default_locale) }}</td>
+    <td class="{{ _cell }} nowo-ui-cell--end" data-label="{{ 'admin.column.articles'|trans }}">{{ article_counts[row.id]|default(0) }}</td>
 {% endblock %}

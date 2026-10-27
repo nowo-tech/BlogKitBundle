@@ -1,83 +1,27 @@
+{#
+  Articles (REQ-UI-003): UiKit list scaffold. Variables: page (View\ListPage from BlogArticleController::index():
+  header admin.articles.title with the action New article and the blog area nav as tabs; columns position, slug,
+  title, status, updated_at, updated_by; rows = list<BlogArticle>; row actions Edit / Delete (POST + CSRF FormView
+  behind a Confirm); filters = BlogArticleFilterType; Pagination; EmptyState admin.articles.empty), and the 1.x
+  variables page_title, items, pagination, filters, filter_form, delete_forms.
+  Data block filled: nowo_ui_list_row (cells).
+#}
+{% extends '@NowoUiKit/page/list.html.twig' %}
 {% trans_default_domain 'NowoBlogKitBundle' %}
-{% import '@NowoUiKitBundle/macros/ui.html.twig' as ui %}
-{% set _css_fw = nowo_blog_kit_css_framework|default('bootstrap5') %}
-{% extends '@NowoBlogKitBundle/admin/base.html.twig' %}
-{% block title %}{{ page_title|trans }}{% endblock %}
-{% block admin %}
-<div class="{{ ui.page_header(_css_fw) }}">
-  <div><h1>{{ page_title|trans }}</h1></div>
-  <div class="{{ ui.toolbar(_css_fw) }}">
-    <a href="{{ path('admin_blog_new') }}" class="{{ ui.btn('primary', null, _css_fw) }}">{{ 'admin.articles.new'|trans }}</a>
-    {% if nowo_blog_kit_can_configure() %}
-      <a href="{{ path('admin_blog_settings') }}" class="{{ ui.btn('secondary', null, _css_fw) }}">{{ 'admin.settings.title'|trans }}</a>
-    {% endif %}
-    <a href="{{ path('admin_blog_tags_index') }}" class="{{ ui.btn('secondary', null, _css_fw) }}">{{ 'admin.tags.title'|trans }}</a>
-    {% if nowo_blog_kit_can_moderate() %}
-      <a href="{{ path('admin_blog_comments_index') }}" class="{{ ui.btn('secondary', null, _css_fw) }}">{{ 'admin.comments.title'|trans }}</a>
-    {% endif %}
-  </div>
-</div>
-{{ include('@NowoBlogKitBundle/admin/_list_filters.html.twig', {
-  route: 'admin_blog_index',
-  filter_form: filter_form,
-  filters: filters|default({}),
-}) }}
 
-<div class="{{ ui.card(_css_fw) }}">
-  <div class="{{ ui.table_wrap(_css_fw) }}">
-    <table class="{{ ui.table(_css_fw) }}">
-      <thead>
-        <tr>
-          <th scope="col">{{ 'admin.column.position'|trans }}</th>
-          <th scope="col">{{ 'admin.column.slug'|trans }}</th>
-          <th scope="col">{{ 'admin.column.title'|trans }}</th>
-          <th scope="col">{{ 'admin.column.status'|trans }}</th>
-          {{ include('@NowoBlogKitBundle/admin/_audit_table_heads.html.twig') }}
-          <th scope="col"><span class="visually-hidden">{{ 'admin.column.actions'|trans }}</span></th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for item in items %}
-          <tr>
-            <td>{{ item.position }}</td>
-            <td><code>/blog/{{ item.slug }}</code></td>
-            <td>{{ item.title(nowo_blog_kit_default_locale) }}</td>
-            <td>
-              {% if item.published %}
-                {{ 'admin.status.published'|trans }}
-              {% else %}
-                {{ 'admin.status.draft'|trans }}
-              {% endif %}
-            </td>
-            {{ include('@NowoBlogKitBundle/admin/_audit_table_cells.html.twig', {item: item}) }}
-            <td>
-              {% if nowo_blog_kit_can_manage_article(item) %}
-              {{ include('@NowoBlogKitBundle/admin/_row_actions.html.twig', {actions: [
-                {kind: 'edit', href: path('admin_blog_edit', {id: item.id}), label: 'admin.action.edit'|trans},
-                {
-                  kind: 'delete',
-                  tag: 'button',
-                  confirm_id: 'blog-delete-article-' ~ item.id,
-                  label: 'admin.action.delete'|trans,
-                },
-              ]}) }}
-              {% if delete_forms[item.id] is defined %}
-                {{ include('@NowoBlogKitBundle/admin/_delete_confirm.html.twig', {
-                  id: 'blog-delete-article-' ~ item.id,
-                  form: delete_forms[item.id],
-                  title: 'admin.confirm.delete_title'|trans,
-                  body: 'admin.confirm.delete_article'|trans,
-                }) }}
-              {% endif %}
-              {% endif %}
-            </td>
-          </tr>
-        {% else %}
-          <tr><td colspan="7">{{ 'admin.articles.empty'|trans }}</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-</div>
-{{ include('@NowoBlogKitBundle/admin/_pagination.html.twig', {pagination: pagination|default(null), route: 'admin_blog_index', filters: filters|default({})}) }}
+{% block nowo_ui_styles %}
+    {{ parent() }}
+    {{ include('@NowoBlogKitBundle/_stylesheets.html.twig') }}
+{% endblock %}
+
+{% block nowo_ui_list_row %}
+    {% set _b = page.bundle %}
+    {% set _cell = nowo_ui_class('table_cell', _b) %}
+    <td class="{{ _cell }} nowo-ui-cell--end" data-label="{{ 'admin.column.position'|trans }}">{{ row.position }}</td>
+    <td class="{{ _cell }}" data-label="{{ 'admin.column.slug'|trans }}"><code class="{{ nowo_ui_class('code', _b) }}">/blog/{{ row.slug }}</code></td>
+    <td class="{{ _cell }}" data-label="{{ 'admin.column.title'|trans }}" data-required="1">{{ row.title(nowo_blog_kit_default_locale) }}</td>
+    <td class="{{ _cell }}" data-label="{{ 'admin.column.status'|trans }}">
+        <span class="{{ nowo_ui_class(row.published ? 'badge_success' : 'badge_neutral', _b) }}">{{ (row.published ? 'admin.status.published' : 'admin.status.draft')|trans }}</span>
+    </td>
+    {{ include('@NowoBlogKitBundle/admin/_audit_cells.html.twig', {item: row, bundle: _b}) }}
 {% endblock %}

@@ -24,8 +24,8 @@ final class FormKitTestSupport
         $blogKit = [
             'translation_domain' => 'NowoBlogKitBundle',
             'defaults'           => [
-                'attr'     => ['class' => 'nowo-ui-input form-control'],
-                'row_attr' => ['class' => 'mb-2'],
+                'attr'     => ['class' => 'nowo-ui-input'],
+                'row_attr' => [],
             ],
             'field_types' => [],
         ];

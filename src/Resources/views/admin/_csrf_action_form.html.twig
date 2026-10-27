@@ -1,9 +1,0 @@
-{% trans_default_domain 'NowoBlogKitBundle' %}
-{{ form_start(form, {attr: attr|default({})}) }}
-  {% for child in form %}
-    {% if not child.rendered %}
-      {{ form_row(child) }}
-    {% endif %}
-  {% endfor %}
-  <button type="submit" class="{{ button_class }}">{{ button_label }}</button>
-{{ form_end(form) }}

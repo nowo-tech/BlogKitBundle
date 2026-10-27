@@ -21,7 +21,7 @@ Security considerations for public blog pages, comments, admin CRUD, and CMS HTM
 
 | Risk | Mitigation |
 | --- | --- |
-| Unauthorized editors reach article/tag/settings admin | `access_roles` / `manage_roles` / `configure_roles`, custom `access_checker`, object access (`none` / `owner` / host `service`), Symfony Security |
+| Unauthorized editors reach article/tag/settings admin | `access_roles` / `roles.manage` / `roles.moderate` / `roles.configure`, custom `access_checker`, object access (`none` / `owner` / host `service`), Symfony Security |
 | IDOR on another editor's publication | `security.object_access.strategy: owner` or a host `BlogKitResourceAccessCheckerInterface`; `BlogKitAccessDenied` on edit/delete/inline |
 | Unauthorized comment moderation | `moderate_roles` and route prefix `admin_blog_comments` |
 | Stored XSS through article HTML | Default Twig auto-escaping; `article.body` uses `\|raw`. Optional `html.sanitize` (`allowlist` / `strip` / host `service`) on persist and render |
@@ -41,9 +41,10 @@ Default configuration:
 nowo_blog_kit:
     security:
         access_roles: [ROLE_ADMIN]
-        manage_roles: [ROLE_EDITOR]
-        moderate_roles: [ROLE_MODERATOR]
-        configure_roles: [ROLE_ADMIN]
+        roles:
+            manage: [ROLE_EDITOR]
+            moderate: [ROLE_MODERATOR]
+            configure: [ROLE_ADMIN]
         allow_unauthenticated: false
 ```
 

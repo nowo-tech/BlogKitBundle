@@ -1,12 +1,36 @@
+{#
+  Public article (REQ-UI-003 unique page, listed in docs/TEMPLATES.md): the host's public front page, no admin
+  chrome — extends web_ui.public_layout_template (nowo_blog_kit_page_layout), else the UiKit guest layout
+  (nowo_ui_kit.layouts.guest). Variables: header (View\PageHeader: article title / excerpt), page_title,
+  page_description, article, article_id, comments, comment_form, reply_forms, can_moderate_comments, filters,
+  search_form, sidebar_related, sidebar_tags, sidebar_resources, aside_left, aside_right, show_share, show_comments,
+  show_source_link, hero_image_mode, breadcrumbs (host breadcrumb data).
+  Blocks filled: nowo_ui_document_title, nowo_ui_head (meta description), nowo_ui_styles / nowo_ui_scripts (bundle
+  assets after parent()), nowo_ui_page_header (UiKit page-header contract: title, excerpt), nowo_ui_content (meta,
+  tags, hero image, body, share, source link, comments).
+#}
+{% extends nowo_blog_kit_page_layout ?? nowo_ui_layout.guest %}
 {% trans_default_domain 'NowoBlogKitBundle' %}
-{% extends '@NowoBlogKitBundle/public/base.html.twig' %}
+{% set nowo_ui_bundle = 'NowoBlogKitBundle' %}
 
-{% block title %}{{ page_title }}{% endblock %}
-{% block meta_description %}{{ page_description }}{% endblock %}
+{% block nowo_ui_document_title %}{{ page_title }}{% endblock %}
 
-{% block body %}
-<article class="blog-section">
-  <div class="{{ nowo_blog_kit_container_class() }}">
+{% block nowo_ui_head %}
+    {{ parent() }}
+    {{ include('@NowoBlogKitBundle/public/_meta.html.twig') }}
+{% endblock %}
+
+{% block nowo_ui_styles %}
+    {{ parent() }}
+    {{ include('@NowoBlogKitBundle/_stylesheets.html.twig') }}
+{% endblock %}
+
+{% block nowo_ui_page_header %}{{ nowo_ui_page_header(header) }}{% endblock %}
+
+{% block nowo_ui_content %}
+{% set _b = nowo_ui_bundle %}
+<article class="blog-section" data-testid="blog-kit-article">
+  <div class="blog-container">
     {% set has_left = aside_left is not empty %}
     {% set has_right = aside_right is not empty %}
     <div class="blog-layout{{ has_left and has_right ? ' blog-layout--both' : (has_left ? ' blog-layout--left' : '') }}">
@@ -28,13 +52,9 @@
       <div class="blog-layout__main blog-article">
         <header class="blog-article__header">
           {% if article.published_at %}
-            <p class="blog-item__meta">
+            <p class="blog-item__meta {{ nowo_ui_class('muted', _b) }}">
               <time datetime="{{ article.published_at }}">{{ article.published_at }}</time>
             </p>
-          {% endif %}
-          <h1>{{ article.title }}</h1>
-          {% if article.excerpt %}
-            <p class="blog-page-header__intro">{{ article.excerpt }}</p>
           {% endif %}
           {% if article.tags is not empty %}
             <ul class="blog-article__tags">
@@ -99,4 +119,9 @@
     </div>
   </div>
 </article>
+{% endblock %}
+
+{% block nowo_ui_scripts %}
+    {{ parent() }}
+    {{ include('@NowoBlogKitBundle/_scripts.html.twig') }}
 {% endblock %}

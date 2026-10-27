@@ -29,20 +29,19 @@ nowo_blog_kit:
     locales: [es, en]
     security:
         access_roles: [ROLE_ADMIN]
-        manage_roles: [ROLE_EDITOR]
-        moderate_roles: [ROLE_MODERATOR]
-        configure_roles: [ROLE_ADMIN]
+        roles:
+            manage: [ROLE_EDITOR]
+            moderate: [ROLE_MODERATOR]
+            configure: [ROLE_ADMIN]
         access_checker: null
         allow_unauthenticated: false
         object_access:
             strategy: none
             service: null
     web_ui:
-        layout_template: '@NowoBlogKitBundle/admin/layout.html.twig'
-        public_layout_template: '@NowoBlogKitBundle/public/layout.html.twig'
-        css_framework: bootstrap5
-        icon_set: bootstrap-icons
-        row_actions_display: icon
+        layout_template: null          # null = nowo_ui_kit.layouts.admin
+        public_layout_template: null   # null = nowo_ui_kit.layouts.guest
+        templates: {}                  # page id => template (per-page override)
         page_size: 20
         privacy_url: '#'
     listing:
@@ -83,7 +82,7 @@ nowo_blog_kit:
 | `default_locale` | string | `es` | Default locale used for translation fallback and `BlogLocales`. |
 | `locales` | list<string> | `[es, en]` | Locales exposed to admin translation forms and public fallback. |
 | `security` | map | see YAML | Access control for manage / moderate / configure routes. |
-| `web_ui` | map | see YAML | Admin and public shells, CSS framework, pagination, privacy URL. |
+| `web_ui` | map | see YAML | Layouts (UiKit page contract), per-page templates, admin page size, privacy URL. |
 | `doctrine` | map | see YAML | Bundle table prefixing and connection name. |
 
 This bundle uses a single configuration tree. It does not expose `default_profile` / `profiles` of its own. FormKit profiles used by admin filters are documented below.
@@ -93,9 +92,10 @@ This bundle uses a single configuration tree. It does not expose `default_profil
 | Key | Default | Description |
 | --- | --- | --- |
 | `access_roles` | `[ROLE_ADMIN]` | Canonical REQ-UI-002 key. Any matching role grants **all** admin capabilities (manage, moderate, configure). Empty list adds no extra grant. |
-| `manage_roles` | `[ROLE_EDITOR]` | Article and tag admin access (`admin_blog` except comments/settings). |
-| `moderate_roles` | `[ROLE_MODERATOR]` | Comment moderation (`admin_blog_comments*`). Editors with `manage_roles` also moderate. |
-| `configure_roles` | `[ROLE_ADMIN]` | Settings screen (`admin_blog_settings`). |
+| `roles.manage` | `[ROLE_EDITOR]` | Article and tag admin access (`admin_blog` except comments/settings). |
+| `roles.moderate` | `[ROLE_MODERATOR]` | Comment moderation (`admin_blog_comments*`). Editors with `roles.manage` also moderate. |
+| `roles.configure` | `[ROLE_ADMIN]` | Settings screen (`admin_blog_settings`). |
+| `manage_roles`, `moderate_roles`, `configure_roles` | `null` | **Deprecated since 1.7** (REQ-UI-003 vocabulary): mapped to `roles.manage` / `roles.moderate` / `roles.configure` when those are not set. |
 | `access_checker` | `null` | Optional service id implementing `BlogKitAccessCheckerInterface`. |
 | `allow_unauthenticated` | `false` | When `true`, the bundle uses an allow-all checker. Intended only for trusted demos. |
 | `object_access.strategy` | `none` | After roles: `none` (every granted editor sees all rows), `owner` (publications scoped to `createdBy`; configure roles see all), or `service`. |
@@ -107,11 +107,10 @@ The bundle enforces **roles** on route names beginning with `admin_blog` (`BlogK
 
 | Key | Default | Description |
 | --- | --- | --- |
-| `layout_template` | `@NowoBlogKitBundle/admin/layout.html.twig` | Base layout used by admin screens. Point this to your own layout to embed the admin UI in host chrome. |
-| `public_layout_template` | `@NowoBlogKitBundle/public/layout.html.twig` | Base layout used by public index and article pages. |
-| `css_framework` | `bootstrap5` | Host CSS stack. The bundle keeps **semantic** `blog-*` markup and remaps buttons via UiKit. Allowed: `bootstrap`, `bootstrap4`, `bootstrap5`, `tabler`, `tailwind`, `foundation`, `custom`, `none`. Load the matching framework CSS in the **host** layout; switching this key MUST NOT require forking page Twig files. Default matches the FrankenPHP demo. |
-| `icon_set` | `bootstrap-icons` | How action glyphs are drawn. Allowed: `bootstrap-icons`, `tabler-icons`, `ux_icon`, `svg_inline`, `none`. Prepended to UiKit when the host has not set `nowo_ui_kit.icon_set`. |
-| `row_actions_display` | `icon` | Admin table row actions: `icon`, `text`, or `icon_text`. Switching this MUST NOT require forking list Twig. Prepended to UiKit when the host has not set `nowo_ui_kit.row_actions_display`. |
+| `layout_template` | `null` | Layout of the admin pages (UiKit scaffolds). `null` = `nowo_ui_kit.layouts.admin` (recommended: set your layout once in UiKit for every bundle). A layout that renders the UiKit canonical blocks is used as it is; a 1.x layout (no `nowo_ui_page_header` block, content in `admin`) is wrapped by the deprecated bridge `admin/_legacy_layout.html.twig`. The former default `@NowoBlogKitBundle/admin/layout.html.twig` maps to `null`. |
+| `public_layout_template` | `null` | Layout of the public index and article. `null` = `nowo_ui_kit.layouts.guest`. A 1.x layout (content in `body`, e.g. `base.html.twig`) is wrapped by the deprecated bridge `public/_legacy_layout.html.twig`. The former default `@NowoBlogKitBundle/public/layout.html.twig` maps to `null`. |
+| `templates` | `{}` | Per-page template overrides: `article_index`, `article_form`, `tag_index`, `tag_form`, `comment_index`, `settings`, `public_index`, `public_show` => a host template extending `@!NowoBlogKitBundle/...` (see [TEMPLATES](TEMPLATES.md#per-page-overrides)). |
+| `css_framework`, `icon_set`, `row_actions_display` | `null` | **Deprecated since 1.7**: the CSS stack is inherited from `nowo_ui_kit.css_framework` / `icon_set` / `row_actions_display`. When set (and the UiKit key is not), the value is copied to UiKit. |
 | `page_size` | `20` | Admin list page size (1–200). |
 | `privacy_url` | `#` | URL used in the public comment privacy checkbox label. |
 
@@ -192,14 +191,14 @@ The bundle Twig extension publishes:
 
 | Global | Meaning |
 | --- | --- |
-| `nowo_blog_kit_layout` | Active admin layout template |
-| `nowo_blog_kit_public_layout` | Active public layout template |
-| `nowo_blog_kit_css_framework` | Selected CSS framework hint |
+| `nowo_blog_kit_layout` | **Deprecated** (1.7): configured `web_ui.layout_template`; the pages resolve the layout through `BlogKitPages` |
+| `nowo_blog_kit_public_layout` | **Deprecated** (1.7): configured `web_ui.public_layout_template` |
+| `nowo_blog_kit_css_framework` | **Deprecated** (1.7): deprecated `web_ui.css_framework` (null unless set); read `nowo_ui_kit_css_framework` |
 | `nowo_blog_kit_default_locale` | Configured default locale |
 | `nowo_blog_kit_locales` | Configured locales |
 | `nowo_blog_kit_privacy_url` | Privacy policy URL for the comment form |
-| `nowo_blog_kit_icon_set` | Selected icon set |
-| `nowo_blog_kit_row_actions_display` | Selected row-action display mode |
+| `nowo_blog_kit_icon_set` | **Deprecated** (1.7): deprecated `web_ui.icon_set` (null unless set) |
+| `nowo_blog_kit_row_actions_display` | **Deprecated** (1.7): deprecated `web_ui.row_actions_display` (null unless set) |
 | `nowo_blog_kit_can_manage` | **Deprecated**, use `nowo_blog_kit_can_manage()`. Whether the current user may manage articles and tags |
 | `nowo_blog_kit_can_moderate` | **Deprecated**, use `nowo_blog_kit_can_moderate()`. Whether the current user may moderate comments |
 | `nowo_blog_kit_can_configure` | **Deprecated**, use `nowo_blog_kit_can_configure()`. Whether the current user may edit blog settings |
@@ -246,9 +245,10 @@ See also [USAGE.md](USAGE.md) and [SECURITY.md](SECURITY.md).
 nowo_blog_kit:
     security:
         access_roles: [ROLE_ADMIN]
-        manage_roles: [ROLE_EDITOR, ROLE_ADMIN]
-        moderate_roles: [ROLE_MODERATOR, ROLE_ADMIN]
-        configure_roles: [ROLE_ADMIN]
+        roles:
+            manage: [ROLE_EDITOR, ROLE_ADMIN]
+            moderate: [ROLE_MODERATOR, ROLE_ADMIN]
+            configure: [ROLE_ADMIN]
 ```
 
 **Custom access checker service:**
@@ -264,8 +264,9 @@ nowo_blog_kit:
 ```yaml
 nowo_blog_kit:
     security:
-        manage_roles: [ROLE_EDITOR]
-        configure_roles: [ROLE_ADMIN]
+        roles:
+            manage: [ROLE_EDITOR]
+            configure: [ROLE_ADMIN]
         object_access:
             strategy: owner
 ```
@@ -280,63 +281,51 @@ nowo_blog_kit:
             service: App\Security\BlogPublicationAccessChecker
 ```
 
-**Host layout + CSS framework (do not fork page templates):**
+**Host layouts and CSS stack (UiKit page contract, REQ-UI-003 — do not fork page templates):**
 
 ```yaml
+# Once for every nowo-tech bundle
+nowo_ui_kit:
+    css_framework: bootstrap5   # or: tailwind | foundation | tabler | custom | none
+    icon_set: bootstrap-icons
+    row_actions_display: icon   # or: text | icon_text
+    layouts:
+        admin: 'layouts/admin.html.twig'   # renders the UiKit canonical blocks
+        guest: 'layouts/guest.html.twig'   # public blog pages
+
 nowo_blog_kit:
     web_ui:
-        layout_template: 'admin/layout.html.twig'   # project chrome (demo FrankenPHP uses this)
-        public_layout_template: 'base.html.twig'
-        css_framework: bootstrap5   # or: tailwind | foundation | custom
-        icon_set: bootstrap-icons
-        row_actions_display: icon   # or: text | icon_text
         privacy_url: '/privacy'
 ```
 
-Keep `stylesheets` / `javascripts` blocks in the host layout. Public pages stack `nowo-ui.css` + `blog.css`. Remap look-and-feel with `--nowo-blog-*` / `--color-*` (or `--nowo-ui-*`) instead of copying `public/index.html.twig`.
-
-If the project content block is not `admin` / `nowo_ui_content` / `body`, use a **one-file bridge**:
+A host layout renders the canonical blocks (`nowo_ui_document_title`, `nowo_ui_head`, `nowo_ui_styles`,
+`nowo_ui_navigation`, `nowo_ui_page_header`, `nowo_ui_flashes`, `nowo_ui_content`, `nowo_ui_modals`,
+`nowo_ui_scripts`). The one-file bridge on top of a project base layout uses UiKit's `_bridge` (the FrankenPHP demo
+does this in `demo/symfony8/templates/layouts/`):
 
 ```twig
-{# templates/admin/nowo_blog_kit_bridge.html.twig #}
-{% extends 'admin/layout.html.twig' %}
-{% block body %}
-    {% block nowo_ui_content %}{% endblock %}
-    {% block admin %}{% endblock %}
+{# templates/layouts/admin.html.twig #}
+{% extends 'base.html.twig' %}
+{% use '@NowoUiKit/layout/_bridge.html.twig' %}
+{% block title %}{{ block('nowo_ui_bridge_title') }}{% endblock %}
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('css/nowo-ui.css', 'nowo_ui_kit') }}">
+    {{ nowo_ui_tokens() }}
+    {{ block('nowo_ui_bridge_assets') }}
+{% endblock %}
+{% block body %}{{ block('nowo_ui_bridge_body') }}{% endblock %}
+{% block javascripts %}
+    {{ parent() }}
+    {{ include(nowo_ui_partial('scripts', nowo_ui_bundle|default(null))) }}
+    {{ block('nowo_ui_bridge_end') }}
 {% endblock %}
 ```
 
-```yaml
-nowo_blog_kit:
-    web_ui:
-        layout_template: 'admin/nowo_blog_kit_bridge.html.twig'
-```
-
-```yaml
-# Tailwind host (load Tailwind in base.html.twig)
-nowo_blog_kit:
-    web_ui:
-        public_layout_template: 'base.html.twig'
-        css_framework: tailwind
-        icon_set: none
-        row_actions_display: text
-
-# Foundation host
-nowo_blog_kit:
-    web_ui:
-        public_layout_template: 'base.html.twig'
-        css_framework: foundation
-        icon_set: svg_inline
-        row_actions_display: icon_text
-
-# Own CSS: semantic blog-* + nowo-ui-* only
-nowo_blog_kit:
-    web_ui:
-        public_layout_template: 'base.html.twig'
-        css_framework: custom
-        icon_set: svg_inline
-        row_actions_display: text
-```
+Theme the look once in `nowo_ui_kit.theme` (class / attribute maps, `--nowo-ui-*` tokens, exceptions under
+`theme.bundles.NowoBlogKitBundle`) and with `--nowo-blog-*` / `blog-*` CSS for the public cards, instead of copying
+`public/index.html.twig`. `web_ui.layout_template` / `public_layout_template` remain per-bundle overrides; 1.x layouts
+still work through the deprecated bridges (see [UPGRADING](UPGRADING.md)).
 
 **Public listing (paginator or infinite scroll):**
 
@@ -370,6 +359,8 @@ nowo_blog_kit:
             strategy: allowlist
 ```
 
-Admin pages extend `@NowoBlogKitBundle/admin/base.html.twig` and public pages extend `@NowoBlogKitBundle/public/base.html.twig`. Those templates call `{{ parent() }}` in `stylesheets` / `javascripts` and then load `nowo_ui_kit` + `nowo_blog_kit` assets inside nested `nowo_ui_styles` / `nowo_ui_scripts` (REQ-UI-001). Keep matching `stylesheets` and `javascripts` blocks in the host layout so stacking works. Override only those nested blocks if you need extra CSS/JS. Do not fork every CRUD page to inject CSS/JS.
-
-Row actions compose UiKit `_row_actions`. Switch `web_ui.row_actions_display` (`icon` / `text` / `icon_text`) without copying list templates. Deletes open a native `<dialog>` confirm (`_delete_confirm.html.twig` + UiKit `_confirm`) with POST + CSRF in the footer. The inline CMS editor is the same native-dialog contract (`_modal_form.html.twig`). See [UiKit ADOPTION](https://github.com/nowo-tech/UiKitBundle/blob/main/docs/ADOPTION.md) and [STIMULUS](https://github.com/nowo-tech/UiKitBundle/blob/main/docs/STIMULUS.md).
+Admin pages extend the UiKit scaffolds (`@NowoUiKit/page/list|form|settings.html.twig`) and stack `blog.css` /
+`blog-kit.js` in `nowo_ui_styles` / `nowo_ui_scripts` after `{{ parent() }}`; the public pages are unique pages on
+the guest layout (see [TEMPLATES](TEMPLATES.md)). Row actions, filters, pagination, empty states and delete confirms
+are the UiKit ones (`View\Action` with a CSRF-only `FormView` behind a `View\Confirm` → native `<dialog>`, no
+`window.confirm`). The inline CMS editor is the UiKit `dialog` partial (`admin/_modal_form.html.twig`).

@@ -1,0 +1,21 @@
+{#
+  Form body of the article / tag forms and the inline CMS dialog (REQ-TWIG-003): the FormKit locale tabs of the
+  `translations` collection first (default locale first; UiKit `locale_tabs` partial), then the child loop.
+  Variables: form (FormView); optional tabs_id (default `locale`), active_locale, testid (default
+  `blog-kit-locale-tabs`).
+#}
+{% trans_default_domain 'NowoBlogKitBundle' %}
+{% if form.translations is defined %}
+    {{ form_errors(form.translations) }}
+    {{ include('@NowoFormKitBundle/form/_locale_tabs.html.twig', form.translations.vars.locale_tabs|default({})|merge({
+        field: form.translations,
+        tabs_id: tabs_id|default('locale'),
+        active_locale: active_locale|default(null),
+        testid: testid|default('blog-kit-locale-tabs'),
+    }), with_context: false) }}
+{% endif %}
+{% for child in form %}
+    {% if not child.rendered %}
+        {{ form_row(child) }}
+    {% endif %}
+{% endfor %}

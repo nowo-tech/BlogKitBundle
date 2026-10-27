@@ -56,7 +56,7 @@ final class LocaleTabsRenderingTest extends TestCase
         $tag->ensureTranslations(['en', 'es']);
         $form = $this->tagForm($tag);
 
-        $html = $this->render('@NowoBlogKitBundle/admin/_form.html.twig', $form);
+        $html = $this->render('@NowoBlogKitBundle/admin/_form_body.html.twig', $form);
         $doc  = HTMLDocument::createFromString('<!doctype html><body>' . $html, LIBXML_NOERROR);
 
         self::assertSame(['es', 'en'], $this->tabLocales($doc), 'default locale (es) first');
@@ -93,7 +93,7 @@ final class LocaleTabsRenderingTest extends TestCase
         $form->submit(['slug' => 'php', 'translations' => [['locale' => 'es', 'name' => 'PHP'], ['locale' => 'en', 'name' => 'x']]]);
         $form->get('translations')->get('1')->get('name')->addError(new FormError('Name missing.'));
 
-        $doc = HTMLDocument::createFromString('<!doctype html><body>' . $this->render('@NowoBlogKitBundle/admin/_form.html.twig', $form), LIBXML_NOERROR);
+        $doc = HTMLDocument::createFromString('<!doctype html><body>' . $this->render('@NowoBlogKitBundle/admin/_form_body.html.twig', $form), LIBXML_NOERROR);
 
         self::assertSame('locale-en', $doc->querySelector('[data-nowo-ui-locale-tabs]')?->getAttribute('data-nowo-ui-tabs-active'), 'the invalid tab opens');
         self::assertTrue($doc->querySelector('#tab-locale-en')?->hasAttribute('data-invalid') ?? false);

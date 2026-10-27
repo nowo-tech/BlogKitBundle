@@ -11,6 +11,7 @@ use Nowo\BlogKitBundle\Form\BlogSettingsType;
 use Nowo\BlogKitBundle\Repository\BlogSettingsRepository;
 use Nowo\BlogKitBundle\Tests\Support\ControllerTestHelper;
 use Nowo\BlogKitBundle\Tests\Support\LocaleTestSupport;
+use Nowo\BlogKitBundle\Tests\Support\PageFixtures;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
@@ -166,6 +167,7 @@ final class BlogSettingsControllerTest extends TestCase
         $controller = new BlogSettingsController(
             $repository ?? $this->createMock(BlogSettingsRepository::class),
             $entityManager ?? $this->createMock(EntityManagerInterface::class),
+            PageFixtures::factory(),
         );
 
         ControllerTestHelper::bind($controller, $request, array_filter([

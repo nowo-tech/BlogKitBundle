@@ -1,7 +1,17 @@
+{#
+  Tag create / edit (REQ-UI-003): UiKit form scaffold. Variables: page (View\FormPage from BlogTagController: header
+  admin.tags.new / admin.tags.edit with a back link to the tags; form = BlogTagType; submit admin.action.save;
+  cancel = tags list), and the 1.x variables page_title, form, tag (edit).
+  Data block filled: nowo_ui_form_body (locale tabs of the translations, then the REQ-TWIG-003 child loop).
+#}
+{% extends '@NowoUiKit/page/form.html.twig' %}
 {% trans_default_domain 'NowoBlogKitBundle' %}
-{% extends '@NowoBlogKitBundle/admin/base.html.twig' %}
-{% block title %}{{ page_title|trans }}{% endblock %}
-{% block admin %}
-<h1>{{ page_title|trans }}</h1>
-{{ include('@NowoBlogKitBundle/admin/_form.html.twig', {cancel_path: path('admin_blog_tags_index')}) }}
+
+{% block nowo_ui_styles %}
+    {{ parent() }}
+    {{ include('@NowoBlogKitBundle/_stylesheets.html.twig') }}
+{% endblock %}
+
+{% block nowo_ui_form_body %}
+    {{ include('@NowoBlogKitBundle/admin/_form_body.html.twig', {form: page.form}) }}
 {% endblock %}

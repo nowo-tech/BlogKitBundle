@@ -1,18 +1,35 @@
+{#
+  Public blog index (REQ-UI-003 unique page, listed in docs/TEMPLATES.md): the host's public front page, no admin
+  chrome — extends web_ui.public_layout_template (nowo_blog_kit_page_layout), else the UiKit guest layout
+  (nowo_ui_kit.layouts.guest). Variables: header (View\PageHeader page.blog.heading / page.blog.intro), pager
+  (View\Pagination), page_title, page_description, articles, pagination (1.x array), filters, search_form,
+  aside_search_form, listing_mode, masonry_strategy, masonry_columns, card_options, tags, sidebar_latest,
+  sidebar_tags, aside_left, aside_right, breadcrumbs (host breadcrumb data).
+  Blocks filled: nowo_ui_document_title, nowo_ui_head (meta description), nowo_ui_styles / nowo_ui_scripts (bundle
+  assets after parent()), nowo_ui_page_header (UiKit page-header contract), nowo_ui_content.
+#}
+{% extends nowo_blog_kit_page_layout ?? nowo_ui_layout.guest %}
 {% trans_default_domain 'NowoBlogKitBundle' %}
-{% extends '@NowoBlogKitBundle/public/base.html.twig' %}
+{% set nowo_ui_bundle = 'NowoBlogKitBundle' %}
 
-{% block title %}{{ page_title }}{% endblock %}
-{% block meta_description %}{{ page_description }}{% endblock %}
+{% block nowo_ui_document_title %}{{ page_title }}{% endblock %}
 
-{% block body %}
-<header class="blog-page-header">
-  <div class="{{ nowo_blog_kit_container_class() }}">
-    <h1>{{ 'page.blog.heading'|trans }}</h1>
-    <p class="blog-page-header__intro">{{ 'page.blog.intro'|trans }}</p>
-  </div>
-</header>
-<section class="blog-section">
-  <div class="{{ nowo_blog_kit_container_class() }}">
+{% block nowo_ui_head %}
+    {{ parent() }}
+    {{ include('@NowoBlogKitBundle/public/_meta.html.twig') }}
+{% endblock %}
+
+{% block nowo_ui_styles %}
+    {{ parent() }}
+    {{ include('@NowoBlogKitBundle/_stylesheets.html.twig') }}
+{% endblock %}
+
+{% block nowo_ui_page_header %}{{ nowo_ui_page_header(header) }}{% endblock %}
+
+{% block nowo_ui_content %}
+{% set _b = nowo_ui_bundle %}
+<section class="blog-section" data-testid="blog-kit-index">
+  <div class="blog-container">
     <div class="blog-filters">
       {{ include('@NowoBlogKitBundle/public/_search.html.twig', {search_form: search_form, filters: filters}) }}
 
@@ -54,7 +71,7 @@
         </div>
       {% endif %}
 
-      <div class="blog-layout__main">
+      <div class="blog-layout__main"{{ nowo_ui_attrs('cards', _b) }}>
         {% if articles is not empty %}
           {% set is_infinite = listing_mode|default('paginated') == 'infinite' %}
           <div
@@ -97,13 +114,13 @@
                 <p class="blog-infinite__end">{{ 'page.blog.end_of_list'|trans }}</p>
               {% endif %}
             {% else %}
-              {{ include('@NowoBlogKitBundle/admin/_pagination.html.twig', {pagination: pagination, route: 'blog_index', filters: filters}) }}
+              {% if pager.totalPages > 1 %}
+                {{ include(nowo_ui_partial('pagination', _b), {pagination: pager, bundle: _b}, false) }}
+              {% endif %}
             {% endif %}
           </div>
         {% else %}
-          <p class="blog-empty">
-            {{ (filters.q or filters.tag ? 'page.blog.empty_filtered' : 'page.blog.empty')|trans }}
-          </p>
+          {{ include(nowo_ui_partial('empty', _b), {message: (filters.q or filters.tag ? 'page.blog.empty_filtered' : 'page.blog.empty')|trans, bundle: _b}, false) }}
         {% endif %}
       </div>
 
@@ -122,4 +139,9 @@
     </div>
   </div>
 </section>
+{% endblock %}
+
+{% block nowo_ui_scripts %}
+    {{ parent() }}
+    {{ include('@NowoBlogKitBundle/_scripts.html.twig') }}
 {% endblock %}

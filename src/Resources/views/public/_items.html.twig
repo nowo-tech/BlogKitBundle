@@ -1,6 +1,5 @@
 {% trans_default_domain 'NowoBlogKitBundle' %}
-{% import '@NowoUiKitBundle/macros/ui.html.twig' as ui %}
-{% set _css_fw = nowo_blog_kit_css_framework|default('bootstrap5') %}
+{% set _b = 'NowoBlogKitBundle' %}
 {% set opts = card_options|default({show_image: true, show_excerpt: true, show_tags: true}) %}
 {% for article in articles %}
   <article class="blog-item blog-masonry__item">
@@ -11,7 +10,7 @@
     {% endif %}
     <div class="blog-item__content">
       {% if article.published_at %}
-        <p class="blog-item__meta">
+        <p class="blog-item__meta {{ nowo_ui_class('muted', _b) }}">
           <time datetime="{{ article.published_at }}">{{ article.published_at }}</time>
         </p>
       {% endif %}
@@ -30,7 +29,7 @@
           {% endfor %}
         </ul>
       {% endif %}
-      <a href="{{ path('blog_show', {slug: article.slug}) }}" class="{{ ui.btn('secondary', 'sm', _css_fw) }}">{{ 'page.blog.read_more'|trans }}</a>
+      <a href="{{ path('blog_show', {slug: article.slug}) }}" class="{{ nowo_ui_class('btn_secondary', _b) }} {{ nowo_ui_class('btn_sm', _b) }}">{{ 'page.blog.read_more'|trans }}</a>
     </div>
   </article>
 {% endfor %}

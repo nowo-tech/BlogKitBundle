@@ -1,0 +1,5 @@
+{#
+  Bundle stylesheet (named asset package nowo_blog_kit). Pages stack it in nowo_ui_styles after {{ parent() }}. The
+  bundle loads no CSS framework: the host layout (nowo_ui_kit.layouts) owns it.
+#}
+<link rel="stylesheet" href="{{ asset('blog.css', 'nowo_blog_kit') }}">

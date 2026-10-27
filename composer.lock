@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "5b2bb397fa2474dd99a37e8198162b27",
+    "content-hash": "c16b5481b46fed47bd8b8ca28c4637e1",
     "packages": [
         {
             "name": "doctrine/collections",
@@ -1026,16 +1026,16 @@
         },
         {
             "name": "nowo-tech/form-kit-bundle",
-            "version": "v2.13.2",
+            "version": "v2.13.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/nowo-tech/FormKitBundle.git",
-                "reference": "1d8f8f9686e23b93090c7f4e0419d3d97fea3ba4"
+                "reference": "4092f7423c47a4f5b0afce3e1c4db64a5a003fed"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/nowo-tech/FormKitBundle/zipball/1d8f8f9686e23b93090c7f4e0419d3d97fea3ba4",
-                "reference": "1d8f8f9686e23b93090c7f4e0419d3d97fea3ba4",
+                "url": "https://api.github.com/repos/nowo-tech/FormKitBundle/zipball/4092f7423c47a4f5b0afce3e1c4db64a5a003fed",
+                "reference": "4092f7423c47a4f5b0afce3e1c4db64a5a003fed",
                 "shasum": ""
             },
             "require": {
@@ -1135,7 +1135,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-10-20T08:21:50+00:00"
+            "time": "2026-10-25T11:33:57+00:00"
         },
         {
             "name": "nowo-tech/routing-kit-bundle",
@@ -1239,16 +1239,16 @@
         },
         {
             "name": "nowo-tech/ui-kit-bundle",
-            "version": "v2.7.0",
+            "version": "v2.15.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/nowo-tech/UiKitBundle.git",
-                "reference": "a9839e0dba8d57de1fd479d69fd31a7824eb67a0"
+                "reference": "3fec561cec962822083c755fc02385f56eb28715"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/nowo-tech/UiKitBundle/zipball/a9839e0dba8d57de1fd479d69fd31a7824eb67a0",
-                "reference": "a9839e0dba8d57de1fd479d69fd31a7824eb67a0",
+                "url": "https://api.github.com/repos/nowo-tech/UiKitBundle/zipball/3fec561cec962822083c755fc02385f56eb28715",
+                "reference": "3fec561cec962822083c755fc02385f56eb28715",
                 "shasum": ""
             },
             "require": {
@@ -1329,7 +1329,7 @@
                 "issues": "https://github.com/nowo-tech/UiKitBundle/issues",
                 "source": "https://github.com/nowo-tech/UiKitBundle"
             },
-            "time": "2026-10-23T07:30:52+00:00"
+            "time": "2026-10-26T21:48:05+00:00"
         },
         {
             "name": "psr/cache",
@@ -7620,16 +7620,16 @@
         },
         {
             "name": "phpunit/phpunit",
-            "version": "13.4.3",
+            "version": "13.4.5",
             "source": {
                 "type": "git",
                 "url": "https://github.com/sebastianbergmann/phpunit.git",
-                "reference": "2180c47c4229e5da117ff248753370443c074f10"
+                "reference": "941457a4f147a60fe2074d40e1fce0d08ea8d930"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/sebastianbergmann/phpunit/zipball/2180c47c4229e5da117ff248753370443c074f10",
-                "reference": "2180c47c4229e5da117ff248753370443c074f10",
+                "url": "https://api.github.com/repos/sebastianbergmann/phpunit/zipball/941457a4f147a60fe2074d40e1fce0d08ea8d930",
+                "reference": "941457a4f147a60fe2074d40e1fce0d08ea8d930",
                 "shasum": ""
             },
             "require": {
@@ -7654,7 +7654,7 @@
                 "sebastian/environment": "^9.3.3",
                 "sebastian/exporter": "^8.2.1",
                 "sebastian/file-filter": "^1.0",
-                "sebastian/git-state": "^1.0",
+                "sebastian/git-state": "^1.1",
                 "sebastian/global-state": "^9.0.1",
                 "sebastian/object-enumerator": "^8.1.0",
                 "sebastian/recursion-context": "^8.0.1",
@@ -7700,7 +7700,7 @@
             "support": {
                 "issues": "https://github.com/sebastianbergmann/phpunit/issues",
                 "security": "https://github.com/sebastianbergmann/phpunit/security/policy",
-                "source": "https://github.com/sebastianbergmann/phpunit/tree/13.4.3"
+                "source": "https://github.com/sebastianbergmann/phpunit/tree/13.4.5"
             },
             "funding": [
                 {
@@ -7708,7 +7708,7 @@
                     "type": "other"
                 }
             ],
-            "time": "2026-10-16T05:56:47+00:00"
+            "time": "2026-10-27T04:16:22+00:00"
         },
         {
             "name": "react/cache",

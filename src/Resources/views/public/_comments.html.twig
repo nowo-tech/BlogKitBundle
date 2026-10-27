@@ -1,6 +1,5 @@
 {% trans_default_domain 'NowoBlogKitBundle' %}
-{% import '@NowoUiKitBundle/macros/ui.html.twig' as ui %}
-{% set _css_fw = nowo_blog_kit_css_framework|default('bootstrap5') %}
+{% set _b = 'NowoBlogKitBundle' %}
 
 <section class="blog-comments" id="comments" aria-labelledby="blog-comments-title">
   <div class="blog-comments__inner">
@@ -46,7 +45,7 @@
                       {{ form_row(child) }}
                     {% endif %}
                   {% endfor %}
-                  <button type="submit" class="{{ ui.btn('secondary', 'sm', _css_fw) }}">{{ 'blog.comments.reply_submit'|trans }}</button>
+                  <button type="submit" class="{{ nowo_ui_class('btn_secondary', _b) }} {{ nowo_ui_class('btn_sm', _b) }}">{{ 'blog.comments.reply_submit'|trans }}</button>
                 {{ form_end(reply_forms[comment.id]) }}
               </div>
             {% endif %}
@@ -60,7 +59,7 @@
     <div class="blog-comments__form">
       <h3 class="blog-comments__form-title">{{ 'blog.comments.form_title'|trans }}</h3>
       <p class="blog-comments__form-lead">{{ 'blog.comments.form_lead'|trans }}</p>
-      {{ form_start(comment_form, {attr: {class: 'form-card'}}) }}
+      {{ form_start(comment_form, {attr: {class: nowo_ui_class('form', _b) ~ ' blog-comments__form-card'}|merge(nowo_ui_theme.attributesFor('form', _b, {}, null))}) }}
         {% set captcha = nowo_blog_kit_captcha() %}
         {% if captcha.script_url %}
           <script src="{{ captcha.script_url }}" async defer></script>
@@ -80,7 +79,7 @@
             {{ form_row(child) }}
           {% endif %}
         {% endfor %}
-        <button type="submit" class="{{ ui.btn('primary', null, _css_fw) }}">{{ 'blog.comments.submit'|trans }}</button>
+        <button type="submit" class="{{ nowo_ui_class('btn_primary', _b) }}">{{ 'blog.comments.submit'|trans }}</button>
       {{ form_end(comment_form) }}
     </div>
   </div>

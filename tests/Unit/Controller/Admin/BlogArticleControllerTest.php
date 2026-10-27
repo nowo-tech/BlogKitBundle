@@ -17,6 +17,7 @@ use Nowo\BlogKitBundle\Security\BlogKitAccessDenied;
 use Nowo\BlogKitBundle\Security\BlogKitResourceAccessCheckerInterface;
 use Nowo\BlogKitBundle\Tests\Support\ControllerTestHelper;
 use Nowo\BlogKitBundle\Tests\Support\LocaleTestSupport;
+use Nowo\BlogKitBundle\Tests\Support\PageFixtures;
 use Nowo\BlogKitBundle\Tests\Support\TestUser;
 use Nowo\FormKitBundle\Form\CsrfOnlyFormFactory;
 use Nowo\FormKitBundle\Form\GetFilterFormFactory;
@@ -52,9 +53,11 @@ final class BlogArticleControllerTest extends TestCase
             ->method('findFilteredPaginated')
             ->with(['title' => 'Symfony'], 2, 12, null)
             ->willReturn([
-                'items' => [$article, $unsaved],
-                'total' => 2,
-                'page'  => 2,
+                'items'       => [$article, $unsaved],
+                'total'       => 2,
+                'page'        => 2,
+                'per_page'    => 12,
+                'total_pages' => 1,
             ]);
 
         $deleteForm = $this->createConfiguredMock(FormInterface::class, [
@@ -208,9 +211,11 @@ final class BlogArticleControllerTest extends TestCase
             ->method('findFilteredPaginated')
             ->with([], 1, 20, 10)
             ->willReturn([
-                'items' => [$article],
-                'total' => 1,
-                'page'  => 1,
+                'items'       => [$article],
+                'total'       => 1,
+                'page'        => 1,
+                'per_page'    => 20,
+                'total_pages' => 1,
             ]);
 
         $resourceAccess = $this->createMock(BlogKitResourceAccessCheckerInterface::class);
@@ -509,6 +514,7 @@ final class BlogArticleControllerTest extends TestCase
             LocaleTestSupport::create(),
             $accessDenied ?? new BlogKitAccessDenied(new AllowAllBlogKitResourceAccessChecker()),
             $pageSize,
+            PageFixtures::factory(),
         );
 
         ControllerTestHelper::bind($controller, $request, array_filter([

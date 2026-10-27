@@ -62,9 +62,13 @@ final class NowoBlogKitExtensionTest extends TestCase
         self::assertTrue($container->getParameter('nowo_blog_kit.security.allow_unauthenticated'));
         self::assertSame('none', $container->getParameter('nowo_blog_kit.security.object_access.strategy'));
         self::assertNull($container->getParameter('nowo_blog_kit.security.object_access.service'));
-        self::assertSame('bootstrap5', $container->getParameter('nowo_blog_kit.web_ui.css_framework'));
-        self::assertSame('bootstrap-icons', $container->getParameter('nowo_blog_kit.web_ui.icon_set'));
-        self::assertSame('icon', $container->getParameter('nowo_blog_kit.web_ui.row_actions_display'));
+        self::assertSame(['manage' => ['ROLE_EDITOR'], 'moderate' => ['ROLE_MODERATOR'], 'configure' => ['ROLE_ADMIN']], $container->getParameter('nowo_blog_kit.security.roles'));
+        self::assertNull($container->getParameter('nowo_blog_kit.web_ui.layout_template'));
+        self::assertNull($container->getParameter('nowo_blog_kit.web_ui.public_layout_template'));
+        self::assertSame([], $container->getParameter('nowo_blog_kit.web_ui.templates'));
+        self::assertNull($container->getParameter('nowo_blog_kit.web_ui.css_framework'));
+        self::assertNull($container->getParameter('nowo_blog_kit.web_ui.icon_set'));
+        self::assertNull($container->getParameter('nowo_blog_kit.web_ui.row_actions_display'));
         self::assertSame(20, $container->getParameter('nowo_blog_kit.web_ui.page_size'));
         self::assertSame('#', $container->getParameter('nowo_blog_kit.web_ui.privacy_url'));
         self::assertSame('paginated', $container->getParameter('nowo_blog_kit.listing.mode'));
@@ -538,7 +542,7 @@ final class NowoBlogKitExtensionTest extends TestCase
 
         self::assertSame('tailwind', $merged['css_framework']);
         self::assertSame('bootstrap-icons', $merged['icon_set']);
-        self::assertSame('icon', $merged['row_actions_display']);
+        self::assertArrayNotHasKey('row_actions_display', $merged, 'unset deprecated keys inherit the UiKit value');
     }
 
     #[Test]
