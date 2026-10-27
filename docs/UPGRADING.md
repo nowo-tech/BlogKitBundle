@@ -3,6 +3,7 @@
 ## Table of contents
 
 - [Unreleased](#unreleased)
+- [To 1.7.0](#to-170)
   - [Template contract](#template-contract)
   - [Upgrade steps to the page contract](#upgrade-steps-to-the-page-contract)
   - [Security hardening — behaviour changes](#security-hardening--behaviour-changes)
@@ -36,6 +37,14 @@
 - [Future releases](#future-releases)
 
 ## Unreleased
+
+## To 1.7.0
+
+From **1.6.3**:
+
+```bash
+composer update nowo-tech/blog-kit-bundle
+```
 
 From **1.6.3**:
 

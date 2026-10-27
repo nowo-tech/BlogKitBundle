@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Table of contents
 
 - [[Unreleased]](#unreleased)
+- [[1.7.0] - 2026-10-27](#170---2026-10-27)
 - [[1.6.3] - 2026-10-24](#163---2026-10-24)
 - [[1.6.2] - 2026-10-21](#162---2026-10-21)
 - [[1.6.1] - 2026-10-20](#161---2026-10-20)
@@ -35,6 +36,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [[1.0.0] - 2026-08-18](#100---2026-08-18)
 
 ## [Unreleased]
+
+## [1.7.0] - 2026-10-27
+
+UiKit page contract (REQ-UI-003) + SEC-004 hardening: stored XSS fixes (sanitize last, DOM hashtag rewrite, escaped strip), empty role list denies, controller-class guard, prefixed native SQL See [UPGRADING](UPGRADING.md#to-170).
 
 Admin and public pages on the UiKit page contract (REQ-UI-003, UiKit 2.15), and the SEC-004 security hardening. See [UPGRADING](UPGRADING.md#unreleased).
 
@@ -417,7 +422,8 @@ Initial public release of **Blog Kit Bundle** (`nowo-tech/blog-kit-bundle`).
 - CSRF-protected admin mutations and public comment forms; deletes go through native confirm dialogs
 - Comment bodies escaped in Twig; article HTML documented as trusted-editor `|raw`
 
-[Unreleased]: https://github.com/nowo-tech/BlogKitBundle/compare/v1.6.3...HEAD
+[Unreleased]: https://github.com/nowo-tech/BlogKitBundle/compare/v1.7.0...HEAD
+[1.7.0]: https://github.com/nowo-tech/BlogKitBundle/compare/v1.6.3...v1.7.0
 [1.6.3]: https://github.com/nowo-tech/BlogKitBundle/compare/v1.6.2...v1.6.3
 [1.6.2]: https://github.com/nowo-tech/BlogKitBundle/compare/v1.6.1...v1.6.2
 [1.6.1]: https://github.com/nowo-tech/BlogKitBundle/compare/v1.6.0...v1.6.1
