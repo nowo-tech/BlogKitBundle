@@ -152,7 +152,7 @@ Before tagging a release, confirm:
 | **CSRF** | Mutations use Symfony forms. |
 | **Dependencies** | `composer audit` run; issues triaged. |
 | **Permissions / exposure** | Manage / moderate / configure roles, optional `owner` object access, or custom checkers (`BlogKitAccessCheckerInterface` / `BlogKitResourceAccessCheckerInterface`). |
-| **AI security audit (REQ-SEC-004)** | Grade **Pass (conditional)** / risk **Medium** (2026-08-18). See [AI security audit](#ai-security-audit). |
+| **AI security audit (REQ-SEC-004)** | Grade **Pass (good)** / risk **Low** (2026-10-27, re-audit of `main` `2f595df` + fixes in PR #44, shipped in 1.7.0). See [AI security audit](#ai-security-audit). |
 
 Record confirmation in the release PR or tag notes.
 
@@ -160,11 +160,13 @@ Record confirmation in the release PR or tag notes.
 
 | Field | Value |
 | --- | --- |
-| Date | 2026-08-18 |
-| Grade | Pass (conditional) |
-| Risk | Medium |
-| Method | Static review of admin access subscriber, object access (`BlogKitAccessDenied`), CSRF forms, Twig escaping, article `\|raw`, public comments, infinite-scroll HTML insert, recipe defaults (`allow_unauthenticated: false`) |
-| Open residuals | Public comments still need a host CAPTCHA provider for serious bot farms (honeypot is the default); `allowlist` is optional because trusted-editor `\|raw` remains |
+| Date | 2026-10-27 |
+| Scope | `main` `2f595df` (UiKit page contract, PR #43) + hardening PR #44 (`ca82037`), released as 1.7.0 |
+| Grade | Pass (good) |
+| Risk | Low |
+| Method | Claude Code static review of `src/`, Twig views (scaffolds, legacy bridges, inline CMS dialog), TS, Flex recipe, docs; sanitizer PoCs (PHP 8.5 / libxml 2.13, HTML5 re-parse) before and after the fixes |
+| Findings (all fixed in 1.7.0) | M1 stored XSS past the default allowlist (post-sanitize hashtag rewrite; 1.1.0–1.6.3); M2 `strip` decoded entities into `\|raw` (1.1.0–1.6.3); M3 empty role list granted everyone; L1 `javascript:` LinkedIn URL; L2/L3 route-name guard (comment actions on `canManage()`, `name_prefix` bypass); L4 update sanitize not persisted; L5 no-op `service` strategies; L6 `table_prefix` not applied to native SQL / join table; L7 unbounded moderation queue; Info I1–I11 |
+| Open residuals | Keep `allowlist` unless editors are fully trusted; image URLs are editor-controlled; rate limiter is not atomic (front public POSTs with a proxy / `symfony/rate-limiter` on busy sites); bodies written directly to the database are only sanitized at render; keep `access_control` on `^/admin/blog`; a `table_prefix` that is itself a prefix of `content_blog_article_tag` leaves that join table unprefixed |
 
 See [CONFIGURATION.md](CONFIGURATION.md) and [USAGE.md](USAGE.md).
 
