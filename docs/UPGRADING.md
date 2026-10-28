@@ -3,6 +3,8 @@
 ## Table of contents
 
 - [Unreleased](#unreleased)
+- [To 1.8.0](#to-180)
+  - [CSRF protection is now required at compile time](#csrf-protection-is-now-required-at-compile-time)
 - [To 1.7.0](#to-170)
   - [Template contract](#template-contract)
   - [Upgrade steps to the page contract](#upgrade-steps-to-the-page-contract)
@@ -37,6 +39,14 @@
 - [Future releases](#future-releases)
 
 ## Unreleased
+
+## To 1.8.0
+
+From **1.7.0**:
+
+```bash
+composer update nowo-tech/blog-kit-bundle
+```
 
 ### CSRF protection is now required at compile time
 
