@@ -93,6 +93,7 @@ As a maintainer, I run the Symfony 8 FrankenPHP demo and smoke checks.
 | FR-CMT-002 | Approved comments (and approved replies) render on the article |
 | FR-CMT-003 | Moderators can approve, reject, reply, and delete |
 | FR-CMT-004 | Configurable comment rate-limit and CAPTCHA strategies (YAML + admin `inherit`) |
+| FR-CMT-005 | Staff replies are signed with `BlogStaffDisplayNameInterface::getBlogStaffDisplayName()` when the host user implements it, else `comments.staff_name`; the login identifier is never published |
 
 ### Settings (`FR-SET-*`)
 
@@ -115,6 +116,7 @@ As a maintainer, I run the Symfony 8 FrankenPHP demo and smoke checks.
 | FR-UI-001 | Configurable CSS framework and layout templates |
 | FR-UI-002 | Admin routes require Symfony Security or a custom checker unless `allow_unauthenticated` |
 | FR-UI-003 | Object-level publication access via `security.object_access` (`none` / `owner` / host `service`) and `BlogKitAccessDenied` — not Symfony voters |
+| FR-UI-004 | UiKit page contract (REQ-UI-003): `Ui/BlogKitPages` resolves the admin / public layouts (1.x layouts through a deprecated bridge), `Ui/BlogKitPageFactory` builds the page view models (headers, columns, POST + CSRF row actions, filters, pagination, empty states) and `Ui/BlogKitAreaNav` publishes the `blog_kit` / `blog_kit_settings` area navs for host menus |
 | FR-FORM-001 | Prepend FormKit profiles `blog_kit` / `filter` and `type_map.entity` when the host has not defined them |
 | FR-TWIG-001 | Application templates under `templates/bundles/NowoBlogKitBundle/` take precedence |
 | FR-TWIG-005 | Kit Twig must not ship raw `<form>` / `<input>`; render with `form_start` + `form_row` loops |
@@ -136,6 +138,7 @@ As a maintainer, I run the Symfony 8 FrankenPHP demo and smoke checks.
 
 | ID | Requirement |
 | --- | --- |
+| FR-SEC-006 | `CsrfProtectionPass` fails the container build when form CSRF protection is unavailable (every admin mutation relies on it) |
 | FR-SEC-005 | Optional article HTML sanitizer (`none` / `strip` / `allowlist` / host `service`) on persist and public render |
 
 ### Demo (`FR-DEMO-*`)
@@ -163,7 +166,7 @@ As a maintainer, I run the Symfony 8 FrankenPHP demo and smoke checks.
 
 ## Success criteria (`SC-*`)
 
-- **SC-001**: **153/153** files tracked under `src/` are mapped in [`code-inventory.md`](code-inventory.md) (audit: `git ls-files src | wc -l`).
+- **SC-001**: **150/150** files tracked under `src/` are mapped in [`code-inventory.md`](code-inventory.md) (audit: `git ls-files src | wc -l`).
 - **SC-002**: Every `FR-*` ID cited in the inventory is defined in this spec.
 - **SC-003**: `composer qa` (cs-check, PHPStan, PHPUnit) and `make release-check` pass; PHPUnit line coverage for `src/` stays at 100% (`make test-coverage-100`).
 - **SC-004**: Vitest specs pass (`make test-ts`).

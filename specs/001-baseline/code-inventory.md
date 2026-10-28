@@ -2,8 +2,8 @@
 
 **Baseline spec**: [`spec.md`](spec.md)  
 **Package**: `nowo-tech/blog-kit-bundle`  
-**Last audited**: 2026-10-20  
-**Coverage summary**: **153/153** files tracked under `src/` mapped (see [Coverage summary](#coverage-summary)); audit command: `git ls-files src | wc -l`.
+**Last audited**: 2026-10-28  
+**Coverage summary**: **150/150** files tracked under `src/` mapped (see [Coverage summary](#coverage-summary)); audit command: `git ls-files src | wc -l`.
 
 Maps **100%** of the files under `src/` (100 PHP classes + Twig views, translations, config, public assets, TypeScript sources and co-located Vitest specs). Paths are relative to `src/`. Test and demo trees outside `src/` are out of Packagist scope unless promoted in the spec.
 
@@ -20,6 +20,7 @@ Maps **100%** of the files under `src/` (100 PHP classes + Twig views, translati
 | `DependencyInjection/Configuration.php` | Config tree | FR-CFG-001 |
 | `DependencyInjection/NowoBlogKitExtension.php` | DI extension, prepends (FormKit profiles + `type_map.entity`), access checker | FR-CFG-002, FR-DI-001, FR-UI-002, FR-UI-003, FR-FORM-001 |
 | `DependencyInjection/Compiler/TwigPathsPass.php` | Twig override path order | FR-TWIG-001 |
+| `DependencyInjection/Compiler/CsrfProtectionPass.php` | Fails closed without form CSRF protection | FR-SEC-006 |
 | `DependencyInjection/TablePrefixListener.php` | Optional table prefix | FR-ORM-001 |
 
 ## Controllers
@@ -73,6 +74,7 @@ Maps **100%** of the files under `src/` (100 PHP classes + Twig views, translati
 | `Enum/HtmlSanitizeStrategy.php` | Article HTML sanitizer strategies | FR-SEC-005 |
 | `Enum/BlogObjectAccessStrategy.php` | none / owner / service object access | FR-UI-003 |
 | `Model/BlogUserInterface.php` | Host user contract | FR-CFG-001 |
+| `Model/BlogStaffDisplayNameInterface.php` | Optional public name of staff replies | FR-CMT-005 |
 | `Model/BlameableUserTrait.php` | Created/updated by | FR-ART-001 |
 | `Locale/BlogLocales.php` | Injected locale catalog (default + supported list) | FR-I18N-003 |
 | `Meta/BlogBrandNameProviderInterface.php` | Optional title suffix | FR-PUB-001 |
@@ -151,6 +153,15 @@ Maps **100%** of the files under `src/` (100 PHP classes + Twig views, translati
 | `Security/Html/StripBlogHtmlSanitizer.php` | Strip tags | FR-SEC-005 |
 | `Security/Html/AllowlistBlogHtmlSanitizer.php` | CMS allowlist | FR-SEC-005 |
 
+
+## UiKit pages
+
+| Source file | Role | Requirement IDs |
+| --- | --- | --- |
+| `Ui/BlogKitPages.php` | Layout resolution and 1.x layout bridge | FR-UI-004 |
+| `Ui/BlogKitPageFactory.php` | Page view models shared by controllers and the page contract test | FR-UI-004 |
+| `Ui/BlogKitAreaNav.php` | `blog_kit` / `blog_kit_settings` area navs | FR-UI-004 |
+
 ## Twig
 
 | Source file | Purpose | Requirement IDs |
@@ -191,15 +202,16 @@ Vitest specs live next to the TypeScript sources under `src/`; they are not load
 | Category | Files | Mapped |
 | --- | ---: | ---: |
 | Bundle entry | 1 | 1 |
-| DependencyInjection | 4 | 4 |
+| DependencyInjection | 5 | 5 |
 | Controllers | 8 | 8 |
 | Entity & persistence | 17 | 17 |
-| Domain model & enums | 16 | 16 |
+| Domain model & enums | 17 | 17 |
 | Services | 8 | 8 |
 | HTTP, events, command | 6 | 6 |
 | Forms | 15 | 15 |
 | Security | 24 | 24 |
+| UiKit pages | 3 | 3 |
 | Twig | 1 | 1 |
-| Non-PHP production assets (documented) | 48 | 48 |
+| Non-PHP production assets (documented) | 40 | 40 |
 | Co-located Vitest sources (`FR-TEST-*`) | 5 | 5 |
-| **Total production files (`git ls-files src`)** | **153** | **153** |
+| **Total production files (`git ls-files src`)** | **150** | **150** |
