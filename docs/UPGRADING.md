@@ -41,6 +41,8 @@
 
 ## Unreleased
 
+From **1.8.1**: no action if your `config/routes` imports `@NowoBlogKitBundle/Resources/config/routing.yaml` (see [INSTALLATION](INSTALLATION.md)). If the blog pages appeared on Symfony >= 7.3 without that import (only through `controllers: { resource: routing.controllers }`), add the import now: the bundle routes are opt-in and no longer registered by `routing.controllers`.
+
 ## To 1.8.1
 
 From **1.8.0**:

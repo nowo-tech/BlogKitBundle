@@ -39,6 +39,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- **Blog routes registered without being imported (REQ-SF-004 rule 7):** the controller services were autoconfigured, so on Symfony >= 7.3 their `#[Route]` tagged them `routing.controller` and a host's default `controllers: { resource: routing.controllers }` registered every blog route at its bare path — the public pages and the unauthenticated comment endpoint (`POST /blog/{slug}/comments`) included — even when the host never imported `@NowoBlogKitBundle/Resources/config/routing.yaml`, or a second time without the host prefix. (The admin routes stayed behind `BlogKitAdminAccessSubscriber`, which guards by route name.) The controllers are now registered with `autoconfigure: false` and explicit `controller.service_arguments` / `container.service_subscriber` tags: the routes exist only where the host imports `routing.yaml`. Regression test with a kernel whose routing is only `routing.controllers`.
+
 ## [1.8.1] - 2026-10-30
 
 BlogKit: 1.x layout bridge wired (Twig autowired by type) See [UPGRADING](UPGRADING.md#to-181).

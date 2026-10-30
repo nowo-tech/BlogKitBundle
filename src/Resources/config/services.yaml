@@ -18,9 +18,14 @@ services:
             - '../../Security/Html/'
             - '../../Security/RateLimit/'
 
+    # REQ-SF-004 rule 7: the controllers carry #[Route] and must not be autoconfigured. On Symfony >= 7.3
+    # autoconfiguration tags them `routing.controller`, and the host's `controllers: { resource: routing.controllers }`
+    # would then register the blog routes without the host importing routing.yaml (opt-in only, with its prefix).
+    # Tagged explicitly instead; they extend AbstractController, hence the service subscriber tag.
     Nowo\BlogKitBundle\Controller\:
         resource: '../../Controller/'
-        tags: ['controller.service_arguments']
+        autoconfigure: false
+        tags: ['controller.service_arguments', 'container.service_subscriber']
 
     Nowo\BlogKitBundle\Locale\BlogLocales:
         public: true
