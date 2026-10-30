@@ -3,6 +3,7 @@
 ## Table of contents
 
 - [Unreleased](#unreleased)
+- [To 1.8.1](#to-181)
 - [To 1.8.0](#to-180)
   - [CSRF protection is now required at compile time](#csrf-protection-is-now-required-at-compile-time)
 - [To 1.7.0](#to-170)
@@ -39,6 +40,14 @@
 - [Future releases](#future-releases)
 
 ## Unreleased
+
+## To 1.8.1
+
+From **1.8.0**:
+
+```bash
+composer update nowo-tech/blog-kit-bundle
+```
 
 ## To 1.8.0
 
