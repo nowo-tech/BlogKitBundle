@@ -6,6 +6,7 @@ namespace Nowo\BlogKitBundle\Tests\Integration\Kernel;
 
 use Doctrine\Bundle\DoctrineBundle\DoctrineBundle;
 use Nowo\BlogKitBundle\NowoBlogKitBundle;
+use Nowo\BlogKitBundle\Tests\Support\MappedTestUser;
 use Nowo\FormKitBundle\NowoFormKitBundle;
 use Nowo\UiKitBundle\NowoUiKitBundle;
 use Symfony\Bundle\FrameworkBundle\FrameworkBundle;
@@ -68,8 +69,23 @@ final class HostRoutesKernel extends Kernel
             'session'              => ['storage_factory_id' => 'session.storage.factory.mock_file'],
             'form'                 => ['csrf_protection' => true],
         ]);
-        $container->extension('doctrine', ['dbal' => ['url' => 'sqlite:///:memory:'], 'orm' => []]);
-        $container->extension('nowo_blog_kit', ['security' => ['allow_unauthenticated' => true]]);
+        $container->extension('doctrine', [
+            'dbal' => ['url' => 'sqlite:///:memory:'],
+            'orm'  => [
+                'mappings' => [
+                    'BlogKitTestUser' => [
+                        'type'      => 'attribute',
+                        'is_bundle' => false,
+                        'dir'       => '%kernel.project_dir%/tests/Support',
+                        'prefix'    => 'Nowo\\BlogKitBundle\\Tests\\Support',
+                    ],
+                ],
+            ],
+        ]);
+        $container->extension('nowo_blog_kit', [
+            'user_class' => MappedTestUser::class,
+            'security'   => ['allow_unauthenticated' => true],
+        ]);
     }
 
     protected function configureRoutes(RoutingConfigurator $routes): void
