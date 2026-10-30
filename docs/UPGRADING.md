@@ -3,6 +3,7 @@
 ## Table of contents
 
 - [Unreleased](#unreleased)
+- [To 1.8.2](#to-182)
 - [To 1.8.1](#to-181)
 - [To 1.8.0](#to-180)
   - [CSRF protection is now required at compile time](#csrf-protection-is-now-required-at-compile-time)
@@ -40,6 +41,14 @@
 - [Future releases](#future-releases)
 
 ## Unreleased
+
+## To 1.8.2
+
+From **1.8.1**:
+
+```bash
+composer update nowo-tech/blog-kit-bundle
+```
 
 From **1.8.1**: no action if your `config/routes` imports `@NowoBlogKitBundle/Resources/config/routing.yaml` (see [INSTALLATION](INSTALLATION.md)). If the blog pages appeared on Symfony >= 7.3 without that import (only through `controllers: { resource: routing.controllers }`), add the import now: the bundle routes are opt-in and no longer registered by `routing.controllers`.
 
