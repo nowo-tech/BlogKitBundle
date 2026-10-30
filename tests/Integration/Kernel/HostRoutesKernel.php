@@ -72,7 +72,9 @@ final class HostRoutesKernel extends Kernel
         $container->extension('doctrine', [
             'dbal' => ['url' => 'sqlite:///:memory:'],
             'orm'  => [
-                'mappings' => [
+                // Native SQL and #[ORM\Index] column lists use snake_case (as in DoctrineTestCase).
+                'naming_strategy' => 'doctrine.orm.naming_strategy.underscore_number_aware',
+                'mappings'        => [
                     'BlogKitTestUser' => [
                         'type'      => 'attribute',
                         'is_bundle' => false,
