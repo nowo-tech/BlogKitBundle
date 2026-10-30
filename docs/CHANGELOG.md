@@ -38,6 +38,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **1.x layout bridge never used:** `BlogKitPages` received `null` instead of the Twig environment because
+  `#[Autowire('@?twig')]` is not an optional reference (the attribute keeps `?` in the service id, `"?twig"`, and the
+  nullable argument turned the missing service into `null`). A configured 1.x `web_ui.layout_template` /
+  `web_ui.public_layout_template` was therefore extended directly instead of through the deprecated
+  `admin/_legacy_layout.html.twig` / `public/_legacy_layout.html.twig` bridges. The argument is now autowired by type;
+  a kernel test (`tests/Integration/LegacyLayoutBridgeWiringTest.php`) covers the wiring.
+
 ## [1.8.0] - 2026-10-28
 
 Security: the admin UI refuses to compile without form CSRF protection (CsrfProtectionPass, fail closed). See [UPGRADING](UPGRADING.md#to-180).
