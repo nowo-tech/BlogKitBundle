@@ -131,4 +131,35 @@ final class BlogSettingsRepositoryTest extends DoctrineTestCase
 
         self::assertSame(42, $this->repository->getSingleton()->getId());
     }
+
+    /**
+     * Worker mode without kernel reset: the same repository serves many requests (reset() at each request boundary,
+     * as BlogKitWorkerStateSubscriber does); one row, flat memory, and a change made between requests is seen.
+     */
+    #[Test]
+    public function manyRequestsOnOneRepositoryKeepOneRowAndFlatMemory(): void
+    {
+        $request = function (): BlogSettings {
+            $this->repository->reset();
+
+            return $this->repository->getSingleton();
+        };
+
+        for ($i = 0; $i < 200; ++$i) {
+            $request();
+        }
+        gc_collect_cycles();
+        $baseline = memory_get_usage();
+
+        for ($i = 0; $i < 2000; ++$i) {
+            $request();
+        }
+        gc_collect_cycles();
+
+        self::assertLessThan(256 * 1024, memory_get_usage() - $baseline);
+        self::assertSame(1, $this->repository->count([]));
+
+        $this->connection->executeStatement('UPDATE content_blog_settings SET per_page = 12');
+        self::assertSame(12, $request()->getPerPage(), 'a change made between requests is seen');
+    }
 }
