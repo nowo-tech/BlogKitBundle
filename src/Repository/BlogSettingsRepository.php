@@ -51,7 +51,7 @@ final class BlogSettingsRepository extends ServiceEntityRepository implements Re
     }
 
     /**
-     * Inserts one row with the BlogSettings defaults, bypassing the unit of work.
+     * Inserts one row with the BlogSettings defaults, bypassing the unit of work (no flush).
      */
     private function insertDefaultRow(): void
     {
@@ -74,6 +74,14 @@ final class BlogSettingsRepository extends ServiceEntityRepository implements Re
 
             $data[$column]  = $value instanceof BackedEnum ? $value->value : $value;
             $types[$column] = (string) $metadata->getTypeOfField($field);
+        }
+
+        // Sequence-style generators (pre-insert) need the id in the INSERT; identity columns fill it themselves.
+        if (!$metadata->idGenerator->isPostInsertGenerator()) {
+            $idField          = $metadata->getSingleIdentifierFieldName();
+            $idColumn         = $quoteStrategy->getColumnName($idField, $metadata, $platform);
+            $data[$idColumn]  = $metadata->idGenerator->generateId($entityManager, $defaults);
+            $types[$idColumn] = (string) $metadata->getTypeOfField($idField);
         }
 
         $connection->insert($quoteStrategy->getTableName($metadata, $platform), $data, $types);

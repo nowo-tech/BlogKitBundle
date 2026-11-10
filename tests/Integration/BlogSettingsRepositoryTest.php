@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Nowo\BlogKitBundle\Tests\Integration;
 
+use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\ORM\Id\AbstractIdGenerator;
 use Nowo\BlogKitBundle\Entity\BlogSettings;
 use Nowo\BlogKitBundle\Repository\BlogSettingsRepository;
 use Nowo\BlogKitBundle\Tests\Support\MappedTestUser;
@@ -114,5 +116,19 @@ final class BlogSettingsRepositoryTest extends DoctrineTestCase
         $defaults = new BlogSettings();
 
         self::assertSame($defaults->toPublicArray(), $settings->toPublicArray());
+    }
+
+    #[Test]
+    public function getSingletonPassesTheIdOfAPreInsertGenerator(): void
+    {
+        $metadata              = $this->entityManager->getClassMetadata(BlogSettings::class);
+        $metadata->idGenerator = new class extends AbstractIdGenerator {
+            public function generateId(EntityManagerInterface $em, ?object $entity): int
+            {
+                return 42;
+            }
+        };
+
+        self::assertSame(42, $this->repository->getSingleton()->getId());
     }
 }
