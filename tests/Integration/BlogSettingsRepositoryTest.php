@@ -4,7 +4,11 @@ declare(strict_types=1);
 
 namespace Nowo\BlogKitBundle\Tests\Integration;
 
+use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\ORM\Id\AbstractIdGenerator;
+use Nowo\BlogKitBundle\Entity\BlogSettings;
 use Nowo\BlogKitBundle\Repository\BlogSettingsRepository;
+use Nowo\BlogKitBundle\Tests\Support\MappedTestUser;
 use PHPUnit\Framework\Attributes\Test;
 
 final class BlogSettingsRepositoryTest extends DoctrineTestCase
@@ -73,5 +77,89 @@ final class BlogSettingsRepositoryTest extends DoctrineTestCase
 
         self::assertSame($existing->getId(), $settings->getId());
         self::assertSame(1, $freshRepository->count([]));
+    }
+
+    #[Test]
+    public function getSingletonCreatesTheRowWithoutFlushingPendingHostChanges(): void
+    {
+        $existing = $this->createUser('existing@example.test');
+        $existing->setEmail('changed@example.test');
+        $pending = new MappedTestUser()->setEmail('pending@example.test');
+        $this->entityManager->persist($pending);
+
+        $settings = $this->repository->getSingleton();
+
+        self::assertNotNull($settings->getId());
+        self::assertSame(6, $settings->getPerPage());
+        self::assertSame(1, $this->repository->count([]));
+        self::assertSame(
+            ['existing@example.test'],
+            $this->connection->fetchFirstColumn('SELECT email FROM blog_kit_test_user'),
+            'Pending host changes must not be flushed by a read.',
+        );
+
+        $unitOfWork = $this->entityManager->getUnitOfWork();
+        self::assertTrue($unitOfWork->isScheduledForInsert($pending));
+
+        $this->entityManager->flush();
+
+        self::assertSame(
+            ['changed@example.test', 'pending@example.test'],
+            $this->connection->fetchFirstColumn('SELECT email FROM blog_kit_test_user ORDER BY email'),
+        );
+    }
+
+    #[Test]
+    public function getSingletonInsertsTheEntityDefaults(): void
+    {
+        $settings = $this->repository->getSingleton();
+        $defaults = new BlogSettings();
+
+        self::assertSame($defaults->toPublicArray(), $settings->toPublicArray());
+    }
+
+    #[Test]
+    public function getSingletonPassesTheIdOfAPreInsertGenerator(): void
+    {
+        $metadata              = $this->entityManager->getClassMetadata(BlogSettings::class);
+        $metadata->idGenerator = new class extends AbstractIdGenerator {
+            public function generateId(EntityManagerInterface $em, ?object $entity): int
+            {
+                return 42;
+            }
+        };
+
+        self::assertSame(42, $this->repository->getSingleton()->getId());
+    }
+
+    /**
+     * Worker mode without kernel reset: the same repository serves many requests (reset() at each request boundary,
+     * as BlogKitWorkerStateSubscriber does); one row, flat memory, and a change made between requests is seen.
+     */
+    #[Test]
+    public function manyRequestsOnOneRepositoryKeepOneRowAndFlatMemory(): void
+    {
+        $request = function (): BlogSettings {
+            $this->repository->reset();
+
+            return $this->repository->getSingleton();
+        };
+
+        for ($i = 0; $i < 200; ++$i) {
+            $request();
+        }
+        gc_collect_cycles();
+        $baseline = memory_get_usage();
+
+        for ($i = 0; $i < 2000; ++$i) {
+            $request();
+        }
+        gc_collect_cycles();
+
+        self::assertLessThan(256 * 1024, memory_get_usage() - $baseline);
+        self::assertSame(1, $this->repository->count([]));
+
+        $this->connection->executeStatement('UPDATE content_blog_settings SET per_page = 12');
+        self::assertSame(12, $request()->getPerPage(), 'a change made between requests is seen');
     }
 }

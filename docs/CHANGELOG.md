@@ -40,6 +40,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Target 1.8.3.
+
+### Fixed
+
+- `BlogSettingsRepository::getSingleton()` no longer flushes the entity manager when the settings row does not exist yet. It used to `persist()` + `flush()` on a read path (rendering the blog, the settings provider), which committed any pending, unrelated changes of the host's unit of work at that moment. The default row is now created with a single DBAL `INSERT` on the connection of the entity manager that manages `BlogSettings` (it joins an open host transaction), then loaded as before. Affected: 1.0.0–1.8.2.
+- Worker mode without kernel reset (`FRANKENPHP_RESET_KERNEL=false`): a 2,200-request test on one `BlogSettingsRepository` (reset at each request boundary) keeps one row and flat memory and sees changes made between requests; `getSingleton()` keeps no state beyond the existing request-scoped memo.
+
 ## [1.8.2] - 2026-10-30
 
 Security: bundle routes are opt-in again; controllers are no longer autoconfigured, so a host's routing.controllers import does not expose them (REQ-SF-004 rule 7). See [UPGRADING](UPGRADING.md#to-182).
