@@ -3,7 +3,8 @@
 ## Table of contents
 
 - [Unreleased](#unreleased)
-- [To 1.8.2](#to-182)
+- [To 1.8.3](#to-183)
+  - [To 1.8.2](#to-182)
 - [To 1.8.1](#to-181)
 - [To 1.8.0](#to-180)
   - [CSRF protection is now required at compile time](#csrf-protection-is-now-required-at-compile-time)

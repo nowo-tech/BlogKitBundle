@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Table of contents
 
 - [[Unreleased]](#unreleased)
+- [[1.8.3] - 2026-11-10](#183---2026-11-10)
 - [[1.8.2] - 2026-10-30](#182---2026-10-30)
 - [[1.8.1] - 2026-10-30](#181---2026-10-30)
 - [[1.8.0] - 2026-10-28](#180---2026-10-28)
@@ -40,7 +41,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Target 1.8.3.
+## [1.8.3] - 2026-11-10
+
+Reading the blog settings no longer flushes the host's entity manager. See [UPGRADING](https://github.com/nowo-tech/BlogKitBundle/blob/v1.8.3/docs/UPGRADING.md#to-183).
+
 
 ### Fixed
 
@@ -461,7 +465,8 @@ Initial public release of **Blog Kit Bundle** (`nowo-tech/blog-kit-bundle`).
 - CSRF-protected admin mutations and public comment forms; deletes go through native confirm dialogs
 - Comment bodies escaped in Twig; article HTML documented as trusted-editor `|raw`
 
-[Unreleased]: https://github.com/nowo-tech/BlogKitBundle/compare/v1.8.2...HEAD
+[Unreleased]: https://github.com/nowo-tech/BlogKitBundle/compare/v1.8.3...HEAD
+[1.8.3]: https://github.com/nowo-tech/BlogKitBundle/compare/v1.8.2...v1.8.3
 [1.8.2]: https://github.com/nowo-tech/BlogKitBundle/compare/v1.8.1...v1.8.2
 [1.8.1]: https://github.com/nowo-tech/BlogKitBundle/compare/v1.8.0...v1.8.1
 [1.8.0]: https://github.com/nowo-tech/BlogKitBundle/compare/v1.7.0...v1.8.0
