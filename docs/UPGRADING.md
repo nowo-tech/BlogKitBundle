@@ -42,6 +42,16 @@
 
 ## Unreleased
 
+### To 1.8.3
+
+From **1.8.2**:
+
+```bash
+composer update nowo-tech/blog-kit-bundle
+```
+
+- No configuration change. Reading the blog settings for the first time (empty `content_blog_settings` table) no longer flushes your entity manager: pending changes of your own entities stay pending until your code flushes them. If your code relied on a blog page render to flush them, flush explicitly.
+
 ## To 1.8.2
 
 From **1.8.1**:
