@@ -33,6 +33,7 @@ use Symfony\Component\Routing\Attribute\Route;
 final class BlogArticleController extends AbstractController
 {
     use AdminListFilterTrait;
+    use DeniesUnrecordableUserTrait;
     use RequiresValidFormTrait;
 
     public function __construct(
@@ -98,6 +99,7 @@ final class BlogArticleController extends AbstractController
     #[Route('/admin/blog/new', name: 'admin_blog_new')]
     public function new(Request $request): Response
     {
+        $this->denyUnrecordableUser($this->users);
         $blogArticle = new BlogArticle();
         $blogArticle->ensureTranslations($this->blogLocales->getAll());
 
@@ -108,10 +110,6 @@ final class BlogArticleController extends AbstractController
             $user = $this->blogUser();
             if ($user instanceof BlogUserInterface) {
                 $blogArticle->setCreatedBy($user);
-            } elseif ($this->users?->idMode() === true && $this->users->currentUser() !== null) {
-                // Audit ON-M1: the signed-in user's id cannot be kept exactly; an article without owner would be
-                // editable by every manager.
-                throw $this->createAccessDeniedException();
             }
 
             $this->entityManager->persist($blogArticle);
@@ -127,6 +125,7 @@ final class BlogArticleController extends AbstractController
     #[Route('/admin/blog/{id}/edit', name: 'admin_blog_edit', requirements: ['id' => '\d+'])]
     public function edit(BlogArticle $blogArticle, Request $request): Response
     {
+        $this->denyUnrecordableUser($this->users);
         $this->accessDenied->denyUnlessCanManageArticle($blogArticle);
 
         $form = $this->createForm(BlogArticleType::class, $blogArticle);
@@ -145,6 +144,7 @@ final class BlogArticleController extends AbstractController
     #[Route('/admin/blog/{id}/edit-modal', name: 'admin_blog_edit_modal', requirements: ['id' => '\d+'], methods: ['GET'])]
     public function editModal(BlogArticle $blogArticle, Request $request): Response
     {
+        $this->denyUnrecordableUser($this->users);
         $this->accessDenied->denyUnlessCanManageArticle($blogArticle);
 
         return $this->renderInlineModal($blogArticle, $request);
@@ -153,6 +153,7 @@ final class BlogArticleController extends AbstractController
     #[Route('/admin/blog/{id}/inline', name: 'admin_blog_inline_update', requirements: ['id' => '\d+'], methods: ['POST'])]
     public function inlineUpdate(BlogArticle $blogArticle, Request $request): Response
     {
+        $this->denyUnrecordableUser($this->users);
         $this->accessDenied->denyUnlessCanManageArticle($blogArticle);
 
         return $this->handleInlineSubmit($blogArticle, $request, $this->entityManager);
@@ -161,6 +162,7 @@ final class BlogArticleController extends AbstractController
     #[Route('/admin/blog/{id}/delete', name: 'admin_blog_delete', requirements: ['id' => '\d+'], methods: ['POST'])]
     public function delete(BlogArticle $blogArticle, Request $request): RedirectResponse
     {
+        $this->denyUnrecordableUser($this->users);
         $this->accessDenied->denyUnlessCanManageArticle($blogArticle);
 
         $form = $this->csrfOnlyFormFactory->createNamed(

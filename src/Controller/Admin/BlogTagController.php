@@ -13,6 +13,7 @@ use Nowo\BlogKitBundle\Locale\BlogLocales;
 use Nowo\BlogKitBundle\Repository\BlogTagRepository;
 use Nowo\BlogKitBundle\Security\BlogKitAccessDenied;
 use Nowo\BlogKitBundle\Ui\BlogKitPageFactory;
+use Nowo\BlogKitBundle\User\BlogUsers;
 use Nowo\FormKitBundle\Form\CsrfOnlyFormFactory;
 use Nowo\FormKitBundle\Form\GetFilterFormFactory;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -29,6 +30,7 @@ use Symfony\Component\Routing\Attribute\Route;
 final class BlogTagController extends AbstractController
 {
     use AdminListFilterTrait;
+    use DeniesUnrecordableUserTrait;
     use RequiresValidFormTrait;
 
     public function __construct(
@@ -39,6 +41,7 @@ final class BlogTagController extends AbstractController
         private readonly BlogLocales $blogLocales,
         private readonly BlogKitAccessDenied $accessDenied,
         private readonly BlogKitPageFactory $pageFactory,
+        private readonly ?BlogUsers $users = null,
     ) {
     }
 
@@ -80,6 +83,7 @@ final class BlogTagController extends AbstractController
     #[Route('/admin/blog/tags/new', name: 'admin_blog_tags_new')]
     public function new(Request $request): Response
     {
+        $this->denyUnrecordableUser($this->users);
         $blogTag = new BlogTag();
         $blogTag->ensureTranslations($this->blogLocales->getAll());
 
@@ -100,6 +104,7 @@ final class BlogTagController extends AbstractController
     #[Route('/admin/blog/tags/{id}/edit', name: 'admin_blog_tags_edit', requirements: ['id' => '\d+'])]
     public function edit(BlogTag $blogTag, Request $request): Response
     {
+        $this->denyUnrecordableUser($this->users);
         $this->accessDenied->denyUnlessCanManageTag($blogTag);
 
         $form = $this->createForm(BlogTagType::class, $blogTag);
@@ -118,6 +123,7 @@ final class BlogTagController extends AbstractController
     #[Route('/admin/blog/tags/{id}/delete', name: 'admin_blog_tags_delete', requirements: ['id' => '\d+'], methods: ['POST'])]
     public function delete(BlogTag $blogTag, Request $request): RedirectResponse
     {
+        $this->denyUnrecordableUser($this->users);
         $this->accessDenied->denyUnlessCanManageTag($blogTag);
 
         $form = $this->csrfOnlyFormFactory->createNamed(

@@ -133,8 +133,9 @@ cannot be read: the bundle falls back to `utf8mb4_bin` (PAD SPACE), logs a warni
 metadata cache. Warm the cache with the database reachable, or clear the metadata cache before generating the
 migration, so the columns get `utf8mb4_0900_bin`.
 
-**Owner access (all modes).** In the id mode a signed-in user whose id cannot be kept exactly now gets HTTP 403 when
-creating an article, and any article write made as that user is refused, instead of saving an article without owner.
+**Owner access (all modes).** In the id mode a signed-in user whose id cannot be kept exactly now gets HTTP 403 on
+every admin route that writes articles, tags or settings, and any article flush made as that user is refused (the
+manager is then closed, as after any failed flush), instead of saving an article without owner.
 The `owner` listing gate that refuses such ids applies in the id mode only; the entity mode lists by your user's
 primary key exactly as in 1.8.
 

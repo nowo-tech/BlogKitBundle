@@ -9,6 +9,7 @@ use Nowo\BlogKitBundle\Form\BlogSettingsType;
 use Nowo\BlogKitBundle\Repository\BlogSettingsRepository;
 use Nowo\BlogKitBundle\Ui\BlogKitAreaNav;
 use Nowo\BlogKitBundle\Ui\BlogKitPageFactory;
+use Nowo\BlogKitBundle\User\BlogUsers;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -20,10 +21,13 @@ use Symfony\Component\Routing\Attribute\Route;
  */
 final class BlogSettingsController extends AbstractController
 {
+    use DeniesUnrecordableUserTrait;
+
     public function __construct(
         private readonly BlogSettingsRepository $blogSettingsRepository,
         private readonly EntityManagerInterface $entityManager,
         private readonly BlogKitPageFactory $pageFactory,
+        private readonly ?BlogUsers $users = null,
     ) {
     }
 
@@ -65,6 +69,7 @@ final class BlogSettingsController extends AbstractController
 
     private function handleSection(Request $request, string $section): Response
     {
+        $this->denyUnrecordableUser($this->users);
         $blogSettings = $this->blogSettingsRepository->getSingleton();
         $route        = BlogKitAreaNav::SETTINGS_SECTIONS[$section];
         $form         = $this->createForm(BlogSettingsType::class, $blogSettings, [

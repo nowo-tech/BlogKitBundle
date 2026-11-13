@@ -145,8 +145,10 @@ The id columns of `user_reference: id` hold identities a host supplies, so they 
    value that is not valid (legacy or hand-written) reads back as a `ValueObject\UnreadableBlogUserRef`: an owner
    nobody matches, never "no owner". The built-in owner access, the owner listing and the snapshot flag
    `BlogArticleSnapshot::$createdByUnreadable` deny it; only a really NULL column is unowned. A signed-in user whose
-   id cannot be kept exactly gets HTTP 403 when creating an article, and any article flush made as that user is
-   refused (`AccessDeniedException`), so no article is saved without its owner.
+   id cannot be kept exactly gets HTTP 403 on every admin route that writes articles, tags or settings, before the
+   form touches an entity; as a backstop any article flush made as that user is refused (`AccessDeniedException`):
+   the blog entities of that flush are detached and the manager is closed, as after any failed flush, so the next
+   flush (another user, a later request of a kept-alive worker) cannot save the refused write.
 2. The owner listing re-checks every row with `===` in PHP after the query; the owner policy compares ids with `===`
    and never falls back to a login identifier for a reference. The re-check runs after `LIMIT`: with the id mode the
    SQL is already exact (item 3), so it drops nothing; in the entity mode under a folding collation of a string user

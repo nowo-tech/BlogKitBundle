@@ -70,6 +70,15 @@ final readonly class BlogUsers
         return $this->reference($this->currentUser());
     }
 
+    /**
+     * Since 1.9.0 (audit ON-M1 / ON-R1): id mode, a security user is signed in, and its id cannot be kept exactly. Such
+     * a user may not write blog rows (they would read back as unowned).
+     */
+    public function isUnrecordable(): bool
+    {
+        return $this->idMode() && $this->currentUser() !== null && !$this->current() instanceof BlogUserInterface;
+    }
+
     /** The security user of the current request, whatever its class. */
     public function currentUser(): ?object
     {

@@ -91,7 +91,9 @@ Without new configuration the behaviour is the 1.8.3 one. See [ARCHITECTURE](ARC
 - Audit ON (pre-release fixes of the id mode): a stored user id the bundle cannot keep exactly reads back as
   `ValueObject\UnreadableBlogUserRef`, an owner nobody matches (denied by the owner access, the owner listing and
   `BlogArticleSnapshot::$createdByUnreadable`), never as "no owner" (ON-M1); a signed-in user whose id cannot be kept
-  exactly gets 403 when creating an article and its article writes are refused (ON-M1); the owner listing's id gate
+  exactly gets 403 on every admin route that writes articles, tags or settings, before the form touches an entity, and
+  as a backstop its article flushes are refused with the blog entities detached and the manager closed, so no later
+  flush saves the refused write (ON-M1, ON-R1); the owner listing's id gate
   applies in the id mode only (ON-I1); the re-check-after-`LIMIT` limit of the entity mode, the build-time collation
   fallback and the event timing inside a host transaction are documented (ON-L1, ON-I2, ON-I3).
 - Dev dependencies: `symfony/messenger` (tracker and worker tests); `doctrine/doctrine-bundle` 3.4.1 in the lock file.
