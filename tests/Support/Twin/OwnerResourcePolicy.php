@@ -25,7 +25,16 @@ final readonly class OwnerResourcePolicy implements BlogKitResourcePolicyInterfa
 
     public function canManageArticle(BlogArticleSnapshot $article): bool
     {
-        return $this->accessChecker->canConfigure() || $article->createdById === null || $article->createdById === $this->currentId();
+        if ($this->accessChecker->canConfigure()) {
+            return true;
+        }
+
+        // An owner whose stored id cannot be read is nobody's to manage (audit ON-M1); only a real NULL is unowned.
+        if ($article->createdByUnreadable) {
+            return false;
+        }
+
+        return $article->createdById === null || $article->createdById === $this->currentId();
     }
 
     public function canManageTag(BlogTagSnapshot $tag): bool

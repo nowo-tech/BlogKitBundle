@@ -8,7 +8,9 @@ use Nowo\BlogKitBundle\Entity\BlogArticle;
 use Nowo\BlogKitBundle\Entity\BlogComment;
 use Nowo\BlogKitBundle\Entity\BlogTag;
 use Nowo\BlogKitBundle\Support\BlogUserIdResolver;
+use Nowo\BlogKitBundle\User\BlogUsers;
 use Nowo\BlogKitBundle\ValueObject\BlogUserRef;
+use Nowo\BlogKitBundle\ValueObject\UnreadableBlogUserRef;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 
 use function is_object;
@@ -22,6 +24,7 @@ final readonly class OwnerBlogKitResourceAccessChecker implements BlogKitResourc
     public function __construct(
         private BlogKitAccessCheckerInterface $accessChecker,
         private ?TokenStorageInterface $tokenStorage = null,
+        private ?BlogUsers $users = null,
     ) {
     }
 
@@ -32,8 +35,14 @@ final readonly class OwnerBlogKitResourceAccessChecker implements BlogKitResourc
         }
 
         $owner = $article->getCreatedBy();
+        // A really NULL column (legacy rows, no signed-in creator): any manager, as in 1.8.
         if ($owner === null) {
             return true;
+        }
+
+        // Audit ON-M1: a stored id the bundle cannot read is an owner nobody matches (fail closed).
+        if ($owner instanceof UnreadableBlogUserRef) {
+            return false;
         }
 
         return BlogUserIdResolver::isSame($owner, $this->currentUser());
@@ -55,10 +64,14 @@ final readonly class OwnerBlogKitResourceAccessChecker implements BlogKitResourc
             return null;
         }
 
-        // Since 1.9.0 (REQ-SEC-006): an id that cannot be matched byte for byte lists nothing (fail closed).
         $id = BlogUserIdResolver::idOf($this->currentUser());
+        if ($id === null) {
+            return '';
+        }
 
-        return $id !== null && BlogUserRef::isValid($id) ? $id : '';
+        // Since 1.9.0 (REQ-SEC-006, `user_reference: id` only, audit ON-I1): an id that cannot be matched byte for
+        // byte lists nothing (fail closed). The entity mode compares the host's primary key as in 1.8.
+        return $this->users?->idMode() === true && !BlogUserRef::isValid($id) ? '' : $id;
     }
 
     private function currentUser(): ?object

@@ -215,6 +215,28 @@ final class BlogArticleControllerTest extends TestCase
     }
 
     #[Test]
+    public function newIsDeniedInIdModeWhenTheSignedInUserIdCannotBeKept(): void
+    {
+        $request = Request::create('/admin/blog/new', 'POST');
+        $form    = $this->createConfiguredMock(FormInterface::class, [
+            'isSubmitted' => true,
+            'isValid'     => true,
+            'createView'  => new FormView(),
+        ]);
+
+        $entityManager = $this->createMock(EntityManagerInterface::class);
+        $entityManager->expects(self::never())->method('persist');
+
+        $this->expectException(AccessDeniedException::class);
+        $this->createController(
+            request: $request,
+            entityManager: $entityManager,
+            formFactory: $this->createArticleFormFactory($form),
+            users: self::idModeUsers(str_repeat('x', 129)),
+        )->new($request);
+    }
+
+    #[Test]
     public function editDeniesWhenObjectAccessRejectsTheArticle(): void
     {
         $request = Request::create('/admin/blog/5/edit', 'GET');

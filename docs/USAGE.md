@@ -120,7 +120,8 @@ php bin/console nowo:blog:sync-hashtags --dry-run
 
 ## Published event
 
-When an article transitions to published, `BlogArticlePublishedDoctrineSubscriber` dispatches `BlogArticlePublishedEvent` after the flush committed. Listen to it in the host application (for example to send Web Push via PwaBundle). Since 1.9.0 read `getArticleId()` and `getArticleSnapshot()` (slug, titles, dates, author id); `getArticle()` is deprecated and removed in 2.0.
+When an article transitions to published, `BlogArticlePublishedDoctrineSubscriber` dispatches `BlogArticlePublishedEvent` from `postFlush`, after the flush committed its own transaction; when you
+wrap the write in a transaction of yours, the event runs before your commit (the transaction is yours). Listen to it in the host application (for example to send Web Push via PwaBundle). Since 1.9.0 read `getArticleId()` and `getArticleSnapshot()` (slug, titles, dates, author id); `getArticle()` is deprecated and removed in 2.0.
 
 ## Custom access logic
 

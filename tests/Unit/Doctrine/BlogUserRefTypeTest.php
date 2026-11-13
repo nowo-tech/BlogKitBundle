@@ -10,6 +10,7 @@ use InvalidArgumentException;
 use Nowo\BlogKitBundle\Doctrine\Type\BlogUserRefType;
 use Nowo\BlogKitBundle\Tests\Support\PlainHostUser;
 use Nowo\BlogKitBundle\ValueObject\BlogUserRef;
+use Nowo\BlogKitBundle\ValueObject\UnreadableBlogUserRef;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use stdClass;
@@ -28,9 +29,11 @@ final class BlogUserRefTypeTest extends TestCase
         self::assertSame('7', $type->convertToDatabaseValue(new PlainHostUser(7), $platform));
 
         self::assertNull($type->convertToPHPValue(null, $platform));
-        self::assertNull($type->convertToPHPValue('', $platform));
         self::assertEquals(new BlogUserRef('Bob'), $type->convertToPHPValue('Bob', $platform));
-        self::assertNull($type->convertToPHPValue('bob ', $platform), 'a legacy value that cannot be kept exactly is unreachable');
+        // Audit ON-M1: a stored value that cannot be kept exactly is an owner nobody matches, never "no user".
+        self::assertEquals(new UnreadableBlogUserRef('bob '), $type->convertToPHPValue('bob ', $platform));
+        self::assertEquals(new UnreadableBlogUserRef(''), $type->convertToPHPValue('', $platform));
+        self::assertSame('bob ', $type->convertToDatabaseValue(new UnreadableBlogUserRef('bob '), $platform), 'written back unchanged');
     }
 
     #[Test]

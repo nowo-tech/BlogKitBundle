@@ -17,6 +17,8 @@ final readonly class BlogArticleSnapshot
     /**
      * @param array<string, string> $titles locale => title (translations that have one)
      * @param list<string> $tagSlugs
+     * @param bool $createdByUnreadable audit ON-M1: the article has an owner whose stored id the bundle cannot read
+     *                                  (`createdById` is then null, but the article is NOT unowned: deny it)
      */
     public function __construct(
         public ?int $id,
@@ -28,6 +30,7 @@ final readonly class BlogArticleSnapshot
         public array $titles = [],
         public array $tagSlugs = [],
         public int $position = 0,
+        public bool $createdByUnreadable = false,
     ) {
     }
 
@@ -56,6 +59,7 @@ final readonly class BlogArticleSnapshot
             $titles,
             $tagSlugs,
             $article->getPosition(),
+            $article->getCreatedBy() instanceof UnreadableBlogUserRef,
         );
     }
 }

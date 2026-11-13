@@ -22,6 +22,7 @@ use Nowo\BlogKitBundle\Tests\Support\LocaleTestSupport;
 use Nowo\BlogKitBundle\Tests\Support\PlainHostUser;
 use Nowo\BlogKitBundle\User\BlogUsers;
 use Nowo\BlogKitBundle\ValueObject\BlogUserRef;
+use Nowo\BlogKitBundle\ValueObject\UnreadableBlogUserRef;
 use PHPUnit\Framework\Attributes\Test;
 use ReflectionMethod;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorage;
@@ -165,7 +166,7 @@ final class IdModeUserReferenceTest extends DoctrineTestCase
         $this->login('alice');
         $roles = $this->createStub(BlogKitAccessCheckerInterface::class);
         $roles->method('canConfigure')->willReturn(false);
-        $owner = new OwnerBlogKitResourceAccessChecker($roles, $this->tokenStorage);
+        $owner = new OwnerBlogKitResourceAccessChecker($roles, $this->tokenStorage, $this->users);
         self::assertSame('alice', $owner->articleListingCreatedById());
         $aliceArticle = $repository->findOneBy(['slug' => 'a-1']);
         $upperArticle = $repository->findOneBy(['slug' => 'a-2']);
@@ -187,9 +188,11 @@ final class IdModeUserReferenceTest extends DoctrineTestCase
         $mine->setCreatedBy(new BlogUserRef('bob'));
         $lookAlike = new BlogArticle()->setSlug('look-alike');
         $lookAlike->setCreatedBy(new BlogUserRef('Bob'));
-        $nobody = new BlogArticle()->setSlug('nobody');
+        $nobody     = new BlogArticle()->setSlug('nobody');
+        $unreadable = new BlogArticle()->setSlug('unreadable');
+        $unreadable->setCreatedBy(new UnreadableBlogUserRef('bob '));
 
-        self::assertSame([$mine, $nobody], $keep->invoke($repository, [$mine, $lookAlike, $nobody], 'bob'));
+        self::assertSame([$mine, $nobody], $keep->invoke($repository, [$mine, $lookAlike, $unreadable, $nobody], 'bob'));
         self::assertSame([$mine, $lookAlike], $keep->invoke($repository, [3 => $mine, 7 => $lookAlike], null));
     }
 

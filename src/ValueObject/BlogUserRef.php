@@ -57,6 +57,10 @@ final readonly class BlogUserRef implements BlogUserInterface, Stringable
             return $user->id;
         }
 
+        if ($user instanceof UnreadableBlogUserRef) {
+            return null;
+        }
+
         if ($user === null || !method_exists($user, 'getId')) {
             return null;
         }

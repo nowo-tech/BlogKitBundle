@@ -465,6 +465,7 @@ final class NowoBlogKitExtension extends Extension implements PrependExtensionIn
             '$tokenStorage',
             new Reference('security.token_storage', ContainerInterface::NULL_ON_INVALID_REFERENCE),
         );
+        $definition->setArgument('$users', new Reference(BlogUsers::class));
         $container->setDefinition($id, $definition);
         $container->setAlias(BlogKitResourceAccessCheckerInterface::class, $id);
     }

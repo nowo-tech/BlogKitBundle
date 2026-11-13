@@ -63,7 +63,7 @@ The other ports already take values only: `BlogKitAccessCheckerInterface`, `Blog
 
 `Event\BlogArticlePublishedEvent` carries the article id (`getArticleId()`) and a `BlogArticleSnapshot`
 (`getArticleSnapshot()`) copied when the event is created. `getArticle()` is deprecated and removed in 2.0. The event is
-dispatched from `postFlush`, after the flush committed its transaction, and never for a flush that rolled back
+dispatched from `postFlush`, after the flush committed its own transaction, and never for a flush that rolled back
 (REQ-ARCH-001 rule 7, `tests/Integration/BlogArticlePublishedAfterCommitTest.php`). Inside a transaction **you** opened
 around a bundle write, `postFlush` still runs before your commit: the transaction is yours.
 
@@ -142,12 +142,21 @@ The id columns of `user_reference: id` hold identities a host supplies, so they 
 
 1. `BlogUserRef` and the DBAL type `nowo_blog_kit_user_ref` refuse ids with edge whitespace (NBSP included), control or
    format characters (ZWSP, BOM, bidi marks), invalid UTF-8 or more than 128 characters; nothing is trimmed. A stored
-   value that is no longer valid reads back as `null` (unreachable, fail closed).
+   value that is not valid (legacy or hand-written) reads back as a `ValueObject\UnreadableBlogUserRef`: an owner
+   nobody matches, never "no owner". The built-in owner access, the owner listing and the snapshot flag
+   `BlogArticleSnapshot::$createdByUnreadable` deny it; only a really NULL column is unowned. A signed-in user whose
+   id cannot be kept exactly gets HTTP 403 when creating an article, and any article flush made as that user is
+   refused (`AccessDeniedException`), so no article is saved without its owner.
 2. The owner listing re-checks every row with `===` in PHP after the query; the owner policy compares ids with `===`
-   and never falls back to a login identifier for a reference.
+   and never falls back to a login identifier for a reference. The re-check runs after `LIMIT`: with the id mode the
+   SQL is already exact (item 3), so it drops nothing; in the entity mode under a folding collation of a string user
+   primary key it can leave a short page and an over-counted total (known limit, never another owner's row).
 3. On MySQL / MariaDB the columns get a binary NO PAD collation from the bundle's metadata listener:
    `utf8mb4_0900_bin` (MySQL ≥ 8.0.17), `utf8mb4_nopad_bin` (MariaDB), `utf8mb4_bin` only on an older MySQL or when the
-   server version cannot be read in full, with a logged warning. PostgreSQL and SQLite compare exactly.
+   server cannot be asked its version, with a logged warning. The version is read from the live server when the
+   metadata is built (the configured `server_version` only picks the DBAL platform); metadata warmed with no database
+   reachable (e.g. `cache:warmup` in an image build) is cached with `utf8mb4_bin`: warm it with the database up, or
+   clear the metadata cache before generating a migration. PostgreSQL and SQLite compare exactly.
 4. `user_directory` labels are looked up by the exact id.
 5. Id checks use anchored regular expressions with `/D`.
 6. The owner filter is exact in SQL (binary collation) before `LIMIT`.

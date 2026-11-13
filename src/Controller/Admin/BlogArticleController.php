@@ -108,6 +108,10 @@ final class BlogArticleController extends AbstractController
             $user = $this->blogUser();
             if ($user instanceof BlogUserInterface) {
                 $blogArticle->setCreatedBy($user);
+            } elseif ($this->users?->idMode() === true && $this->users->currentUser() !== null) {
+                // Audit ON-M1: the signed-in user's id cannot be kept exactly; an article without owner would be
+                // editable by every manager.
+                throw $this->createAccessDeniedException();
             }
 
             $this->entityManager->persist($blogArticle);

@@ -15,6 +15,7 @@ use Nowo\BlogKitBundle\Repository\Concerns\JoinsTranslationsAndAuditUsers;
 use Nowo\BlogKitBundle\Repository\Concerns\RunsDocumentedSql;
 use Nowo\BlogKitBundle\Support\BlogUserIdResolver;
 use Nowo\BlogKitBundle\User\BlogUsers;
+use Nowo\BlogKitBundle\ValueObject\UnreadableBlogUserRef;
 use SortDirection;
 use Symfony\Contracts\Service\ResetInterface;
 
@@ -436,7 +437,12 @@ class BlogArticleRepository extends ServiceEntityRepository implements ResetInte
 
     /**
      * Since 1.9.0 (REQ-SEC-006 item 2): the rows the owner filter selected, re-checked byte for byte in PHP (a folding
-     * collation could have matched a look-alike id).
+     * collation could have matched a look-alike id); an unreadable stored owner (audit ON-M1) is nobody's.
+     *
+     * Known limit (audit ON-L1): this runs after `LIMIT`. With `user_reference: id` the column compares exactly in SQL
+     * (binary NO PAD collation), so nothing is dropped here. In the entity mode the filter compares your user table's
+     * primary key: under a folding collation of a string key a dropped look-alike leaves a short page and an
+     * over-counted total, never another owner's row.
      *
      * @param array<array-key, BlogArticle> $items
      *
@@ -453,7 +459,12 @@ class BlogArticleRepository extends ServiceEntityRepository implements ResetInte
         return array_values(array_filter(
             $items,
             static function (BlogArticle $article) use ($id): bool {
-                $owner = BlogUserIdResolver::idOf($article->getCreatedBy());
+                $createdBy = $article->getCreatedBy();
+                if ($createdBy instanceof UnreadableBlogUserRef) {
+                    return false;
+                }
+
+                $owner = BlogUserIdResolver::idOf($createdBy);
 
                 return $owner === null || $owner === $id;
             },

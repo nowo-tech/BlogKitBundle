@@ -9,6 +9,7 @@ use Doctrine\DBAL\Types\Exception\InvalidType;
 use Doctrine\DBAL\Types\StringType;
 use InvalidArgumentException;
 use Nowo\BlogKitBundle\ValueObject\BlogUserRef;
+use Nowo\BlogKitBundle\ValueObject\UnreadableBlogUserRef;
 
 use function is_object;
 use function is_string;
@@ -16,7 +17,8 @@ use function is_string;
 /**
  * Since 1.9.0 (`doctrine.user_reference: id`): the column type of the user fields of the blog rows. The database holds
  * the user's id as a string; PHP reads it back as a {@see BlogUserRef}. Ids that cannot be kept exactly are refused
- * before any write (REQ-SEC-006 item 1), on every platform.
+ * before any write (REQ-SEC-006 item 1), on every platform; a stored one reads back as an {@see UnreadableBlogUserRef}
+ * that every owner check denies.
  *
  * @internal registered by the bundle (`doctrine.dbal.types`)
  */
@@ -28,6 +30,11 @@ final class BlogUserRefType extends StringType
     {
         if ($value === null) {
             return null;
+        }
+
+        // Audit ON-M1: an unreadable stored value is written back exactly as it was read (never as NULL).
+        if ($value instanceof UnreadableBlogUserRef) {
+            return $value->raw;
         }
 
         $id = match (true) {
@@ -46,15 +53,16 @@ final class BlogUserRefType extends StringType
         return $id;
     }
 
-    public function convertToPHPValue(mixed $value, AbstractPlatform $platform): ?BlogUserRef
+    public function convertToPHPValue(mixed $value, AbstractPlatform $platform): BlogUserRef|UnreadableBlogUserRef|null
     {
-        if ($value === null || $value === '') {
+        if ($value === null) {
             return null;
         }
 
         $id = (string) $value;
 
-        // A legacy value that cannot be kept exactly is unreachable (fail closed), never trimmed into another id.
-        return BlogUserRef::isValid($id) ? new BlogUserRef($id) : null;
+        // Audit ON-M1: a stored value that cannot be kept exactly is an owner nobody matches (fail closed), never "no
+        // owner" and never trimmed into another id. Only a real NULL is "no user".
+        return BlogUserRef::isValid($id) ? new BlogUserRef($id) : new UnreadableBlogUserRef($id);
     }
 }

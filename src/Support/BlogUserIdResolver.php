@@ -6,6 +6,7 @@ namespace Nowo\BlogKitBundle\Support;
 
 use Nowo\BlogKitBundle\Model\BlogUserInterface;
 use Nowo\BlogKitBundle\ValueObject\BlogUserRef;
+use Nowo\BlogKitBundle\ValueObject\UnreadableBlogUserRef;
 
 use function method_exists;
 
@@ -33,6 +34,11 @@ final class BlogUserIdResolver
 
     public static function isSame(?object $left, ?object $right): bool
     {
+        // Audit ON-M1: an unreadable stored id is the same as nobody.
+        if ($left instanceof UnreadableBlogUserRef || $right instanceof UnreadableBlogUserRef) {
+            return false;
+        }
+
         $leftId  = self::idOf($left);
         $rightId = self::idOf($right);
         if ($leftId !== null && $rightId !== null && $leftId === $rightId) {

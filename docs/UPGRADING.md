@@ -122,9 +122,21 @@ ALTER TABLE content_blog_comment
   MODIFY moderated_by_id VARCHAR(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_bin DEFAULT NULL;
 ```
 
-Use `utf8mb4_nopad_bin` on MariaDB. A value the bundle cannot keep exactly reads back as `null` (unreachable) and is
-logged nowhere: fix it before switching. With `server_version` set without a patch number (`8`, `8.0`) the bundle cannot
-tell 8.0.17+ apart, so it falls back to `utf8mb4_bin` and logs a warning; set the full version (`8.0.36`).
+Use `utf8mb4_nopad_bin` on MariaDB. A value the bundle cannot keep exactly (edge spaces, invisible characters, more
+than 128 characters) reads back as an `UnreadableBlogUserRef`: the article keeps an owner that nobody matches, so only
+users with the configure role can edit it (audit ON-M1). Fix such values before switching.
+
+The collation is chosen from the version the live server reports when the Doctrine metadata is built; the configured
+`server_version` only selects the DBAL platform, so a value without a patch number (`8`, `8.0`) is harmless. When the
+metadata is built with no database reachable (for example `cache:warmup` during an image build), the server version
+cannot be read: the bundle falls back to `utf8mb4_bin` (PAD SPACE), logs a warning, and that mapping stays in the
+metadata cache. Warm the cache with the database reachable, or clear the metadata cache before generating the
+migration, so the columns get `utf8mb4_0900_bin`.
+
+**Owner access (all modes).** In the id mode a signed-in user whose id cannot be kept exactly now gets HTTP 403 when
+creating an article, and any article write made as that user is refused, instead of saving an article without owner.
+The `owner` listing gate that refuses such ids applies in the id mode only; the entity mode lists by your user's
+primary key exactly as in 1.8.
 
 ### Worker mode
 
