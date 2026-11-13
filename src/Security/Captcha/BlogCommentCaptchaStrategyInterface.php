@@ -8,6 +8,9 @@ use Symfony\Component\Form\FormBuilderInterface;
 
 /**
  * Configures and verifies the active public-comment CAPTCHA strategy.
+ *
+ * @deprecated since 1.9.0, removed in 2.0: implement {@see BlogCommentCaptchaVerifierInterface} (no Symfony Form
+ *             builder); the same configuration key takes it
  */
 interface BlogCommentCaptchaStrategyInterface
 {

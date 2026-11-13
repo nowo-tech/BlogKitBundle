@@ -23,8 +23,15 @@ trait JoinsTranslationsAndAuditUsers
             ->addSelect($translationAlias);
     }
 
-    protected function joinAuditUsers(QueryBuilder $queryBuilder, string $rootAlias): QueryBuilder
+    /**
+     * @param bool $join since 1.9.0: false with `doctrine.user_reference: id` (the user fields are ids, nothing to join)
+     */
+    protected function joinAuditUsers(QueryBuilder $queryBuilder, string $rootAlias, bool $join = true): QueryBuilder
     {
+        if (!$join) {
+            return $queryBuilder;
+        }
+
         return $queryBuilder
             ->leftJoin(sprintf('%s.createdBy', $rootAlias), 'cb')
             ->addSelect('cb')

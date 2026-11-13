@@ -15,6 +15,7 @@ use Nowo\BlogKitBundle\Security\BlogKitAccessCheckerInterface;
 use Nowo\BlogKitBundle\Security\BlogProtection;
 use Nowo\BlogKitBundle\Service\BlogCommentManager;
 use Nowo\BlogKitBundle\Service\BlogSettingsProvider;
+use Nowo\BlogKitBundle\User\BlogUsers;
 use Nowo\RoutingKitBundle\Attribute\Routable;
 use Nowo\RoutingKitBundle\Attribute\RouteParam;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -36,6 +37,7 @@ final class PublicCommentController extends AbstractController
         private readonly BlogProtection $protection,
         private readonly BlogKitAccessCheckerInterface $accessChecker,
         private readonly ?BlogSettingsProvider $blogSettings = null,
+        private readonly ?BlogUsers $users = null,
     ) {
     }
 
@@ -106,7 +108,7 @@ final class PublicCommentController extends AbstractController
 
         /** @var array{body: string} $data */
         $data = $form->getData();
-        $user = $this->getUser();
+        $user = $this->blogUser();
 
         if (!$this->accessChecker->canModerate() || !$user instanceof BlogUserInterface) {
             throw $this->createAccessDeniedException();
@@ -132,5 +134,19 @@ final class PublicCommentController extends AbstractController
     private function redirectToArticle(string $slug): RedirectResponse
     {
         return $this->redirectToRoute('blog_show', ['slug' => $slug]);
+    }
+
+    /**
+     * Since 1.9.0: the blog user of the current request: the security user (entity mode) or its reference (id mode).
+     */
+    private function blogUser(): ?BlogUserInterface
+    {
+        if ($this->users instanceof BlogUsers) {
+            return $this->users->current();
+        }
+
+        $user = $this->getUser();
+
+        return $user instanceof BlogUserInterface ? $user : null;
     }
 }

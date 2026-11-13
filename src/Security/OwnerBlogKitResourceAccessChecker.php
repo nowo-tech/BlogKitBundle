@@ -8,6 +8,7 @@ use Nowo\BlogKitBundle\Entity\BlogArticle;
 use Nowo\BlogKitBundle\Entity\BlogComment;
 use Nowo\BlogKitBundle\Entity\BlogTag;
 use Nowo\BlogKitBundle\Support\BlogUserIdResolver;
+use Nowo\BlogKitBundle\ValueObject\BlogUserRef;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 
 use function is_object;
@@ -54,7 +55,10 @@ final readonly class OwnerBlogKitResourceAccessChecker implements BlogKitResourc
             return null;
         }
 
-        return BlogUserIdResolver::idOf($this->currentUser()) ?? '';
+        // Since 1.9.0 (REQ-SEC-006): an id that cannot be matched byte for byte lists nothing (fail closed).
+        $id = BlogUserIdResolver::idOf($this->currentUser());
+
+        return $id !== null && BlogUserRef::isValid($id) ? $id : '';
     }
 
     private function currentUser(): ?object

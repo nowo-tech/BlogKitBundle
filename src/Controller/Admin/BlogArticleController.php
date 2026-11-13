@@ -15,6 +15,7 @@ use Nowo\BlogKitBundle\Model\BlogUserInterface;
 use Nowo\BlogKitBundle\Repository\BlogArticleRepository;
 use Nowo\BlogKitBundle\Security\BlogKitAccessDenied;
 use Nowo\BlogKitBundle\Ui\BlogKitPageFactory;
+use Nowo\BlogKitBundle\User\BlogUsers;
 use Nowo\FormKitBundle\Form\CsrfOnlyFormFactory;
 use Nowo\FormKitBundle\Form\GetFilterFormFactory;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -44,6 +45,7 @@ final class BlogArticleController extends AbstractController
         #[Autowire('%nowo_blog_kit.web_ui.page_size%')]
         private readonly int $pageSize,
         private readonly BlogKitPageFactory $pageFactory,
+        private readonly ?BlogUsers $users = null,
     ) {
     }
 
@@ -103,7 +105,7 @@ final class BlogArticleController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $user = $this->getUser();
+            $user = $this->blogUser();
             if ($user instanceof BlogUserInterface) {
                 $blogArticle->setCreatedBy($user);
             }
@@ -231,5 +233,19 @@ final class BlogArticleController extends AbstractController
             'action' => $this->generateUrl('admin_blog_inline_update', ['id' => $blogArticle->getId()]),
             'method' => 'POST',
         ]);
+    }
+
+    /**
+     * Since 1.9.0: the blog user of the current request: the security user (entity mode) or its reference (id mode).
+     */
+    private function blogUser(): ?BlogUserInterface
+    {
+        if ($this->users instanceof BlogUsers) {
+            return $this->users->current();
+        }
+
+        $user = $this->getUser();
+
+        return $user instanceof BlogUserInterface ? $user : null;
     }
 }

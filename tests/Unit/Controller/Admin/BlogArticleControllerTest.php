@@ -18,7 +18,10 @@ use Nowo\BlogKitBundle\Security\BlogKitResourceAccessCheckerInterface;
 use Nowo\BlogKitBundle\Tests\Support\ControllerTestHelper;
 use Nowo\BlogKitBundle\Tests\Support\LocaleTestSupport;
 use Nowo\BlogKitBundle\Tests\Support\PageFixtures;
+use Nowo\BlogKitBundle\Tests\Support\PlainHostUser;
 use Nowo\BlogKitBundle\Tests\Support\TestUser;
+use Nowo\BlogKitBundle\User\BlogUsers;
+use Nowo\BlogKitBundle\ValueObject\BlogUserRef;
 use Nowo\FormKitBundle\Form\CsrfOnlyFormFactory;
 use Nowo\FormKitBundle\Form\GetFilterFormFactory;
 use PHPUnit\Framework\Attributes\Test;
@@ -29,6 +32,8 @@ use Symfony\Component\Form\FormInterface;
 use Symfony\Component\Form\FormView;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorage;
+use Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 use Twig\Environment;
 
@@ -183,6 +188,30 @@ final class BlogArticleControllerTest extends TestCase
         );
 
         $controller->new($request);
+    }
+
+    #[Test]
+    public function newAssignsTheReferenceOfAPlainHostUserInIdMode(): void
+    {
+        $request = Request::create('/admin/blog/new', 'POST');
+        $form    = $this->createConfiguredMock(FormInterface::class, [
+            'isSubmitted' => true,
+            'isValid'     => true,
+            'createView'  => new FormView(),
+        ]);
+        $form->expects(self::once())->method('handleRequest')->with($request);
+
+        $entityManager = $this->createMock(EntityManagerInterface::class);
+        $entityManager->expects(self::once())
+            ->method('persist')
+            ->with(self::callback(static fn (BlogArticle $article): bool => $article->getCreatedBy() == new BlogUserRef('editor-7')));
+
+        $this->createController(
+            request: $request,
+            entityManager: $entityManager,
+            formFactory: $this->createArticleFormFactory($form),
+            users: $this->idModeUsers('editor-7'),
+        )->new($request);
     }
 
     #[Test]
@@ -504,6 +533,7 @@ final class BlogArticleControllerTest extends TestCase
         int $pageSize = 20,
         ?BlogKitAccessDenied $accessDenied = null,
         ?TestUser $user = null,
+        ?BlogUsers $users = null,
     ): BlogArticleController {
         $request ??= Request::create('/admin/blog', 'GET');
 
@@ -516,6 +546,7 @@ final class BlogArticleControllerTest extends TestCase
             $accessDenied ?? new BlogKitAccessDenied(new AllowAllBlogKitResourceAccessChecker()),
             $pageSize,
             PageFixtures::factory(),
+            $users,
         );
 
         ControllerTestHelper::bind($controller, $request, array_filter([
@@ -581,5 +612,14 @@ final class BlogArticleControllerTest extends TestCase
         $reflection->setValue($article, $id);
 
         return $article;
+    }
+
+    private function idModeUsers(string $id): BlogUsers
+    {
+        $user    = new PlainHostUser($id, $id);
+        $storage = new TokenStorage();
+        $storage->setToken(new UsernamePasswordToken($user, 'main', $user->getRoles()));
+
+        return new BlogUsers(BlogUsers::ID, $storage);
     }
 }

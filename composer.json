@@ -76,6 +76,7 @@
         "phpstan/phpstan-symfony": "^2.0",
         "phpunit/phpunit": "^13.4",
         "rector/rector": "^2.0",
+        "symfony/messenger": "^7.4 || ^8.0",
         "vincentlanglet/twig-cs-fixer": "^4.0"
     },
     "autoload": {

@@ -11,6 +11,7 @@ use Doctrine\Persistence\ManagerRegistry;
 use Nowo\BlogKitBundle\Entity\BlogArticle;
 use Nowo\BlogKitBundle\Entity\BlogComment;
 use Nowo\BlogKitBundle\Entity\BlogCommentStatus;
+use Nowo\BlogKitBundle\User\BlogUsers;
 use SortDirection;
 
 use function ceil;
@@ -24,21 +25,32 @@ use function min;
  */
 final class BlogCommentRepository extends ServiceEntityRepository
 {
-    public function __construct(ManagerRegistry $registry)
+    private readonly BlogUsers $users;
+
+    /**
+     * @param BlogUsers|null $users since 1.9.0: how the rows reference users (null: the 1.8 relation)
+     */
+    public function __construct(ManagerRegistry $registry, ?BlogUsers $users = null)
     {
         parent::__construct($registry, BlogComment::class);
+        $this->users = $users ?? new BlogUsers();
     }
 
     /** @return list<BlogComment> */
     public function findApprovedRootCommentsByArticle(BlogArticle $blogArticle): array
     {
-        return $this->createQueryBuilder('comment')
+        $queryBuilder = $this->createQueryBuilder('comment')
             ->leftJoin('comment.replies', 'reply', 'WITH', 'reply.blogCommentStatus = :status')
-            ->addSelect('reply')
-            ->leftJoin('comment.staffAuthor', 'staff')
-            ->addSelect('staff')
-            ->leftJoin('reply.staffAuthor', 'replyStaff')
-            ->addSelect('replyStaff')
+            ->addSelect('reply');
+        if ($this->users->joinable()) {
+            $queryBuilder
+                ->leftJoin('comment.staffAuthor', 'staff')
+                ->addSelect('staff')
+                ->leftJoin('reply.staffAuthor', 'replyStaff')
+                ->addSelect('replyStaff');
+        }
+
+        return $queryBuilder
             ->andWhere('comment.blogArticle = :article')
             ->andWhere('comment.blogComment IS NULL')
             ->andWhere('comment.blogCommentStatus = :status')
@@ -99,9 +111,10 @@ final class BlogCommentRepository extends ServiceEntityRepository
             ->addSelect('article')
             ->leftJoin('comment.blogComment', 'parent')
             ->addSelect('parent')
-            ->leftJoin('comment.staffAuthor', 'staff')
-            ->addSelect('staff')
             ->orderBy('comment.createdAt', SortDirection::Descending);
+        if ($this->users->joinable()) {
+            $queryBuilder->leftJoin('comment.staffAuthor', 'staff')->addSelect('staff');
+        }
 
         if ($blogCommentStatus instanceof BlogCommentStatus) {
             $queryBuilder

@@ -18,8 +18,11 @@ use Nowo\BlogKitBundle\Service\BlogSettingsProvider;
 use Nowo\BlogKitBundle\Tests\Support\BlogProtectionTestFactory;
 use Nowo\BlogKitBundle\Tests\Support\ControllerTestHelper;
 use Nowo\BlogKitBundle\Tests\Support\LocaleTestSupport;
+use Nowo\BlogKitBundle\Tests\Support\PlainHostUser;
 use Nowo\BlogKitBundle\Tests\Support\RepositoryTestSupport;
 use Nowo\BlogKitBundle\Tests\Support\TestUser;
+use Nowo\BlogKitBundle\User\BlogUsers;
+use Nowo\BlogKitBundle\ValueObject\BlogUserRef;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use ReflectionProperty;
@@ -28,6 +31,8 @@ use Symfony\Component\Form\FormInterface;
 use Symfony\Component\Form\FormView;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorage;
+use Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
@@ -280,6 +285,33 @@ final class PublicCommentControllerTest extends TestCase
     }
 
     #[Test]
+    public function staffReplyRecordsTheReferenceOfAPlainHostUserInIdMode(): void
+    {
+        $request = Request::create('/blog/comments/9/reply', 'POST');
+        $comment = $this->createComment(9, $this->createArticle(4, 'post', true));
+
+        $repository = $this->createMock(BlogCommentRepository::class);
+        $repository->method('find')->willReturn($comment);
+        $form = $this->createConfiguredMock(FormInterface::class, [
+            'isSubmitted' => true,
+            'isValid'     => true,
+            'getData'     => ['body' => 'Staff reply'],
+            'createView'  => new FormView(),
+        ]);
+
+        $manager = $this->createMock(BlogCommentManager::class);
+        $manager->expects(self::once())->method('createStaffReply')->with($comment, new BlogUserRef('staff-3'), 'Staff reply');
+
+        $this->createController(
+            request: $request,
+            commentRepository: $repository,
+            manager: $manager,
+            formFactory: $this->createFormFactoryForForm($form),
+            users: $this->idModeUsers('staff-3'),
+        )->staffReply(9, $request);
+    }
+
+    #[Test]
     public function staffReplyDeniesAccessWhenUserCannotModerate(): void
     {
         $request = Request::create('/blog/comments/9/reply', 'POST');
@@ -337,6 +369,7 @@ final class PublicCommentControllerTest extends TestCase
         ?TestUser $user = null,
         ?BlogKitAccessCheckerInterface $accessChecker = null,
         ?BlogSettingsProvider $settings = null,
+        ?BlogUsers $users = null,
     ): PublicCommentController {
         $request ??= Request::create('/blog/post/comments', 'POST');
 
@@ -348,6 +381,7 @@ final class PublicCommentControllerTest extends TestCase
             BlogProtectionTestFactory::create(['rateLimit' => 0]),
             $accessChecker ?? $this->allowingAccessChecker(),
             $settings,
+            $users,
         );
 
         ControllerTestHelper::bind($controller, $request, array_filter([
@@ -405,5 +439,14 @@ final class PublicCommentControllerTest extends TestCase
         $access->method('canModerate')->willReturn(true);
 
         return $access;
+    }
+
+    private function idModeUsers(string $id): BlogUsers
+    {
+        $user    = new PlainHostUser($id, $id);
+        $storage = new TokenStorage();
+        $storage->setToken(new UsernamePasswordToken($user, 'main', $user->getRoles()));
+
+        return new BlogUsers(BlogUsers::ID, $storage);
     }
 }

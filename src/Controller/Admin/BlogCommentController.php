@@ -14,6 +14,7 @@ use Nowo\BlogKitBundle\Repository\BlogCommentRepository;
 use Nowo\BlogKitBundle\Security\BlogKitAccessDenied;
 use Nowo\BlogKitBundle\Service\BlogCommentManager;
 use Nowo\BlogKitBundle\Ui\BlogKitPageFactory;
+use Nowo\BlogKitBundle\User\BlogUsers;
 use Nowo\FormKitBundle\Form\CsrfOnlyFormFactory;
 use Nowo\FormKitBundle\Form\GetFilterFormFactory;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -55,6 +56,7 @@ final class BlogCommentController extends AbstractController
         private readonly BlogKitPageFactory $pageFactory,
         #[Autowire('%nowo_blog_kit.web_ui.page_size%')]
         private readonly int $pageSize = 20,
+        private readonly ?BlogUsers $users = null,
     ) {
     }
 
@@ -239,12 +241,26 @@ final class BlogCommentController extends AbstractController
 
     private function requireUser(): BlogUserInterface
     {
-        $user = $this->getUser();
+        $user = $this->blogUser();
 
         if (!$user instanceof BlogUserInterface) {
             throw $this->createAccessDeniedException();
         }
 
         return $user;
+    }
+
+    /**
+     * Since 1.9.0: the blog user of the current request: the security user (entity mode) or its reference (id mode).
+     */
+    private function blogUser(): ?BlogUserInterface
+    {
+        if ($this->users instanceof BlogUsers) {
+            return $this->users->current();
+        }
+
+        $user = $this->getUser();
+
+        return $user instanceof BlogUserInterface ? $user : null;
     }
 }

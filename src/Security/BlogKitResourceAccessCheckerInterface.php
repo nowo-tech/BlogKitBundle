@@ -12,6 +12,9 @@ use Nowo\BlogKitBundle\Entity\BlogTag;
  * Object-level admin access after the role checker has already granted the route.
  *
  * Replace via `security.object_access.strategy: service` (or use built-in `owner`).
+ *
+ * @deprecated since 1.9.0, removed in 2.0: implement {@see BlogKitResourcePolicyInterface} (snapshots instead of
+ *             entities); the same configuration key takes it
  */
 interface BlogKitResourceAccessCheckerInterface
 {

@@ -2,6 +2,10 @@ services:
     _defaults:
         autowire: true
         autoconfigure: true
+        bind:
+            # Since 1.9.0 (REQ-ARCH-001 rule 6): every bundle service writes through the bundle's entity manager:
+            # doctrine.entity_manager when set (a manager dedicated to the blog), else the one that maps the entities.
+            Doctrine\ORM\EntityManagerInterface $entityManager: '@nowo_blog_kit.entity_manager'
 
     Nowo\BlogKitBundle\:
         resource: '../../*'
@@ -17,6 +21,11 @@ services:
             - '../../Security/Captcha/'
             - '../../Security/Html/'
             - '../../Security/RateLimit/'
+            - '../../ValueObject/'
+            - '../../Port/'
+            - '../../Doctrine/'
+            - '../../User/'
+            - '../../Worker/BlogKitOwnEntityManagerSubscriber.php'
 
     # REQ-SF-004 rule 7: the controllers carry #[Route] and must not be autoconfigured. On Symfony >= 7.3
     # autoconfiguration tags them `routing.controller`, and the host's `controllers: { resource: routing.controllers }`
