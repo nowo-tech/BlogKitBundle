@@ -25,6 +25,7 @@ All options live under the root key `nowo_blog_kit`.
 ```yaml
 nowo_blog_kit:
     user_class: null
+    user_directory: null           # 1.9.0: service id of a BlogUserDirectoryInterface (id mode labels)
     default_locale: es
     locales: [es, en]
     security:
@@ -73,18 +74,22 @@ nowo_blog_kit:
     doctrine:
         table_prefix: ''
         connection: default
+        entity_manager: null           # 1.9.0: a manager dedicated to the blog (opt-in)
+        mapping_type: attribute        # 1.9.0: attribute | xml
+        user_reference: entity         # 1.9.0: entity | id
 ```
 
 ## Top-level options
 
 | Key | Type | Default | Description |
 | --- | --- | --- | --- |
-| `user_class` | string\|null | `null` | FQCN of the host user entity implementing `BlogUserInterface`. Required for Doctrine `resolve_target_entities`. |
+| `user_class` | string\|null | `null` | FQCN of the host user entity implementing `BlogUserInterface`. Required for Doctrine `resolve_target_entities` with `doctrine.user_reference: entity`; not used with `id`. |
+| `user_directory` | string\|null | `null` | Since 1.9.0: service id of a `Nowo\BlogKitBundle\User\BlogUserDirectoryInterface` that labels the user ids kept with `doctrine.user_reference: id` (admin "updated by" column). Without it the id is shown. |
 | `default_locale` | string | `es` | Default locale used for translation fallback and `BlogLocales`. |
 | `locales` | list<string> | `[es, en]` | Locales exposed to admin translation forms and public fallback. |
 | `security` | map | see YAML | Access control for manage / moderate / configure routes. |
 | `web_ui` | map | see YAML | Layouts (UiKit page contract), per-page templates, admin page size, privacy URL. |
-| `doctrine` | map | see YAML | Bundle table prefixing and connection name. |
+| `doctrine` | map | see YAML | Table prefix, connection name, and since 1.9.0 the entity manager, mapping type and user references. |
 
 This bundle uses a single configuration tree. It does not expose `default_profile` / `profiles` of its own. FormKit profiles used by admin filters are documented below.
 
@@ -100,7 +105,7 @@ This bundle uses a single configuration tree. It does not expose `default_profil
 | `access_checker` | `null` | Optional service id implementing `BlogKitAccessCheckerInterface`. |
 | `allow_unauthenticated` | `false` | When `true`, the bundle uses an allow-all checker. Intended only for trusted demos. |
 | `object_access.strategy` | `none` | After roles: `none` (every granted editor sees all rows), `owner` (publications scoped to `createdBy`; configure roles see all), or `service`. |
-| `object_access.service` | `null` | Service id implementing `BlogKitResourceAccessCheckerInterface` when `strategy: service`. |
+| `object_access.service` | `null` | Service id implementing `BlogKitResourcePolicyInterface` (1.9.0 twin: snapshots) or the deprecated `BlogKitResourceAccessCheckerInterface` (entities) when `strategy: service`. |
 
 The bundle enforces **roles** on route names beginning with `admin_blog` (`BlogKitAdminAccessSubscriber`). Object checks run in admin controllers via `BlogKitAccessDenied` (edit/delete/inline, and listing filter for `owner` / custom services). Twig helpers `nowo_blog_kit_can_manage_article()`, `nowo_blog_kit_can_manage_tag()`, and `nowo_blog_kit_can_moderate_comment()` hide row actions; they are not a substitute for the service.
 
@@ -144,7 +149,7 @@ Public `POST /blog/{slug}/comments` protection. Admin settings (`/admin/blog/set
 | `strategy` | `fixed_window` | `none`, `fixed_window` (per IP), `per_ip_article`, `sliding_window`, or `service`. |
 | `limit` | `5` | Max posts per interval. `0` disables the limiter. |
 | `interval_seconds` | `60` | Window length. |
-| `service` | `null` | Service id implementing `BlogCommentRateLimiterInterface` when `strategy: service`. |
+| `service` | `null` | Service id implementing `BlogCommentRateLimitPolicyInterface` (1.9.0 twin: request context + snapshot → decision) or the deprecated `BlogCommentRateLimiterInterface` when `strategy: service`. |
 
 Requires Symfony `cache.app`. Without a cache pool, limiting is skipped.
 
@@ -158,7 +163,7 @@ Requires Symfony `cache.app`. Without a cache pool, limiting is skipped.
 | `min_score` | `0.5` | Minimum reCAPTCHA v3 score. |
 | `honeypot_field` | `website` | Hidden field name for the honeypot strategy. |
 | `timeout_seconds` | `5.0` | Timeout (0.1–60 s) of the remote verification call made by the default `StreamCaptchaHttpClient`. DNS resolution is not covered; alias `CaptchaHttpClientInterface` to a Symfony HttpClient implementation for full control. |
-| `service` | `null` | Service id implementing `BlogCommentCaptchaStrategyInterface` when `strategy: service`. |
+| `service` | `null` | Service id implementing `BlogCommentCaptchaVerifierInterface` (1.9.0 twin: widget + verify(request context)) or the deprecated `BlogCommentCaptchaStrategyInterface` when `strategy: service`. |
 
 Remote providers need `site_key` and `secret_key`. Missing keys fail closed (form invalid).
 
@@ -181,6 +186,9 @@ Sanitizing runs on article translation persist and again on public render (befor
 | --- | --- | --- |
 | `table_prefix` | `''` | Prefix applied to all bundle entity tables through `TablePrefixListener`. |
 | `connection` | `default` | Connection name recorded in configuration for host alignment. |
+| `entity_manager` | `null` | Since 1.9.0 (REQ-ARCH-001 rule 6, opt-in): a Doctrine entity manager dedicated to the blog, declared under `doctrine.orm.entity_managers` (not your default one, no other mappings). The bundle maps its entities there, flushes only that manager and clears it at every request / message / command boundary. Needs `user_reference: id`. `null`: the manager that maps the entities (your default one), as in 1.8; the default changes in 2.0. |
+| `mapping_type` | `attribute` | Since 1.9.0: `attribute` or `xml` (`src/Resources/config/doctrine-xml`, the same metadata). |
+| `user_reference` | `entity` | Since 1.9.0: `entity` = a relation to `user_class` (which implements `BlogUserInterface`), as in 1.8; `id` = the user's id in a string column, compared byte for byte (your user class implements nothing of the bundle). See [ARCHITECTURE](ARCHITECTURE.md). |
 
 Example:
 

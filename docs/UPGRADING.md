@@ -3,6 +3,11 @@
 ## Table of contents
 
 - [Unreleased](#unreleased)
+  - [Nothing to do for a standard host](#nothing-to-do-for-a-standard-host)
+  - [Deprecations (removed in 2.0)](#deprecations-removed-in-20)
+  - [Opting in to the DDD path](#opting-in-to-the-ddd-path)
+  - [Moving existing rows to `user_reference: id`](#moving-existing-rows-to-user_reference-id)
+  - [Worker mode](#worker-mode)
 - [To 1.8.3](#to-183)
 - [To 1.8.2](#to-182)
 - [To 1.8.1](#to-181)
@@ -42,6 +47,91 @@
 - [Future releases](#future-releases)
 
 ## Unreleased
+
+Target **1.9.0** (minor; REQ-ARCH-001 and REQ-RUNTIME-002). Every change is additive: without new configuration the
+bundle behaves as in 1.8.3. See [ARCHITECTURE](ARCHITECTURE.md).
+
+### Nothing to do for a standard host
+
+Attribute mapping, the relation to `user_class`, your default entity manager and the 1.x ports keep working unchanged.
+The admin "updated by" column now renders through `nowo_blog_kit_user_label(item.updatedBy)` (same output: the user
+identifier); a template override that prints `item.updatedBy.userIdentifier` keeps working in the entity mode.
+
+### Deprecations (removed in 2.0)
+
+| Deprecated | Replacement |
+|---|---|
+| `Security\BlogKitResourceAccessCheckerInterface` (entities) | `Security\BlogKitResourcePolicyInterface` (snapshots) |
+| `Security\RateLimit\BlogCommentRateLimiterInterface` (`Request`, entity) | `Security\RateLimit\BlogCommentRateLimitPolicyInterface` (`BlogCommentRequestContext`, `BlogArticleSnapshot` → `BlogCommentRateLimitDecision`) |
+| `Security\Captcha\BlogCommentCaptchaStrategyInterface` (`FormBuilderInterface`) | `Security\Captcha\BlogCommentCaptchaVerifierInterface` (`widget()`, `verify(BlogCommentRequestContext)`) |
+| `BlogArticlePublishedEvent::getArticle()` | `getArticleId()`, `getArticleSnapshot()` |
+
+The same configuration keys (`security.object_access.service`, `comments.rate_limit.service`, `comments.captcha.service`)
+take either interface; a service that implements neither now fails the container build. In 2.0 the private entity
+manager (`doctrine.entity_manager`) becomes the default (the bundle will no longer flush your manager).
+
+### Opting in to the DDD path
+
+```yaml
+doctrine:
+    orm:
+        entity_managers:
+            default: { mappings: { App: { type: xml, dir: '%kernel.project_dir%/config/doctrine', prefix: App\Domain } } }
+            blog: { connection: default }   # no mappings: the bundle maps its entities there
+
+nowo_blog_kit:
+    user_directory: App\Infrastructure\Blog\BlogUserLabels   # optional
+    doctrine:
+        entity_manager: blog
+        mapping_type: xml
+        user_reference: id
+```
+
+- `doctrine.entity_manager` must name a manager that is not your default one and maps nothing else; the bundle maps its
+  entities there, flushes only it and clears it between requests, messages and commands. It needs
+  `user_reference: id`.
+- `mapping_type: xml` uses `src/Resources/config/doctrine-xml` (identical metadata).
+- `user_reference: id` stores user ids in `created_by_id`, `updated_by_id`, `staff_author_id` and `moderated_by_id`
+  (string, 128, indexed, no foreign key, binary NO PAD collation on MySQL / MariaDB). Generate a migration after
+  switching.
+
+### Moving existing rows to `user_reference: id`
+
+Switching an existing database from the entity mode changes the column type of the four user columns from your user
+primary key to a string. A numeric or UUID primary key converts as is. Before the `ALTER`, check that no two users
+would collide once compared as bytes, and that no value has edge spaces or invisible characters (REQ-SEC-006 item 9;
+`TRIM`, `DISTINCT`, `LOWER` and `COLLATE …_ai_ci` fold too, so compare with `HEX()` / `CAST(… AS BINARY)`):
+
+```sql
+-- MySQL / MariaDB: ids that differ only by case, accents or trailing spaces under the old collation
+SELECT CAST(created_by_id AS BINARY) AS id_bytes, COUNT(*) FROM content_blog_article
+ WHERE created_by_id IS NOT NULL GROUP BY CAST(created_by_id AS BINARY);
+SELECT created_by_id, HEX(created_by_id) FROM content_blog_article
+ WHERE created_by_id <> TRIM(created_by_id) OR created_by_id REGEXP '[[:cntrl:]]';
+-- repeat for updated_by_id, and content_blog_comment.staff_author_id / moderated_by_id
+```
+
+Then drop the foreign keys of those columns and change them (the migration Doctrine generates does it; MySQL 8.0.17+):
+
+```sql
+ALTER TABLE content_blog_article
+  MODIFY created_by_id VARCHAR(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_bin DEFAULT NULL,
+  MODIFY updated_by_id VARCHAR(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_bin DEFAULT NULL;
+ALTER TABLE content_blog_comment
+  MODIFY staff_author_id VARCHAR(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_bin DEFAULT NULL,
+  MODIFY moderated_by_id VARCHAR(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_bin DEFAULT NULL;
+```
+
+Use `utf8mb4_nopad_bin` on MariaDB. A value the bundle cannot keep exactly reads back as `null` (unreachable) and is
+logged nowhere: fix it before switching. With `server_version` set without a patch number (`8`, `8.0`) the bundle cannot
+tell 8.0.17+ apart, so it falls back to `utf8mb4_bin` and logs a warning; set the full version (`8.0.36`).
+
+### Worker mode
+
+No action. The bundle now also empties its memos at Messenger and console boundaries, and (with
+`doctrine.entity_manager`) clears its own manager at every outermost boundary. Your own managers are still yours to
+clear in a kept-alive worker without the services resetter (REQ-RUNTIME-002 rule 7); see
+[FRANKENPHP-WORKER-AUDIT](FRANKENPHP-WORKER-AUDIT.md).
 
 ## To 1.8.3
 
