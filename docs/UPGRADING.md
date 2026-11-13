@@ -3,6 +3,7 @@
 ## Table of contents
 
 - [Unreleased](#unreleased)
+- [To 1.9.0](#to-190)
   - [Nothing to do for a standard host](#nothing-to-do-for-a-standard-host)
   - [Deprecations (removed in 2.0)](#deprecations-removed-in-20)
   - [Opting in to the DDD path](#opting-in-to-the-ddd-path)
@@ -47,6 +48,14 @@
 - [Future releases](#future-releases)
 
 ## Unreleased
+
+## To 1.9.0
+
+From **1.8.3**:
+
+```bash
+composer update nowo-tech/blog-kit-bundle
+```
 
 Target **1.9.0** (minor; REQ-ARCH-001 and REQ-RUNTIME-002). Every change is additive: without new configuration the
 bundle behaves as in 1.8.3. See [ARCHITECTURE](ARCHITECTURE.md).
