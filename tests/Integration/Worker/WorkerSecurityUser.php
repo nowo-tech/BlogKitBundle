@@ -32,4 +32,11 @@ final readonly class WorkerSecurityUser implements UserInterface
     {
         return ['ROLE_EDITOR'];
     }
+
+    /**
+     * Required by Symfony 7.4 {@see UserInterface}; removed from the interface in Symfony 8.
+     */
+    public function eraseCredentials(): void
+    {
+    }
 }

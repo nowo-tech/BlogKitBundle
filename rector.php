@@ -19,6 +19,8 @@ return RectorConfig::configure()
         // Symfony 7.4 UserInterface still requires eraseCredentials(); removed in Symfony 8.
         RemoveEmptyClassMethodRector::class => [
             __DIR__ . '/tests/Support/TestUser.php',
+            __DIR__ . '/tests/Support/PlainHostUser.php',
+            __DIR__ . '/tests/Integration/Worker/WorkerSecurityUser.php',
         ],
     ])
     ->withPhpSets(php84: true)
