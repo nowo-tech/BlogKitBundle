@@ -18,7 +18,12 @@ use Nowo\BlogKitBundle\Repository\BlogSettingsRepository;
 use Nowo\BlogKitBundle\Repository\BlogTagRepository;
 use Nowo\BlogKitBundle\Service\BlogSettingsProvider;
 use Nowo\BlogKitBundle\Tests\Support\LocaleTestSupport;
+use Nowo\BlogKitBundle\Worker\UnitOfWorkBoundaries;
 use PHPUnit\Framework\Attributes\Test;
+use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Event\ConsoleCommandEvent;
+use Symfony\Component\Console\Input\ArrayInput;
+use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
@@ -55,9 +60,48 @@ final class BlogKitWorkerStateSubscriberTest extends DoctrineTestCase
     public function subscribesToMainRequestBeforeRoutingAndSecurity(): void
     {
         self::assertSame(
-            [KernelEvents::REQUEST => ['onKernelRequest', 4096]],
+            [
+                KernelEvents::REQUEST                                   => ['onKernelRequest', 4096],
+                UnitOfWorkBoundaries::MESSENGER_WORKER_MESSAGE_RECEIVED => ['resetMemos', 4096],
+                UnitOfWorkBoundaries::MESSENGER_WORKER_MESSAGE_HANDLED  => ['resetMemos', -1024],
+                UnitOfWorkBoundaries::MESSENGER_WORKER_MESSAGE_FAILED   => ['resetMemos', -1024],
+                UnitOfWorkBoundaries::CONSOLE_COMMAND                   => ['onConsoleBoundary', 4096],
+                UnitOfWorkBoundaries::CONSOLE_TERMINATE                 => ['onConsoleBoundary', -1024],
+            ],
             BlogKitWorkerStateSubscriber::getSubscribedEvents(),
         );
+    }
+
+    #[Test]
+    public function messengerAndOutermostConsoleBoundariesEmptyTheMemos(): void
+    {
+        $this->createSettings();
+        $boundaries = new UnitOfWorkBoundaries();
+        $subscriber = $this->createSubscriber(null, $boundaries);
+
+        // A message: memos emptied when it is received and when it is handled.
+        $subscriber->resetMemos();
+        self::assertSame(6, $this->settingsProvider->perPage());
+        $this->updatePerPageFromAnotherWorker(8);
+        $subscriber->resetMemos();
+        self::assertSame(8, $this->settingsProvider->perPage());
+
+        // An outermost command clears; a nested one keeps the outer unit's memos.
+        $outer = new ConsoleCommandEvent(new Command('app:outer'), new ArrayInput([]), new NullOutput());
+        $boundaries->onCommand($outer);
+        $this->updatePerPageFromAnotherWorker(9);
+        $subscriber->onConsoleBoundary($outer);
+        self::assertSame(9, $this->settingsProvider->perPage());
+
+        $inner = new ConsoleCommandEvent(new Command('app:inner'), new ArrayInput([]), new NullOutput());
+        $boundaries->onCommand($inner);
+        $this->updatePerPageFromAnotherWorker(10);
+        $subscriber->onConsoleBoundary($inner);
+        self::assertSame(9, $this->settingsProvider->perPage(), 'a nested command keeps the outer memos');
+
+        // Without a tracker every console boundary clears (1.8 behaviour of hosts that build the subscriber by hand).
+        $this->createSubscriber()->onConsoleBoundary($inner);
+        self::assertSame(10, $this->settingsProvider->perPage());
     }
 
     #[Test]
@@ -164,7 +208,7 @@ final class BlogKitWorkerStateSubscriberTest extends DoctrineTestCase
         }
     }
 
-    private function createSubscriber(?ManagerRegistry $registry = null): BlogKitWorkerStateSubscriber
+    private function createSubscriber(?ManagerRegistry $registry = null, ?UnitOfWorkBoundaries $boundaries = null): BlogKitWorkerStateSubscriber
     {
         return new BlogKitWorkerStateSubscriber(
             $registry ?? $this->registry,
@@ -173,6 +217,7 @@ final class BlogKitWorkerStateSubscriberTest extends DoctrineTestCase
             $this->articleRepository,
             $this->tagRepository,
             $this->publishedSubscriber,
+            $boundaries,
         );
     }
 

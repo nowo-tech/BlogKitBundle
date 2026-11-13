@@ -15,6 +15,8 @@ make -C demo/symfony8 demo-screenshots
 ## Table of contents
 
 - [Screenshots](#screenshots)
+- [Standard Symfony host](#standard-symfony-host)
+- [DDD / hexagonal host](#ddd--hexagonal-host)
 - [Public pages](#public-pages)
 - [Admin screens](#admin-screens)
 - [Comments](#comments)
@@ -28,6 +30,37 @@ make -C demo/symfony8 demo-screenshots
 - [Translation overrides](#translation-overrides)
 - [Infinite scroll assets](#infinite-scroll-assets)
 - [Rich text notes](#rich-text-notes)
+
+## Standard Symfony host
+
+The default. Your user entity implements `Nowo\BlogKitBundle\Model\BlogUserInterface` and is named in `user_class`; the
+blog entities are mapped with attributes on your default entity manager; the host ports below take the bundle entities.
+Nothing else to configure. See [ARCHITECTURE](ARCHITECTURE.md) for the full picture.
+
+## DDD / hexagonal host
+
+Since 1.9.0, opt-in (REQ-ARCH-001):
+
+```yaml
+nowo_blog_kit:
+    user_directory: App\Infrastructure\Blog\BlogUserLabels   # optional: labels of the user ids in the admin lists
+    doctrine:
+        entity_manager: blog      # a manager dedicated to the blog (declare it under doctrine.orm.entity_managers)
+        mapping_type: xml         # Resources/config/doctrine-xml
+        user_reference: id        # user ids in string columns; your user class implements nothing of the bundle
+    security:
+        object_access: { strategy: service, service: App\Infrastructure\Blog\BlogResourcePolicy }
+```
+
+- Your security user only needs a `getId()` (int, string or `Stringable`); ids are matched byte for byte.
+- Implement the twin ports (`BlogKitResourcePolicyInterface`, `BlogCommentRateLimitPolicyInterface`,
+  `BlogCommentCaptchaVerifierInterface`): they take snapshots and request value objects, never an entity, a `Request` or a
+  form builder.
+- Listen to `BlogArticlePublishedEvent::getArticleId()` / `getArticleSnapshot()`.
+- The blog writes only to its own manager and clears it between requests, messages and commands; your managers are
+  never flushed nor cleared by the bundle.
+
+Full reference: [ARCHITECTURE](ARCHITECTURE.md).
 
 ## Public pages
 
@@ -87,7 +120,8 @@ php bin/console nowo:blog:sync-hashtags --dry-run
 
 ## Published event
 
-When an article transitions to published, `BlogArticlePublishedDoctrineSubscriber` dispatches `BlogArticlePublishedEvent`. Listen to it in the host application (for example to send Web Push via PwaBundle).
+When an article transitions to published, `BlogArticlePublishedDoctrineSubscriber` dispatches `BlogArticlePublishedEvent` from `postFlush`, after the flush committed its own transaction; when you
+wrap the write in a transaction of yours, the event runs before your commit (the transaction is yours). Listen to it in the host application (for example to send Web Push via PwaBundle). Since 1.9.0 read `getArticleId()` and `getArticleSnapshot()` (slug, titles, dates, author id); `getArticle()` is deprecated and removed in 2.0.
 
 ## Custom access logic
 
@@ -134,7 +168,7 @@ nowo_blog_kit:
             strategy: owner   # none | owner | service
 ```
 
-`owner` lets editors change articles they created (`createdBy` / AuditKit). Users with `canConfigure()` still see every row. Unowned legacy articles stay editable by any manager. Implement `BlogKitResourceAccessCheckerInterface` and set `strategy: service` for teams or workflow rules. Controllers throw via `BlogKitAccessDenied`. This is **not** a Symfony Security voter or ACL.
+`owner` lets editors change articles they created (`createdBy` / AuditKit). Users with `canConfigure()` still see every row. Unowned legacy articles stay editable by any manager. Implement `BlogKitResourcePolicyInterface` (since 1.9.0: snapshots, ids compared byte for byte) and set `strategy: service` for teams or workflow rules; the deprecated `BlogKitResourceAccessCheckerInterface` (entities) is still accepted until 2.0. Controllers throw via `BlogKitAccessDenied`. This is **not** a Symfony Security voter or ACL.
 
 The extension prepends FormKit `type_map.entity` so `BlogArticleType` tags resolve. Hosts can still override `nowo_form_kit.type_map`.
 

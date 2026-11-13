@@ -13,10 +13,15 @@ use Nowo\BlogKitBundle\Entity\BlogArticle;
 use Nowo\BlogKitBundle\Locale\BlogLocales;
 use Nowo\BlogKitBundle\Repository\Concerns\JoinsTranslationsAndAuditUsers;
 use Nowo\BlogKitBundle\Repository\Concerns\RunsDocumentedSql;
+use Nowo\BlogKitBundle\Support\BlogUserIdResolver;
+use Nowo\BlogKitBundle\User\BlogUsers;
+use Nowo\BlogKitBundle\ValueObject\UnreadableBlogUserRef;
 use SortDirection;
 use Symfony\Contracts\Service\ResetInterface;
 
+use function array_filter;
 use function array_key_exists;
+use function array_values;
 use function count;
 use function is_string;
 use function sprintf;
@@ -37,11 +42,18 @@ class BlogArticleRepository extends ServiceEntityRepository implements ResetInte
     /** @var array<string, list<array{slug: string, name: string}>> */
     private array $tagsByArticleCache = [];
 
+    private readonly BlogUsers $users;
+
+    /**
+     * @param BlogUsers|null $users since 1.9.0: how the rows reference users (null: the 1.8 relation)
+     */
     public function __construct(
         ManagerRegistry $registry,
         private readonly BlogLocales $blogLocales,
+        ?BlogUsers $users = null,
     ) {
         parent::__construct($registry, BlogArticle::class);
+        $this->users = $users ?? new BlogUsers();
     }
 
     public function reset(): void
@@ -317,7 +329,7 @@ class BlogArticleRepository extends ServiceEntityRepository implements ResetInte
             ->addOrderBy('b.slug', SortDirection::Ascending);
 
         $this->joinTranslations($queryBuilder, 'b', 'bt');
-        $this->joinAuditUsers($queryBuilder, 'b');
+        $this->joinAuditUsers($queryBuilder, 'b', $this->users->joinable());
 
         return $queryBuilder->getQuery()->getResult();
     }
@@ -335,14 +347,13 @@ class BlogArticleRepository extends ServiceEntityRepository implements ResetInte
 
         $queryBuilder = $this->createQueryBuilder('b')
             ->leftJoin('b.translations', 'bt')->addSelect('bt')
-            ->leftJoin('b.createdBy', 'cb')->addSelect('cb')
-            ->leftJoin('b.updatedBy', 'ub')->addSelect('ub')
             ->orderBy('b.position', SortDirection::Ascending)
             ->addOrderBy('b.publishedAt', SortDirection::Descending)
             ->addOrderBy('b.slug', SortDirection::Ascending)
             ->setFirstResult(($page - 1) * $perPage)
             ->setMaxResults($perPage);
 
+        $this->joinAuditUsers($queryBuilder, 'b', $this->users->joinable());
         $this->restrictToCreatedBy($queryBuilder, 'b', $createdById);
 
         if (($filters['title'] ?? '') !== '') {
@@ -366,7 +377,7 @@ class BlogArticleRepository extends ServiceEntityRepository implements ResetInte
 
         $paginator = new Paginator($queryBuilder->getQuery());
         /** @var list<BlogArticle> $items */
-        $items = iterator_to_array($paginator);
+        $items = $this->keepOwnedBy(iterator_to_array($paginator), $createdById);
         $total = count($paginator);
 
         return [
@@ -392,12 +403,11 @@ class BlogArticleRepository extends ServiceEntityRepository implements ResetInte
 
         $queryBuilder = $this->createQueryBuilder('b')
             ->leftJoin('b.translations', 'bt')->addSelect('bt')
-            ->leftJoin('b.createdBy', 'cb')->addSelect('cb')
-            ->leftJoin('b.updatedBy', 'ub')->addSelect('ub')
             ->orderBy('b.position', SortDirection::Ascending)
             ->addOrderBy('b.publishedAt', SortDirection::Descending)
             ->addOrderBy('b.slug', SortDirection::Ascending);
 
+        $this->joinAuditUsers($queryBuilder, 'b', $this->users->joinable());
         $this->restrictToCreatedBy($queryBuilder, 'b', $createdById);
 
         if (($filters['title'] ?? '') !== '') {
@@ -419,7 +429,46 @@ class BlogArticleRepository extends ServiceEntityRepository implements ResetInte
             $queryBuilder->andWhere('b.published = false');
         }
 
-        return $queryBuilder->getQuery()->getResult();
+        /** @var list<BlogArticle> $items */
+        $items = $queryBuilder->getQuery()->getResult();
+
+        return $this->keepOwnedBy($items, $createdById);
+    }
+
+    /**
+     * Since 1.9.0 (REQ-SEC-006 item 2): the rows the owner filter selected, re-checked byte for byte in PHP (a folding
+     * collation could have matched a look-alike id); an unreadable stored owner (audit ON-M1) is nobody's.
+     *
+     * Known limit (audit ON-L1): this runs after `LIMIT`. With `user_reference: id` the column compares exactly in SQL
+     * (binary NO PAD collation), so nothing is dropped here. In the entity mode the filter compares your user table's
+     * primary key: under a folding collation of a string key a dropped look-alike leaves a short page and an
+     * over-counted total, never another owner's row.
+     *
+     * @param array<array-key, BlogArticle> $items
+     *
+     * @return list<BlogArticle>
+     */
+    private function keepOwnedBy(array $items, int|string|null $createdById): array
+    {
+        if ($createdById === null) {
+            return array_values($items);
+        }
+
+        $id = (string) $createdById;
+
+        return array_values(array_filter(
+            $items,
+            static function (BlogArticle $article) use ($id): bool {
+                $createdBy = $article->getCreatedBy();
+                if ($createdBy instanceof UnreadableBlogUserRef) {
+                    return false;
+                }
+
+                $owner = BlogUserIdResolver::idOf($createdBy);
+
+                return $owner === null || $owner === $id;
+            },
+        ));
     }
 
     /**
@@ -438,8 +487,8 @@ class BlogArticleRepository extends ServiceEntityRepository implements ResetInte
         }
 
         $queryBuilder
-            ->andWhere(sprintf('IDENTITY(%s.createdBy) = :createdById OR %s.createdBy IS NULL', $alias, $alias))
-            ->setParameter('createdById', $createdById);
+            ->andWhere(sprintf('%s = :createdById OR %s.createdBy IS NULL', $this->users->identity($alias . '.createdBy'), $alias))
+            ->setParameter('createdById', $this->users->idMode() ? (string) $createdById : $createdById);
     }
 
     public function findPublishedBySlug(string $slug): ?BlogArticle

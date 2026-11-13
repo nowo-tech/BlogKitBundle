@@ -11,7 +11,11 @@ use Nowo\BlogKitBundle\Enum\CssFramework;
 use Nowo\BlogKitBundle\Security\BlogKitAccessCheckerInterface;
 use Nowo\BlogKitBundle\Security\BlogKitResourceAccessCheckerInterface;
 use Nowo\BlogKitBundle\Tests\Support\BlogProtectionTestFactory;
+use Nowo\BlogKitBundle\Tests\Support\TestUser;
 use Nowo\BlogKitBundle\Twig\BlogKitExtension;
+use Nowo\BlogKitBundle\User\BlogUserDirectoryInterface;
+use Nowo\BlogKitBundle\User\BlogUsers;
+use Nowo\BlogKitBundle\ValueObject\BlogUserRef;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
@@ -47,7 +51,7 @@ final class BlogKitExtensionTest extends TestCase
         $extension = $this->createExtension();
         $functions = $extension->getFunctions();
 
-        self::assertCount(8, $functions);
+        self::assertCount(9, $functions);
         self::assertSame('nowo_blog_kit_container_class', $functions[0]->getName());
         self::assertSame('nowo_blog_kit_captcha', $functions[1]->getName());
         self::assertSame('nowo_blog_kit_can_manage_article', $functions[2]->getName());
@@ -185,5 +189,25 @@ final class BlogKitExtensionTest extends TestCase
             '/privacy',
             $accessChecker,
         );
+    }
+
+    #[Test]
+    public function userLabelShowsTheIdentifierOrTheDirectoryLabel(): void
+    {
+        $args      = ['@NowoBlogKitBundle/admin/layout.html.twig', '@NowoBlogKitBundle/public/layout.html.twig', 'tailwind', 'es', ['es', 'en'], '/privacy', $this->createStub(BlogKitAccessCheckerInterface::class)];
+        $directory = new class implements BlogUserDirectoryInterface {
+            public function labelOf(string $userId): string
+            {
+                return 'Label of ' . $userId;
+            }
+        };
+
+        $plain = new BlogKitExtension(...$args);
+        self::assertSame('editor@example.test', $plain->userLabel(new TestUser()->setEmail('editor@example.test')));
+        self::assertSame('ref-1', $plain->userLabel(new BlogUserRef('ref-1')));
+        self::assertSame('', $plain->userLabel(null));
+
+        $withDirectory = new BlogKitExtension(...[...$args, null, null, null, null, new BlogUsers(BlogUsers::ID, null, $directory)]);
+        self::assertSame('Label of ref-1', $withDirectory->userLabel(new BlogUserRef('ref-1')));
     }
 }

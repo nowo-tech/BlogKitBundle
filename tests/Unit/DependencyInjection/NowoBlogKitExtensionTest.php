@@ -10,15 +10,20 @@ use Nowo\BlogKitBundle\DependencyInjection\Configuration;
 use Nowo\BlogKitBundle\DependencyInjection\NowoBlogKitExtension;
 use Nowo\BlogKitBundle\DependencyInjection\TablePrefixListener;
 use Nowo\BlogKitBundle\Model\BlogUserInterface;
+use Nowo\BlogKitBundle\Port\Ports;
 use Nowo\BlogKitBundle\Security\AllowAllBlogKitAccessChecker;
 use Nowo\BlogKitBundle\Security\AllowAllBlogKitResourceAccessChecker;
 use Nowo\BlogKitBundle\Security\BlogKitAccessCheckerInterface;
 use Nowo\BlogKitBundle\Security\BlogKitResourceAccessCheckerInterface;
 use Nowo\BlogKitBundle\Security\BlogProtection;
+use Nowo\BlogKitBundle\Security\Captcha\BlogCommentCaptchaStrategyInterface;
+use Nowo\BlogKitBundle\Security\Captcha\BlogCommentCaptchaVerifierInterface;
 use Nowo\BlogKitBundle\Security\Captcha\PublicBlogCommentCaptchaTypeExtension;
 use Nowo\BlogKitBundle\Security\Captcha\StreamCaptchaHttpClient;
 use Nowo\BlogKitBundle\Security\ConfigurableBlogKitAccessChecker;
 use Nowo\BlogKitBundle\Security\OwnerBlogKitResourceAccessChecker;
+use Nowo\BlogKitBundle\Security\RateLimit\BlogCommentRateLimiterInterface;
+use Nowo\BlogKitBundle\Security\RateLimit\BlogCommentRateLimitPolicyInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
@@ -272,9 +277,12 @@ final class NowoBlogKitExtensionTest extends TestCase
         ]], $container);
 
         self::assertSame(
-            'app.blog_object_access',
+            'nowo_blog_kit.object_access.service',
             (string) $container->getAlias(BlogKitResourceAccessCheckerInterface::class),
         );
+        $definition = $container->getDefinition('nowo_blog_kit.object_access.service');
+        self::assertSame(Ports::class . '::resourceAccess', implode('::', (array) $definition->getFactory()));
+        self::assertEquals([new Reference('app.blog_object_access')], $definition->getArguments());
         self::assertFalse($container->hasDefinition('nowo_blog_kit.object_access.owner'));
     }
 
@@ -385,9 +393,18 @@ final class NowoBlogKitExtensionTest extends TestCase
         ]], $container);
 
         $arguments = $container->getDefinition(BlogProtection::class)->getArguments();
-        self::assertEquals(new Reference('app.blog_rate_limiter'), $arguments[6]);
-        self::assertEquals(new Reference('app.blog_captcha'), $arguments[7]);
+        // Since 1.9.0 the rate limiter and captcha go through Port\Ports (1.x interface or twin).
+        self::assertEquals(new Reference('nowo_blog_kit.comments.rate_limit.service'), $arguments[6]);
+        self::assertEquals(new Reference('nowo_blog_kit.comments.captcha.service'), $arguments[7]);
         self::assertEquals(new Reference('app.blog_sanitizer'), $arguments[8]);
+        self::assertSame(Ports::class . '::rateLimiter', implode('::', (array) $container->getDefinition('nowo_blog_kit.comments.rate_limit.service')->getFactory()));
+        self::assertEquals([new Reference('app.blog_rate_limiter')], $container->getDefinition('nowo_blog_kit.comments.rate_limit.service')->getArguments());
+        self::assertSame(Ports::class . '::captcha', implode('::', (array) $container->getDefinition('nowo_blog_kit.comments.captcha.service')->getFactory()));
+        self::assertEquals([new Reference('app.blog_captcha'), new Reference('request_stack')], $container->getDefinition('nowo_blog_kit.comments.captcha.service')->getArguments());
+        self::assertSame([
+            'comments.rate_limit.service' => ['app.blog_rate_limiter', BlogCommentRateLimiterInterface::class, BlogCommentRateLimitPolicyInterface::class],
+            'comments.captcha.service'    => ['app.blog_captcha', BlogCommentCaptchaStrategyInterface::class, BlogCommentCaptchaVerifierInterface::class],
+        ], $container->getParameter(NowoBlogKitExtension::PORTS_PARAMETER));
     }
 
     #[Test]

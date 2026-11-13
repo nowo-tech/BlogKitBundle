@@ -15,6 +15,7 @@ use Nowo\BlogKitBundle\Model\BlogUserInterface;
 use Nowo\BlogKitBundle\Repository\BlogArticleRepository;
 use Nowo\BlogKitBundle\Security\BlogKitAccessDenied;
 use Nowo\BlogKitBundle\Ui\BlogKitPageFactory;
+use Nowo\BlogKitBundle\User\BlogUsers;
 use Nowo\FormKitBundle\Form\CsrfOnlyFormFactory;
 use Nowo\FormKitBundle\Form\GetFilterFormFactory;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -32,6 +33,7 @@ use Symfony\Component\Routing\Attribute\Route;
 final class BlogArticleController extends AbstractController
 {
     use AdminListFilterTrait;
+    use DeniesUnrecordableUserTrait;
     use RequiresValidFormTrait;
 
     public function __construct(
@@ -44,6 +46,7 @@ final class BlogArticleController extends AbstractController
         #[Autowire('%nowo_blog_kit.web_ui.page_size%')]
         private readonly int $pageSize,
         private readonly BlogKitPageFactory $pageFactory,
+        private readonly ?BlogUsers $users = null,
     ) {
     }
 
@@ -96,6 +99,7 @@ final class BlogArticleController extends AbstractController
     #[Route('/admin/blog/new', name: 'admin_blog_new')]
     public function new(Request $request): Response
     {
+        $this->denyUnrecordableUser($this->users);
         $blogArticle = new BlogArticle();
         $blogArticle->ensureTranslations($this->blogLocales->getAll());
 
@@ -103,7 +107,7 @@ final class BlogArticleController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $user = $this->getUser();
+            $user = $this->blogUser();
             if ($user instanceof BlogUserInterface) {
                 $blogArticle->setCreatedBy($user);
             }
@@ -121,6 +125,7 @@ final class BlogArticleController extends AbstractController
     #[Route('/admin/blog/{id}/edit', name: 'admin_blog_edit', requirements: ['id' => '\d+'])]
     public function edit(BlogArticle $blogArticle, Request $request): Response
     {
+        $this->denyUnrecordableUser($this->users);
         $this->accessDenied->denyUnlessCanManageArticle($blogArticle);
 
         $form = $this->createForm(BlogArticleType::class, $blogArticle);
@@ -139,6 +144,7 @@ final class BlogArticleController extends AbstractController
     #[Route('/admin/blog/{id}/edit-modal', name: 'admin_blog_edit_modal', requirements: ['id' => '\d+'], methods: ['GET'])]
     public function editModal(BlogArticle $blogArticle, Request $request): Response
     {
+        $this->denyUnrecordableUser($this->users);
         $this->accessDenied->denyUnlessCanManageArticle($blogArticle);
 
         return $this->renderInlineModal($blogArticle, $request);
@@ -147,6 +153,7 @@ final class BlogArticleController extends AbstractController
     #[Route('/admin/blog/{id}/inline', name: 'admin_blog_inline_update', requirements: ['id' => '\d+'], methods: ['POST'])]
     public function inlineUpdate(BlogArticle $blogArticle, Request $request): Response
     {
+        $this->denyUnrecordableUser($this->users);
         $this->accessDenied->denyUnlessCanManageArticle($blogArticle);
 
         return $this->handleInlineSubmit($blogArticle, $request, $this->entityManager);
@@ -155,6 +162,7 @@ final class BlogArticleController extends AbstractController
     #[Route('/admin/blog/{id}/delete', name: 'admin_blog_delete', requirements: ['id' => '\d+'], methods: ['POST'])]
     public function delete(BlogArticle $blogArticle, Request $request): RedirectResponse
     {
+        $this->denyUnrecordableUser($this->users);
         $this->accessDenied->denyUnlessCanManageArticle($blogArticle);
 
         $form = $this->csrfOnlyFormFactory->createNamed(
@@ -231,5 +239,19 @@ final class BlogArticleController extends AbstractController
             'action' => $this->generateUrl('admin_blog_inline_update', ['id' => $blogArticle->getId()]),
             'method' => 'POST',
         ]);
+    }
+
+    /**
+     * Since 1.9.0: the blog user of the current request: the security user (entity mode) or its reference (id mode).
+     */
+    private function blogUser(): ?BlogUserInterface
+    {
+        if ($this->users instanceof BlogUsers) {
+            return $this->users->current();
+        }
+
+        $user = $this->getUser();
+
+        return $user instanceof BlogUserInterface ? $user : null;
     }
 }

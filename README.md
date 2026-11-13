@@ -46,6 +46,7 @@ Blog Kit Bundle gives Symfony applications a reusable blog domain backed by Doct
 - Configurable access: `access_roles`, manage / moderate / configure roles, custom `access_checker`, and object-level publication rules (`security.object_access`: `none` / `owner` / host `service`) via `BlogKitAccessDenied`
 - UiKit page contract (REQ-UI-003): admin pages on the UiKit list / form / settings scaffolds, public pages on the guest layout; one host layout pair and theme (`nowo_ui_kit.layouts`, `nowo_ui_kit.theme`) for every bundle, no page forks
 - Twig namespace `NowoBlogKitBundle` with host override precedence
+- Standard Symfony hosts out of the box, and (opt-in since 1.9.0) strict DDD / hexagonal hosts: XML mapping, user references by id (no bundle interface on your user class), a blog-only entity manager, and host ports that take value objects only. See [Architecture](docs/ARCHITECTURE.md)
 - Symfony Flex recipe and FrankenPHP demo in `demo/symfony8`
 
 ## Quick start
@@ -112,6 +113,7 @@ Demo default URL: `http://localhost:8105`.
 - [Installation](docs/INSTALLATION.md)
 - [Configuration](docs/CONFIGURATION.md)
 - [Usage](docs/USAGE.md)
+- [Architecture: standard Symfony and DDD hosts](docs/ARCHITECTURE.md)
 - [Contributing](docs/CONTRIBUTING.md)
 - [Code of Conduct](CODE_OF_CONDUCT.md)
 - [Changelog](docs/CHANGELOG.md)

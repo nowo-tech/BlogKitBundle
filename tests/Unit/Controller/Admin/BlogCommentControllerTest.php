@@ -16,7 +16,10 @@ use Nowo\BlogKitBundle\Service\BlogCommentManager;
 use Nowo\BlogKitBundle\Tests\Support\ControllerTestHelper;
 use Nowo\BlogKitBundle\Tests\Support\LocaleTestSupport;
 use Nowo\BlogKitBundle\Tests\Support\PageFixtures;
+use Nowo\BlogKitBundle\Tests\Support\PlainHostUser;
 use Nowo\BlogKitBundle\Tests\Support\TestUser;
+use Nowo\BlogKitBundle\User\BlogUsers;
+use Nowo\BlogKitBundle\ValueObject\BlogUserRef;
 use Nowo\FormKitBundle\Form\CsrfOnlyFormFactory;
 use Nowo\FormKitBundle\Form\GetFilterFormFactory;
 use PHPUnit\Framework\Attributes\Test;
@@ -26,6 +29,8 @@ use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\Form\FormView;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorage;
+use Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 use Twig\Environment;
 
@@ -308,6 +313,23 @@ final class BlogCommentControllerTest extends TestCase
     }
 
     #[Test]
+    public function approveRecordsTheReferenceOfAPlainHostUserInIdMode(): void
+    {
+        $request = Request::create('/admin/blog/comments/5/approve', 'POST');
+        $comment = $this->createComment(5, BlogCommentStatus::Pending);
+
+        $manager = $this->createMock(BlogCommentManager::class);
+        $manager->expects(self::once())->method('approve')->with($comment, new BlogUserRef('mod-1'));
+
+        $this->createController(
+            request: $request,
+            manager: $manager,
+            csrfOnlyFormFactory: $this->createCsrfOnlyFormFactory($this->createSubmittedForm(true)),
+            users: $this->idModeUsers('mod-1'),
+        )->approve($comment, $request);
+    }
+
+    #[Test]
     public function rejectUsesQueryStringFallbackForRedirect(): void
     {
         $request = Request::create('/admin/blog/comments/5/reject?status=rejected&author=John', 'POST');
@@ -456,6 +478,7 @@ final class BlogCommentControllerTest extends TestCase
         ?Environment $twig = null,
         ?TestUser $user = null,
         ?BlogKitAccessDenied $accessDenied = null,
+        ?BlogUsers $users = null,
     ): BlogCommentController {
         $request ??= Request::create('/admin/blog/comments', 'GET');
 
@@ -466,6 +489,8 @@ final class BlogCommentControllerTest extends TestCase
             $filterFormFactory ?? ControllerTestHelper::filterFormFactory(),
             $accessDenied ?? new BlogKitAccessDenied(new AllowAllBlogKitResourceAccessChecker()),
             PageFixtures::factory(),
+            20,
+            $users,
         );
 
         ControllerTestHelper::bind($controller, $request, array_filter([
@@ -543,5 +568,14 @@ final class BlogCommentControllerTest extends TestCase
     private function page(array $items): array
     {
         return ['items' => $items, 'total' => count($items), 'page' => 1, 'per_page' => 20, 'total_pages' => 1];
+    }
+
+    private function idModeUsers(string $id): BlogUsers
+    {
+        $user    = new PlainHostUser($id, $id);
+        $storage = new TokenStorage();
+        $storage->setToken(new UsernamePasswordToken($user, 'main', $user->getRoles()));
+
+        return new BlogUsers(BlogUsers::ID, $storage);
     }
 }

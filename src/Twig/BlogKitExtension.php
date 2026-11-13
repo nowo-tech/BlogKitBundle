@@ -11,6 +11,7 @@ use Nowo\BlogKitBundle\Enum\CssFramework;
 use Nowo\BlogKitBundle\Security\BlogKitAccessCheckerInterface;
 use Nowo\BlogKitBundle\Security\BlogKitResourceAccessCheckerInterface;
 use Nowo\BlogKitBundle\Security\BlogProtection;
+use Nowo\BlogKitBundle\User\BlogUsers;
 use Twig\Extension\AbstractExtension;
 use Twig\Extension\GlobalsInterface;
 use Twig\TwigFunction;
@@ -35,6 +36,7 @@ final class BlogKitExtension extends AbstractExtension implements GlobalsInterfa
         private readonly ?string $rowActionsDisplay = null,
         private readonly ?BlogProtection $protection = null,
         private readonly ?BlogKitResourceAccessCheckerInterface $resourceAccess = null,
+        private readonly ?BlogUsers $users = null,
     ) {
     }
 
@@ -52,6 +54,7 @@ final class BlogKitExtension extends AbstractExtension implements GlobalsInterfa
             new TwigFunction('nowo_blog_kit_can_manage', $this->canManage(...)),
             new TwigFunction('nowo_blog_kit_can_moderate', $this->canModerate(...)),
             new TwigFunction('nowo_blog_kit_can_configure', $this->canConfigure(...)),
+            new TwigFunction('nowo_blog_kit_user_label', $this->userLabel(...)),
         ];
     }
 
@@ -146,5 +149,14 @@ final class BlogKitExtension extends AbstractExtension implements GlobalsInterfa
             'nowo_blog_kit_can_moderate'  => false,
             'nowo_blog_kit_can_configure' => false,
         ];
+    }
+
+    /**
+     * Since 1.9.0: what a page shows for a user field (`createdBy`, `updatedBy`, ...): the user identifier of a host
+     * user, the `user_directory` label (else the id) of a reference of the id mode, '' without a user.
+     */
+    public function userLabel(?object $user): string
+    {
+        return ($this->users ?? new BlogUsers())->label($user);
     }
 }

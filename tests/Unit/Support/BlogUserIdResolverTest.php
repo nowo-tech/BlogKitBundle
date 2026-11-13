@@ -6,6 +6,7 @@ namespace Nowo\BlogKitBundle\Tests\Unit\Support;
 
 use Nowo\BlogKitBundle\Support\BlogUserIdResolver;
 use Nowo\BlogKitBundle\Tests\Support\TestUser;
+use Nowo\BlogKitBundle\ValueObject\BlogUserRef;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use stdClass;
@@ -50,5 +51,16 @@ final class BlogUserIdResolverTest extends TestCase
             }
         };
         self::assertNull(BlogUserIdResolver::idOf($emptyId));
+    }
+
+    #[Test]
+    public function aReferenceIsComparedByIdOnlyNeverByLoginIdentifier(): void
+    {
+        $byEmail = new TestUser()->setId(null)->setEmail('bob');
+
+        self::assertTrue(BlogUserIdResolver::isSame(new BlogUserRef('7'), new TestUser()->setId(7)));
+        self::assertFalse(BlogUserIdResolver::isSame(new BlogUserRef('bob'), $byEmail), 'a reference never matches a login identifier');
+        self::assertFalse(BlogUserIdResolver::isSame($byEmail, new BlogUserRef('bob')));
+        self::assertFalse(BlogUserIdResolver::isSame(new BlogUserRef('bob'), new BlogUserRef('Bob')));
     }
 }
