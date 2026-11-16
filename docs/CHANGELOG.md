@@ -42,6 +42,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Spec Kit: `specs/001-baseline/code-inventory.md` maps the 1.9.0 files (host port twins, snapshots, user references, entity manager, worker boundaries, XML mappings) and lists every Twig view and translation catalogue on its own row (185/185 files); `spec.md` documents that existing behaviour as FR-ARC-001, FR-ORM-002…004 and FR-WORKER-006 (REQ-SPECKIT-001/003)
+- CI: Dependabot npm updates for `demo/symfony8/e2e` (REQ-GH-002)
+
 ## [1.9.0] - 2026-11-13
 
 Target **1.9.0** (minor; REQ-ARCH-001 standard + DDD hosts, REQ-RUNTIME-002 kept-alive kernel, REQ-SEC-006 exact ids).
