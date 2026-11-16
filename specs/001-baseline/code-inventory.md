@@ -2,10 +2,10 @@
 
 **Baseline spec**: [`spec.md`](spec.md)  
 **Package**: `nowo-tech/blog-kit-bundle`  
-**Last audited**: 2026-10-28  
-**Coverage summary**: **150/150** files tracked under `src/` mapped (see [Coverage summary](#coverage-summary)); audit command: `git ls-files src | wc -l`.
+**Last audited**: 2026-11-16  
+**Coverage summary**: **185/185** files tracked under `src/` mapped (see [Coverage summary](#coverage-summary)); audit command: `git ls-files src | wc -l`.
 
-Maps **100%** of the files under `src/` (100 PHP classes + Twig views, translations, config, public assets, TypeScript sources and co-located Vitest specs). Paths are relative to `src/`. Test and demo trees outside `src/` are out of Packagist scope unless promoted in the spec.
+Maps **100%** of the files under `src/` (133 PHP classes + Twig views, translations, config, public assets, TypeScript sources and co-located Vitest specs). Paths are relative to `src/`. Test and demo trees outside `src/` are out of Packagist scope unless promoted in the spec.
 
 ## Bundle entry
 
@@ -22,6 +22,8 @@ Maps **100%** of the files under `src/` (100 PHP classes + Twig views, translati
 | `DependencyInjection/Compiler/TwigPathsPass.php` | Twig override path order | FR-TWIG-001 |
 | `DependencyInjection/Compiler/CsrfProtectionPass.php` | Fails closed without form CSRF protection | FR-SEC-006 |
 | `DependencyInjection/TablePrefixListener.php` | Optional table prefix | FR-ORM-001 |
+| `DependencyInjection/Compiler/BlogKitEntityManagerPass.php` | Keeps the blog entities on the opt-in `doctrine.entity_manager` only (1.9) | FR-ORM-002 |
+| `DependencyInjection/Compiler/BlogKitPortsPass.php` | Fails the build when a configured port service implements neither the 1.x interface nor its twin (1.9) | FR-ARC-001 |
 
 ## Controllers
 
@@ -35,6 +37,7 @@ Maps **100%** of the files under `src/` (100 PHP classes + Twig views, translati
 | `Controller/Admin/BlogSettingsController.php` | Settings singleton form | FR-SET-001 |
 | `Controller/Admin/AdminListFilterTrait.php` | GET filter helper | FR-ADM-001 |
 | `Controller/RequiresValidFormTrait.php` | CSRF form guard | FR-ADM-001 |
+| `Controller/Admin/DeniesUnrecordableUserTrait.php` | Denies writes for a user whose id cannot be kept exactly (`user_reference: id`, 1.9) | FR-ORM-004, FR-ADM-001 |
 
 ## Entity & persistence
 
@@ -154,6 +157,46 @@ Maps **100%** of the files under `src/` (100 PHP classes + Twig views, translati
 | `Security/Html/AllowlistBlogHtmlSanitizer.php` | CMS allowlist | FR-SEC-005 |
 
 
+## Doctrine — entity manager and user references
+
+| Source file | Purpose | Requirement IDs |
+| --- | --- | --- |
+| `Doctrine/BlogKitEntityManagerFactory.php` | Entity manager of the blog entities when `doctrine.entity_manager` is not set | FR-ORM-002 |
+| `Doctrine/ExcludedEntityNamespaceDriver.php` | Maps nothing for the blog namespace on every other entity manager | FR-ORM-002 |
+| `Doctrine/BlogUserReferenceMetadataListener.php` | Maps the user fields as id string columns (`user_reference: id`) | FR-ORM-004 |
+| `Doctrine/BlogUserBlameListener.php` | Stamps `createdBy` / `updatedBy` with the current user reference (`user_reference: id`) | FR-ORM-004 |
+| `Doctrine/Type/BlogUserRefType.php` | Column type of the user id fields (`BlogUserRef`) | FR-ORM-004 |
+| `User/BlogUsers.php` | How blog rows reference host users (entity relation or id) | FR-ORM-004 |
+| `User/BlogUserDirectoryInterface.php` | Optional host port: label of a stored user id | FR-ORM-004, FR-ARC-001 |
+| `ValueObject/BlogUserRef.php` | Host user referenced by id | FR-ORM-004 |
+| `ValueObject/UnreadableBlogUserRef.php` | Stored user id the bundle cannot keep exactly (writes denied) | FR-ORM-004 |
+
+## Host ports — 1.9 framework-free twins
+
+| Source file | Purpose | Requirement IDs |
+| --- | --- | --- |
+| `Port/Ports.php` | Selection rule: a configured service implements the 1.x interface or its twin | FR-ARC-001 |
+| `Port/BlogKitResourcePolicyGate.php` | Adapts a `BlogKitResourcePolicyInterface` twin to the 1.x checker | FR-ARC-001, FR-UI-003 |
+| `Port/BlogCommentCaptchaVerifierGate.php` | Adapts a `BlogCommentCaptchaVerifierInterface` twin to the 1.x strategy | FR-ARC-001, FR-CMT-004 |
+| `Port/BlogCommentRateLimitPolicyGate.php` | Adapts a `BlogCommentRateLimitPolicyInterface` twin (HTTP 429 on deny) | FR-ARC-001, FR-CMT-004 |
+| `Port/BlogCommentRequestContexts.php` | Builds the request context of the request-free ports per call | FR-ARC-001, FR-WORKER-006 |
+| `Security/BlogKitResourcePolicyInterface.php` | Object access twin taking snapshots instead of entities | FR-ARC-001, FR-UI-003 |
+| `Security/Captcha/BlogCommentCaptchaVerifierInterface.php` | CAPTCHA twin without the Form builder | FR-ARC-001, FR-CMT-004 |
+| `Security/RateLimit/BlogCommentRateLimitPolicyInterface.php` | Rate-limit twin without `Request` nor the article entity | FR-ARC-001, FR-CMT-004 |
+| `ValueObject/BlogArticleSnapshot.php` | What ports and events see of an article | FR-ARC-001 |
+| `ValueObject/BlogTagSnapshot.php` | What ports see of a tag | FR-ARC-001 |
+| `ValueObject/BlogCommentSnapshot.php` | What ports see of a comment (no e-mail / IP hash) | FR-ARC-001 |
+| `ValueObject/BlogCommentRequestContext.php` | Request parts a comment port may need (no cookies, headers, session) | FR-ARC-001 |
+| `ValueObject/BlogCommentCaptchaWidget.php` | How the public form renders a twin CAPTCHA | FR-ARC-001, FR-CMT-004 |
+| `ValueObject/BlogCommentRateLimitDecision.php` | Rate-limit twin answer (`Retry-After`) | FR-ARC-001, FR-CMT-004 |
+
+## Worker boundaries
+
+| Source file | Purpose | Requirement IDs |
+| --- | --- | --- |
+| `Worker/BlogKitOwnEntityManagerSubscriber.php` | Keeps the opt-in own entity manager usable in a kept-alive kernel | FR-WORKER-006, FR-ORM-002 |
+| `Worker/UnitOfWorkBoundaries.php` | Tracks the outermost request / message / command boundary (REQ-RUNTIME-002) | FR-WORKER-006 |
+
 ## UiKit pages
 
 | Source file | Role | Requirement IDs |
@@ -172,8 +215,36 @@ Maps **100%** of the files under `src/` (100 PHP classes + Twig views, translati
 
 | Path | Purpose | Requirement IDs |
 | --- | --- | --- |
-| `Resources/views/**/*.twig` | Admin and public templates (`form_start` / `form_row`, no raw `<form>`/`<input>`) | FR-PUB-001, FR-ADM-001, FR-TWIG-001, FR-TWIG-005 |
-| `Resources/translations/NowoBlogKitBundle.*.yaml` | Locales en/es/it/fr/pt/de/nl | FR-I18N-002, FR-I18N-003 |
+| `Resources/views/_scripts.html.twig` | Bundle JS include (asset package) | FR-PUB-001, FR-ADM-001 |
+| `Resources/views/_stylesheets.html.twig` | Bundle CSS include (asset package) | FR-PUB-001, FR-ADM-001 |
+| `Resources/views/admin/_audit_cells.html.twig` | Created/updated-by audit cells of the admin lists | FR-ADM-001, FR-TWIG-005 |
+| `Resources/views/admin/_form_body.html.twig` | Article form body (FormKit `form_row` loop) | FR-ADM-001, FR-TWIG-005 |
+| `Resources/views/admin/_legacy_layout.html.twig` | 1.x admin layout bridge | FR-ADM-001, FR-TWIG-005, FR-UI-004 |
+| `Resources/views/admin/_modal_form.html.twig` | Inline modal form for articles | FR-ADM-001, FR-TWIG-005 |
+| `Resources/views/admin/comments/index.html.twig` | Comment moderation queue | FR-ADM-001, FR-TWIG-005, FR-CMT-001, FR-CMT-004 |
+| `Resources/views/admin/form.html.twig` | Article create/edit page | FR-ADM-001, FR-TWIG-005 |
+| `Resources/views/admin/form_theme.html.twig` | Admin form theme | FR-ADM-001, FR-TWIG-005 |
+| `Resources/views/admin/icons/blog.svg.twig` | Blog area icon | FR-ADM-001, FR-TWIG-005 |
+| `Resources/views/admin/index.html.twig` | Article admin index | FR-ADM-001, FR-TWIG-005 |
+| `Resources/views/admin/settings.html.twig` | Settings singleton page | FR-ADM-001, FR-TWIG-005, FR-SET-001 |
+| `Resources/views/admin/tags/form.html.twig` | Tag create/edit page | FR-ADM-001, FR-TWIG-005, FR-TAG-001 |
+| `Resources/views/admin/tags/index.html.twig` | Tag admin index | FR-ADM-001, FR-TWIG-005, FR-TAG-001 |
+| `Resources/views/public/_aside_index.html.twig` | Public index sidebar | FR-PUB-001, FR-TWIG-005 |
+| `Resources/views/public/_aside_show.html.twig` | Article page sidebar | FR-PUB-001, FR-TWIG-005 |
+| `Resources/views/public/_comments.html.twig` | Public comments + comment form | FR-PUB-001, FR-TWIG-005, FR-CMT-001, FR-CMT-004 |
+| `Resources/views/public/_items.html.twig` | Article list items (infinite scroll page) | FR-PUB-001, FR-TWIG-005 |
+| `Resources/views/public/_legacy_layout.html.twig` | 1.x public layout bridge | FR-PUB-001, FR-TWIG-005, FR-UI-004 |
+| `Resources/views/public/_meta.html.twig` | SEO / Open Graph meta of an article | FR-PUB-001, FR-TWIG-005 |
+| `Resources/views/public/_search.html.twig` | Public search / filter form | FR-PUB-001, FR-TWIG-005 |
+| `Resources/views/public/index.html.twig` | Public article index | FR-PUB-001, FR-TWIG-005 |
+| `Resources/views/public/show.html.twig` | Public article page | FR-PUB-001, FR-TWIG-005 |
+| `Resources/translations/NowoBlogKitBundle.en.yaml` | Reference catalogue | FR-I18N-002, FR-I18N-003 |
+| `Resources/translations/NowoBlogKitBundle.es.yaml` | Locale parity | FR-I18N-002, FR-I18N-003 |
+| `Resources/translations/NowoBlogKitBundle.it.yaml` | Locale parity | FR-I18N-002, FR-I18N-003 |
+| `Resources/translations/NowoBlogKitBundle.fr.yaml` | Locale parity | FR-I18N-002, FR-I18N-003 |
+| `Resources/translations/NowoBlogKitBundle.pt.yaml` | Locale parity | FR-I18N-002, FR-I18N-003 |
+| `Resources/translations/NowoBlogKitBundle.de.yaml` | Locale parity | FR-I18N-002, FR-I18N-003 |
+| `Resources/translations/NowoBlogKitBundle.nl.yaml` | Locale parity | FR-I18N-002, FR-I18N-003 |
 | `Resources/public/blog.css` | Public styles | FR-PUB-001 |
 | `Resources/public/blog-kit.js` | Infinite scroll + collection IIFE | FR-PUB-002, FR-ADM-001 |
 | `Resources/public/blog-infinite-controller.js` | Legacy filename copy of `blog-kit.js` | FR-PUB-002 |
@@ -184,6 +255,13 @@ Maps **100%** of the files under `src/` (100 PHP classes + Twig views, translati
 | `Resources/assets/src/blog.css` | Public stylesheet source (built to `Resources/public/blog.css`) | FR-PUB-001 |
 | `Resources/config/services.yaml` | Service autowire | FR-CFG-002 |
 | `Resources/config/routing.yaml` | Attribute controller import | FR-BUNDLE-001 |
+| `Resources/config/doctrine-xml/BlogArticle.orm.xml` | XML mapping of `BlogArticle` (`doctrine.mapping_type: xml`, 1.9) | FR-ORM-003 |
+| `Resources/config/doctrine-xml/BlogArticleTranslation.orm.xml` | XML mapping of `BlogArticleTranslation` (`doctrine.mapping_type: xml`, 1.9) | FR-ORM-003 |
+| `Resources/config/doctrine-xml/BlogArticleResource.orm.xml` | XML mapping of `BlogArticleResource` (`doctrine.mapping_type: xml`, 1.9) | FR-ORM-003 |
+| `Resources/config/doctrine-xml/BlogTag.orm.xml` | XML mapping of `BlogTag` (`doctrine.mapping_type: xml`, 1.9) | FR-ORM-003 |
+| `Resources/config/doctrine-xml/BlogTagTranslation.orm.xml` | XML mapping of `BlogTagTranslation` (`doctrine.mapping_type: xml`, 1.9) | FR-ORM-003 |
+| `Resources/config/doctrine-xml/BlogComment.orm.xml` | XML mapping of `BlogComment` (`doctrine.mapping_type: xml`, 1.9) | FR-ORM-003 |
+| `Resources/config/doctrine-xml/BlogSettings.orm.xml` | XML mapping of `BlogSettings` (`doctrine.mapping_type: xml`, 1.9) | FR-ORM-003 |
 
 ## Co-located Vitest sources (`FR-TEST-*`)
 
@@ -202,16 +280,19 @@ Vitest specs live next to the TypeScript sources under `src/`; they are not load
 | Category | Files | Mapped |
 | --- | ---: | ---: |
 | Bundle entry | 1 | 1 |
-| DependencyInjection | 5 | 5 |
-| Controllers | 8 | 8 |
+| DependencyInjection | 7 | 7 |
+| Controllers | 9 | 9 |
 | Entity & persistence | 17 | 17 |
 | Domain model & enums | 17 | 17 |
 | Services | 8 | 8 |
 | HTTP, events, command | 6 | 6 |
 | Forms | 15 | 15 |
 | Security | 24 | 24 |
+| Doctrine — entity manager and user references | 9 | 9 |
+| Host ports — 1.9 framework-free twins | 14 | 14 |
+| Worker boundaries | 2 | 2 |
 | UiKit pages | 3 | 3 |
 | Twig | 1 | 1 |
-| Non-PHP production assets (documented) | 40 | 40 |
+| Non-PHP production assets (documented) | 47 | 47 |
 | Co-located Vitest sources (`FR-TEST-*`) | 5 | 5 |
-| **Total production files (`git ls-files src`)** | **150** | **150** |
+| **Total production files (`git ls-files src`)** | **185** | **185** |

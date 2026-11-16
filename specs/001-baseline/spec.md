@@ -121,11 +121,20 @@ As a maintainer, I run the Symfony 8 FrankenPHP demo and smoke checks.
 | FR-TWIG-001 | Application templates under `templates/bundles/NowoBlogKitBundle/` take precedence |
 | FR-TWIG-005 | Kit Twig must not ship raw `<form>` / `<input>`; render with `form_start` + `form_row` loops |
 
+### Host ports (`FR-ARC-*`)
+
+| ID | Requirement |
+| --- | --- |
+| FR-ARC-001 | Every host port (object access, comment CAPTCHA, comment rate limit) also accepts a framework-free twin taking snapshots / request contexts instead of entities and `Request` (1.9, REQ-ARCH-001); the same configuration key selects either, and the build fails when a service implements neither |
+
 ### Persistence (`FR-ORM-*`)
 
 | ID | Requirement |
 | --- | --- |
 | FR-ORM-001 | Doctrine attribute mapping; paginated admin and public queries; optional table prefix |
+| FR-ORM-002 | Opt-in dedicated entity manager (`doctrine.entity_manager`, 1.9): blog entities mapped only on that manager; the default stays the manager that maps them |
+| FR-ORM-003 | `doctrine.mapping_type: attribute` (default) or `xml` (shipped `Resources/config/doctrine-xml/*.orm.xml`, 1.9) |
+| FR-ORM-004 | `doctrine.user_reference: entity` (default, relation to `user_class`) or `id` (string id columns, `BlogUserRef`, optional `user_directory` labels); a user whose id cannot be kept exactly may not write (1.9) |
 
 ### Internationalization (`FR-I18N-*`)
 
@@ -157,6 +166,7 @@ As a maintainer, I run the Symfony 8 FrankenPHP demo and smoke checks.
 | FR-WORKER-003 | A failed Doctrine flush never leaks pending `BlogArticlePublishedEvent` into a later flush or request |
 | FR-WORKER-004 | A closed blog EntityManager is recovered on the next main request; clearing an open identity map stays host-owned |
 | FR-WORKER-005 | Default captcha HTTP client timeout is configurable (`comments.captcha.timeout_seconds`) |
+| FR-WORKER-006 | The opt-in own entity manager is kept usable in a kept-alive kernel, acting only at the outermost request / message / command boundary; port request contexts are built per call (1.9) |
 
 ### Frontend tests (`FR-TEST-*`)
 
@@ -166,7 +176,7 @@ As a maintainer, I run the Symfony 8 FrankenPHP demo and smoke checks.
 
 ## Success criteria (`SC-*`)
 
-- **SC-001**: **150/150** files tracked under `src/` are mapped in [`code-inventory.md`](code-inventory.md) (audit: `git ls-files src | wc -l`).
+- **SC-001**: **185/185** files tracked under `src/` are mapped in [`code-inventory.md`](code-inventory.md) (audit: `git ls-files src | wc -l`).
 - **SC-002**: Every `FR-*` ID cited in the inventory is defined in this spec.
 - **SC-003**: `composer qa` (cs-check, PHPStan, PHPUnit) and `make release-check` pass; PHPUnit line coverage for `src/` stays at 100% (`make test-coverage-100`).
 - **SC-004**: Vitest specs pass (`make test-ts`).
