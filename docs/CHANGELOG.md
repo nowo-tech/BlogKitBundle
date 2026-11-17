@@ -42,6 +42,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Demo
+
+- The demo is built on UiKit and FormKit (REQ-DEMO-014 / REQ-DEMO-015): `templates/base.html.twig` is UiKit's admin layout with its default theme and a UiKit masthead (active item, theme toggle) instead of the Bootstrap CDN shell, the host `layouts/admin.html.twig` / `guest.html.twig` bridges and `demo-blog.css` (token overrides) are gone, `nowo_ui_kit` uses `css_framework: custom` with `icon_set: svg_inline`, FormKit uses `css_framework: none` with the `demo` profile on UiKit's form theme, and no Bootstrap CSS/JS or icon font is loaded from a CDN. The demo requires `nowo-tech/ui-kit-bundle` `^2.52` and `nowo-tech/form-kit-bundle` `^2.23`. No bundle runtime change.
+
 ### Changed
 
 - Spec Kit: `specs/001-baseline/code-inventory.md` maps the 1.9.0 files (host port twins, snapshots, user references, entity manager, worker boundaries, XML mappings) and lists every Twig view and translation catalogue on its own row (185/185 files); `spec.md` documents that existing behaviour as FR-ARC-001, FR-ORM-002…004 and FR-WORKER-006 (REQ-SPECKIT-001/003)

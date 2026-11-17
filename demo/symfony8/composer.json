@@ -6,8 +6,9 @@
     "require": {
         "doctrine/doctrine-bundle": "^3.0",
         "doctrine/orm": "^3.0",
-        "nowo-tech/form-kit-bundle": "^2.0",
+        "nowo-tech/form-kit-bundle": "^2.23",
         "nowo-tech/blog-kit-bundle": "@dev",
+        "nowo-tech/ui-kit-bundle": "^2.52",
         "php": ">=8.4",
         "symfony/console": "^8.0",
         "symfony/dotenv": "^8.0",
