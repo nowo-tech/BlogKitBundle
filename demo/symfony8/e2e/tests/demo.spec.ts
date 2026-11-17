@@ -4,14 +4,14 @@ test.describe('BlogKit demo', () => {
   test('home links to public blog and admin', async ({ page }) => {
     const response = await page.goto('/');
     expect(response?.ok()).toBeTruthy();
-    await expect(page.locator('.demo-hero')).toBeVisible();
+    await expect(page.locator('[data-testid="demo-hero"]')).toBeVisible();
     await expect(page.getByRole('link', { name: /Leer el blog|Read/i })).toBeVisible();
   });
 
   test('public blog index shows article cards', async ({ page }) => {
     const response = await page.goto('/blog');
     expect(response?.ok()).toBeTruthy();
-    await expect(page.locator('header.demo-masthead')).toBeVisible();
+    await expect(page.locator('[data-testid="demo-masthead"]')).toBeVisible();
     await expect(page.locator('.blog-item, .blog-feed, .blog-search').first()).toBeVisible({
       timeout: 10000,
     });
@@ -28,7 +28,7 @@ test.describe('BlogKit demo', () => {
     });
     const response = await page.goto('/admin/blog');
     expect(response?.ok()).toBeTruthy();
-    await expect(page.locator('header.demo-masthead')).toBeVisible();
+    await expect(page.locator('[data-testid="demo-masthead"]')).toBeVisible();
     await expect(page.locator('[data-testid="blog-kit-articles"] table tbody tr').first()).toBeVisible();
     await expect(page.locator('[data-testid="blog-kit-nav-articles"]')).toHaveAttribute('aria-current', 'page');
     await page.close();

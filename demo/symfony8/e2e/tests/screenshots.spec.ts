@@ -28,7 +28,7 @@ async function boxOf(
 /** Masthead → main → profiler (union), padded. */
 async function clipDemoFrame(page: import('@playwright/test').Page): Promise<Box> {
   const masthead =
-    (await boxOf(page, 'header.demo-masthead')) ?? (await boxOf(page, '.demo-masthead'));
+    await boxOf(page, '[data-testid="demo-masthead"]');
   const main = await boxOf(page, 'main');
   const profiler =
     (await boxOf(page, '.sf-toolbar')) ?? (await boxOf(page, '.sf-minitoolbar'));
@@ -96,7 +96,7 @@ test.describe('BlogKit screenshots (full demo context)', () => {
   test('overview — masthead + public blog index', async ({ page }) => {
     await fitViewport(page);
     await page.goto('/blog');
-    await expect(page.locator('header.demo-masthead')).toBeVisible();
+    await expect(page.locator('[data-testid="demo-masthead"]')).toBeVisible();
     await expect(page.locator('main')).toBeVisible();
     await expect(page.locator('.blog-item, .blog-feed, .blog-search').first()).toBeVisible({
       timeout: 15000,
@@ -114,7 +114,7 @@ test.describe('BlogKit screenshots (full demo context)', () => {
     } else {
       await page.goto('/blog/lorem-ipsum-01');
     }
-    await expect(page.locator('header.demo-masthead')).toBeVisible();
+    await expect(page.locator('[data-testid="demo-masthead"]')).toBeVisible();
     await expect(page.locator('main')).toBeVisible();
     await expect(page.locator('article, .blog-article, .blog-item__title, h1').first()).toBeVisible({
       timeout: 15000,
@@ -129,7 +129,7 @@ test.describe('BlogKit screenshots (full demo context)', () => {
     });
     await fitViewport(page);
     await page.goto('/admin/blog');
-    await expect(page.locator('header.demo-masthead')).toBeVisible();
+    await expect(page.locator('[data-testid="demo-masthead"]')).toBeVisible();
     await expect(page.locator('[data-testid="blog-kit-articles"] table tbody tr').first()).toBeVisible({
       timeout: 15000,
     });

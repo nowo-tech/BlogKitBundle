@@ -1,27 +1,20 @@
 {% extends 'base.html.twig' %}
 
 {% block title %}Nowo · Blog kit{% endblock %}
-{% block body_class %} demo-shell--home{% endblock %}
-{% block masthead_brand %}{% endblock %}
-{% block footer %}{% endblock %}
+
+{% block nowo_ui_page_header %}
+    <div class="nowo-ui-page-header">
+        <h1 class="nowo-ui-page-header__title" data-testid="demo-home-title">Blog kit</h1>
+        <p class="nowo-ui-muted">Artículos, tags, comentarios y ajustes del <strong>BlogKitBundle</strong>.</p>
+    </div>
+{% endblock %}
 
 {% block body %}
-<section class="demo-hero">
-    <img
-        class="demo-hero__image"
-        src="https://picsum.photos/seed/nowo-blog-hero/1920/1200"
-        alt=""
-        width="1920"
-        height="1200"
-    >
-    <div class="demo-hero__shade"></div>
-    <div class="demo-hero__copy">
-        <p class="demo-wordmark demo-wordmark--hero">Nowo</p>
-        <h1>Blog kit</h1>
-        <p>Artículos, tags, comentarios y ajustes del <strong>BlogKitBundle</strong>.</p>
-        <div class="demo-hero__actions">
-            <a class="demo-cta demo-cta--solid" href="{{ path('blog_index') }}">Leer el blog</a>
-            <a class="demo-cta demo-cta--ghost" href="{{ path('admin_blog_index') }}">Admin</a>
+<section class="nowo-ui-card" data-testid="demo-hero">
+    <div class="nowo-ui-card__body">
+        <div class="nowo-ui-row-actions">
+            <a class="nowo-ui-btn nowo-ui-btn--primary" href="{{ path('blog_index') }}">Leer el blog</a>
+            <a class="nowo-ui-btn nowo-ui-btn--outline" href="{{ path('admin_blog_index') }}">Admin</a>
         </div>
     </div>
 </section>

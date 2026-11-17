@@ -1,71 +1,15 @@
-# FormKit: css_framework is bootstrap|tailwind|foundation|none (no bootstrap5).
-# UiKit / BlogKit use bootstrap5. Pair this with twig.form_themes → bootstrap_5_layout.
-# Profiles `blog_kit` (CRUD) and `filter` (GET lists) skip NowoBlogKitExtension prepends when defined here.
+# REQ-DEMO-015: demo forms are FormKit forms on UiKit's form theme (twig.yaml), not on a CSS framework.
+# The `blog_kit` (CRUD) and `filter` (GET lists) profiles come from the bundle's own prepended defaults (UiKit classes).
 nowo_form_kit:
-    default_profile: default
-    css_framework: bootstrap
+    css_framework: none
+    default_profile: demo
     type_map:
         entity: Symfony\Bridge\Doctrine\Form\Type\EntityType
     profiles:
-        default:
-            alias: default
+        demo:
+            alias: demo
             translation_domain: messages
             defaults:
-                attr:
-                    class: form-control
                 row_attr:
-                    class: mb-3
-            field_types:
-                checkbox:
-                    attr:
-                        class: form-check-input
-                    row_attr:
-                        class: form-check mb-3
-                choice:
-                    attr:
-                        class: form-select
-        blog_kit:
-            alias: blog_kit
-            translation_domain: NowoBlogKitBundle
-            defaults:
-                attr:
-                    class: nowo-ui-input form-control
-                row_attr:
-                    class: mb-3
-            field_types:
-                checkbox:
-                    attr:
-                        class: form-check-input
-                    row_attr:
-                        class: form-check mb-3
-                choice:
-                    attr:
-                        class: form-select
-                entity:
-                    attr:
-                        class: form-select
-                textarea:
-                    attr:
-                        class: nowo-ui-input form-control
-                        rows: '6'
-        filter:
-            alias: filter
-            translation_domain: NowoBlogKitBundle
-            auto_placeholder: true
-            auto_help: true
-            defaults:
-                label: false
-                required: false
-                attr:
-                    class: form-control form-control-sm
-                row_attr:
-                    class: mb-0
-            field_types:
-                checkbox:
-                    attr:
-                        class: form-check-input
-                    row_attr:
-                        class: form-check mb-0
-                choice:
-                    attr:
-                        class: form-select form-select-sm
+                    class: 'nowo-ui-form-row'
+            field_types: {}
