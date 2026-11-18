@@ -246,10 +246,15 @@ jobs:
       - name: Install dependencies
         run: composer install --prefer-dist --no-progress --no-interaction
 
-      - name: DBAL 3
+      # DoctrineBundle 3 needs DBAL 4, and DoctrineBundle 2.x stops at Symfony 7.4: the DBAL 3 legs run on
+      # Symfony 7.4 + DoctrineBundle 2.x (composer.json allows both).
+      - name: DBAL 3 (Symfony 7.4, DoctrineBundle 2.x)
         if: matrix.dbal != ''
-        # DoctrineBundle 3 needs DBAL 4: the DBAL 3 legs run on DoctrineBundle 2.x (composer.json allows ^2.10).
-        run: composer update "doctrine/dbal:${{ matrix.dbal }}" "doctrine/doctrine-bundle:^2.10" --with-all-dependencies --prefer-dist --no-progress --no-interaction
+        run: |
+          symfony=$(php -r '$c = json_decode(file_get_contents("composer.json"), true); foreach (array_keys($c["require"] + $c["require-dev"]) as $p) { if (str_starts_with($p, "symfony/") && !str_contains($p, "contracts")) { echo $p, ":^7.4 "; } }')
+          composer require --no-update --no-interaction $symfony "doctrine/dbal:${{ matrix.dbal }}" "doctrine/doctrine-bundle:^2.10"
+          composer update --with-all-dependencies --prefer-dist --no-progress --no-interaction
+          composer show | grep -E '^(doctrine/dbal|doctrine/doctrine-bundle|symfony/http-kernel) '
 
       - name: Concurrency suite
         env:
