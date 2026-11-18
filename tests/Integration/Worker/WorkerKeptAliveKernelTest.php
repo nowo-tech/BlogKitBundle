@@ -26,8 +26,11 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
 use Symfony\Component\HttpKernel\TerminableInterface;
 
-use function function_exists;
+use function array_slice;
+use function count;
 use function gc_collect_cycles;
+use function intdiv;
+use function max;
 use function memory_get_usage;
 use function str_contains;
 use function sys_get_temp_dir;
@@ -71,7 +74,7 @@ final class WorkerKeptAliveKernelTest extends TestCase
 
         $kernel     = $this->httpKernel($container);
         $connection = $blog->getConnection();
-        $baseline   = 0;
+        $samples    = [];
         for ($i = 0; $i < self::ITERATIONS; ++$i) {
             $user  = $i % 2 === 0 ? 'alice' : 'bob';
             $other = $user === 'alice' ? 'bob' : 'alice';
@@ -82,12 +85,10 @@ final class WorkerKeptAliveKernelTest extends TestCase
             self::assertStringContainsString('Post of ' . $user . ' #' . $i, $html, 'request ' . $i . ' reads the fresh title');
             self::assertStringNotContainsString('Post of ' . $other, $html, 'request ' . $i . ' shows only ' . $user . '\'s article');
             self::assertSame(0, $blog->getUnitOfWork()->size(), 'no blog entity survives request ' . $i);
-            if ($i === 50) {
-                $baseline = $this->collectedMemory();
-            }
+            $this->sample($i, $samples);
         }
 
-        self::assertLessThan(self::MEMORY_MARGIN, $this->collectedMemory() - $baseline, 'memory stays flat over many requests');
+        self::assertLessThan(self::MEMORY_MARGIN, $this->growth($samples), 'memory stays flat over many requests');
         self::assertTrue($host->getUnitOfWork()->isScheduledForInsert($note), 'the host manager is never flushed nor cleared');
     }
 
@@ -156,19 +157,17 @@ final class WorkerKeptAliveKernelTest extends TestCase
         $default->persist($note);
         $kernel = $this->httpKernel($container);
 
-        $baseline = 0;
+        $samples = [];
         for ($i = 0; $i < self::ITERATIONS; ++$i) {
             $user  = $i % 2 === 0 ? 'alice' : 'bob';
             $other = $user === 'alice' ? 'bob' : 'alice';
             $html  = $this->listing($kernel, $user);
             self::assertStringContainsString('Post of ' . $user, $html, 'request ' . $i);
             self::assertStringNotContainsString('Post of ' . $other, $html, 'request ' . $i . ' shows only ' . $user . '\'s article');
-            if ($i === 50) {
-                $baseline = $this->collectedMemory();
-            }
+            $this->sample($i, $samples);
         }
 
-        self::assertLessThan(self::MEMORY_MARGIN, $this->collectedMemory() - $baseline, 'memory stays flat over many requests');
+        self::assertLessThan(self::MEMORY_MARGIN, $this->growth($samples), 'memory stays flat over many requests');
         self::assertTrue($default->getUnitOfWork()->isScheduledForInsert($note), 'the bundle never clears the host default manager (rule 7)');
     }
 
@@ -239,14 +238,35 @@ final class WorkerKeptAliveKernelTest extends TestCase
     }
 
     /**
-     * The heap after a GC run, without PCOV's own line tables: while it collects coverage they are counted by
-     * memory_get_usage() and grow in steps that depend on the code layout of the whole suite (1.10: +5.9 MB in this
-     * test with PCOV collecting, +0.9 MB without), which is not memory the kernel keeps.
+     * Every 50 requests after the warm-up, the heap after a GC run.
+     *
+     * @param list<int> $samples
      */
+    private function sample(int $request, array &$samples): void
+    {
+        if ($request >= 50 && $request % 50 === 0) {
+            $samples[] = $this->collectedMemory();
+        }
+    }
+
+    /**
+     * The growth between the first and the second half of the samples: the highest of each half, so one GC run that
+     * happens to leave more garbage behind (a single sample differed by about 6 MB with PCOV collecting, while the
+     * heap stayed flat) is not read as growth, while a leak, which raises every later sample, still is.
+     *
+     * @param list<int> $samples
+     */
+    private function growth(array $samples): int
+    {
+        $half = intdiv(count($samples), 2);
+
+        return max(array_slice($samples, $half)) - max(array_slice($samples, 0, $half));
+    }
+
     private function collectedMemory(): int
     {
         gc_collect_cycles();
 
-        return memory_get_usage() - (function_exists('pcov\\memory') ? \pcov\memory() : 0);
+        return memory_get_usage();
     }
 }
