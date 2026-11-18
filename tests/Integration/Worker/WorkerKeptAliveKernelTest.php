@@ -26,6 +26,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
 use Symfony\Component\HttpKernel\TerminableInterface;
 
+use function function_exists;
 use function gc_collect_cycles;
 use function memory_get_usage;
 use function str_contains;
@@ -237,10 +238,15 @@ final class WorkerKeptAliveKernelTest extends TestCase
         return $html;
     }
 
+    /**
+     * The heap after a GC run, without PCOV's own line tables: while it collects coverage they are counted by
+     * memory_get_usage() and grow in steps that depend on the code layout of the whole suite (1.10: +5.9 MB in this
+     * test with PCOV collecting, +0.9 MB without), which is not memory the kernel keeps.
+     */
     private function collectedMemory(): int
     {
         gc_collect_cycles();
 
-        return memory_get_usage();
+        return memory_get_usage() - (function_exists('pcov\\memory') ? \pcov\memory() : 0);
     }
 }

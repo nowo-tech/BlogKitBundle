@@ -158,14 +158,38 @@ abstract class DatabaseTestCase extends TestCase
      */
     protected function insertTagFromWriter(string $slug, array $names): int
     {
-        $this->writer->insert('content_blog_tag', ['slug' => $slug]);
+        $this->writer->insert('content_blog_tag', $this->writerId('content_blog_tag') + ['slug' => $slug]);
         $id = (int) $this->writer->fetchOne('SELECT id FROM content_blog_tag WHERE slug = ?', [$slug]);
 
         foreach ($names as $locale => $name) {
-            $this->writer->insert('content_blog_tag_translation', ['translatable_id' => $id, 'locale' => $locale, 'name' => $name]);
+            $this->writer->insert('content_blog_tag_translation', $this->writerId('content_blog_tag_translation') + ['translatable_id' => $id, 'locale' => $locale, 'name' => $name]);
         }
 
         return $id;
+    }
+
+    /**
+     * The id of a raw insert: none with an identity column (MySQL, MariaDB, PostgreSQL on DBAL 4), the next value of
+     * the table's sequence when the AUTO strategy is a sequence (PostgreSQL on DBAL 3).
+     *
+     * @return array<string, int>
+     */
+    protected function writerId(string $table): array
+    {
+        $metadata = null;
+        foreach ($this->entityManager->getMetadataFactory()->getAllMetadata() as $classMetadata) {
+            if ($classMetadata->getTableName() === $table) {
+                $metadata = $classMetadata;
+            }
+        }
+
+        if ($metadata === null || $metadata->idGenerator->isPostInsertGenerator()) {
+            return [];
+        }
+
+        $sequence = $metadata->sequenceGeneratorDefinition['sequenceName'] ?? $table . '_id_seq';
+
+        return ['id' => (int) $this->writer->fetchOne($this->writer->getDatabasePlatform()->getSequenceNextValSQL($sequence))];
     }
 
     protected function assertConnectionUsable(): void

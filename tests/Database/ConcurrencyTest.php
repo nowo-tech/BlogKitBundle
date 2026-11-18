@@ -38,6 +38,7 @@ use Symfony\Component\Translation\Translator;
 use Throwable;
 
 use function array_map;
+use function array_unshift;
 use function implode;
 use function sprintf;
 
@@ -258,9 +259,17 @@ final class ConcurrencyTest extends DatabaseTestCase
         }
 
         $select = array_map(static fn (string $column): string => $column === 'slug' ? '? AS slug' : $column, $columns);
+        $params = [$slug, $templateSlug];
+        $id     = $this->writerId('content_blog_article');
+        if ($id !== []) {
+            array_unshift($columns, 'id');
+            array_unshift($select, '? AS id');
+            array_unshift($params, $id['id']);
+        }
+
         $this->writer->executeStatement(
             sprintf('INSERT INTO content_blog_article (%s) SELECT %s FROM content_blog_article WHERE slug = ?', implode(', ', $columns), implode(', ', $select)),
-            [$slug, $templateSlug],
+            $params,
         );
     }
 
