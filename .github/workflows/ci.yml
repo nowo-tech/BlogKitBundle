@@ -248,7 +248,8 @@ jobs:
 
       - name: DBAL 3
         if: matrix.dbal != ''
-        run: composer update "doctrine/dbal:${{ matrix.dbal }}" --with-all-dependencies --prefer-dist --no-progress --no-interaction
+        # DoctrineBundle 3 needs DBAL 4: the DBAL 3 legs run on DoctrineBundle 2.x (composer.json allows ^2.10).
+        run: composer update "doctrine/dbal:${{ matrix.dbal }}" "doctrine/doctrine-bundle:^2.10" --with-all-dependencies --prefer-dist --no-progress --no-interaction
 
       - name: Concurrency suite
         env:
