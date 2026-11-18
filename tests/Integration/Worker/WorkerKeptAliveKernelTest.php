@@ -28,12 +28,11 @@ use Symfony\Component\HttpKernel\TerminableInterface;
 
 use function array_slice;
 use function count;
-use function function_exists;
 use function gc_collect_cycles;
 use function implode;
 use function intdiv;
-use function max;
 use function memory_get_usage;
+use function sort;
 use function str_contains;
 use function sys_get_temp_dir;
 use function uniqid;
@@ -246,22 +245,15 @@ final class WorkerKeptAliveKernelTest extends TestCase
      */
     private function sample(int $request, array &$samples): void
     {
-        if ($request === 50 && function_exists('pcov\\stop')) {
-            // The warm-up requests ran every line the later ones run, so coverage loses nothing; PCOV's own line
-            // tables are counted by memory_get_usage() and grow while it collects (CI, Symfony 7.4: +5.7 MB with a
-            // flat heap), so it stops for the rest of the test (PHPUnit stops it after each test anyway).
-            \pcov\stop();
-        }
-
         if ($request >= 50 && $request % 50 === 0) {
             $samples[] = $this->collectedMemory();
         }
     }
 
     /**
-     * The growth between the first and the second half of the samples: the highest of each half, so one GC run that
-     * happens to leave more garbage behind (a single sample differed by about 6 MB with PCOV collecting, while the
-     * heap stayed flat) is not read as growth, while a leak, which raises every later sample, still is.
+     * The growth between the medians of the first and the second half of the samples. A leak raises every later
+     * sample, so it moves the median; a single reallocation of a long-lived table does not (CI, Symfony 7.4: samples
+     * flat within 0.8 MB over 900 requests, then one +5.3 MB step when a table sized by the whole suite doubled).
      *
      * @param list<int> $samples
      */
@@ -269,7 +261,17 @@ final class WorkerKeptAliveKernelTest extends TestCase
     {
         $half = intdiv(count($samples), 2);
 
-        return max(array_slice($samples, $half)) - max(array_slice($samples, 0, $half));
+        return $this->median(array_slice($samples, $half)) - $this->median(array_slice($samples, 0, $half));
+    }
+
+    /**
+     * @param list<int> $values
+     */
+    private function median(array $values): int
+    {
+        sort($values);
+
+        return $values[intdiv(count($values), 2)];
     }
 
     private function collectedMemory(): int
