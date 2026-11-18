@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Nowo\BlogKitBundle\Controller\Admin;
 
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\ORM\EntityManagerInterface;
 use Nowo\BlogKitBundle\Controller\RequiresValidFormTrait;
 use Nowo\BlogKitBundle\Entity\BlogArticle;
@@ -14,6 +15,7 @@ use Nowo\BlogKitBundle\Locale\BlogLocales;
 use Nowo\BlogKitBundle\Model\BlogUserInterface;
 use Nowo\BlogKitBundle\Repository\BlogArticleRepository;
 use Nowo\BlogKitBundle\Security\BlogKitAccessDenied;
+use Nowo\BlogKitBundle\Transaction\BlogKitTransactionRunner;
 use Nowo\BlogKitBundle\Ui\BlogKitPageFactory;
 use Nowo\BlogKitBundle\User\BlogUsers;
 use Nowo\FormKitBundle\Form\CsrfOnlyFormFactory;
@@ -29,6 +31,11 @@ use Symfony\Component\Routing\Attribute\Route;
 
 /**
  * Admin CRUD for blog articles.
+ *
+ * Since 1.10.0 (REQ-RUNTIME-003): every save is one transaction of {@see BlogKitTransactionRunner}. The slug is
+ * unique: an article saved with the same slug at the same moment (or a translation row of the same locale) is caught,
+ * and the form is shown again with an error flash (a domain answer, no CONFLICT_* code). A lock conflict answers 409 +
+ * CONFLICT_001. The publish event follows the commit.
  */
 final class BlogArticleController extends AbstractController
 {
@@ -47,6 +54,7 @@ final class BlogArticleController extends AbstractController
         private readonly int $pageSize,
         private readonly BlogKitPageFactory $pageFactory,
         private readonly ?BlogUsers $users = null,
+        private readonly ?BlogKitTransactionRunner $transactionRunner = null,
     ) {
     }
 
@@ -112,11 +120,11 @@ final class BlogArticleController extends AbstractController
                 $blogArticle->setCreatedBy($user);
             }
 
-            $this->entityManager->persist($blogArticle);
-            $this->entityManager->flush();
-            $this->addFlash('success', 'admin.flash.article_created');
+            if ($this->save($blogArticle, persist: true)) {
+                $this->addFlash('success', 'admin.flash.article_created');
 
-            return $this->redirectToRoute('admin_blog_index');
+                return $this->redirectToRoute('admin_blog_index');
+            }
         }
 
         return $this->renderForm($form, 'admin.articles.new');
@@ -131,8 +139,7 @@ final class BlogArticleController extends AbstractController
         $form = $this->createForm(BlogArticleType::class, $blogArticle);
         $form->handleRequest($request);
 
-        if ($form->isSubmitted() && $form->isValid()) {
-            $this->entityManager->flush();
+        if ($form->isSubmitted() && $form->isValid() && $this->save($blogArticle)) {
             $this->addFlash('success', 'admin.flash.article_updated');
 
             return $this->redirectToRoute('admin_blog_index');
@@ -156,7 +163,7 @@ final class BlogArticleController extends AbstractController
         $this->denyUnrecordableUser($this->users);
         $this->accessDenied->denyUnlessCanManageArticle($blogArticle);
 
-        return $this->handleInlineSubmit($blogArticle, $request, $this->entityManager);
+        return $this->handleInlineSubmit($blogArticle, $request);
     }
 
     #[Route('/admin/blog/{id}/delete', name: 'admin_blog_delete', requirements: ['id' => '\d+'], methods: ['POST'])]
@@ -173,10 +180,51 @@ final class BlogArticleController extends AbstractController
         $this->requireValidCsrfForm($form);
 
         $this->entityManager->remove($blogArticle);
-        $this->entityManager->flush();
+        $this->runner()->flushPending();
         $this->addFlash('success', 'admin.flash.article_deleted');
 
         return $this->redirectToRoute('admin_blog_index');
+    }
+
+    /**
+     * Since 1.10.0: saves the bound form in one transaction; false (with an error flash) when a concurrent write took
+     * the slug, or a translation row of the same locale, first.
+     */
+    private function save(BlogArticle $blogArticle, bool $persist = false): bool
+    {
+        if ($persist) {
+            $this->entityManager->persist($blogArticle);
+        }
+
+        try {
+            $this->runner()->flushPending();
+        } catch (UniqueConstraintViolationException) {
+            $this->addFlash('error', $this->slugTaken($blogArticle) ? 'admin.flash.slug_taken' : 'admin.flash.save_conflict');
+
+            return false;
+        }
+
+        return true;
+    }
+
+    /** Whether another article holds the slug (a scalar query: the failed flush closed the manager's unit of work). */
+    private function slugTaken(BlogArticle $blogArticle): bool
+    {
+        $queryBuilder = $this->blogArticleRepository->createQueryBuilder('a')
+            ->select('COUNT(a.id)')
+            ->andWhere('a.slug = :slug')
+            ->setParameter('slug', $blogArticle->getSlug());
+
+        if ($blogArticle->getId() !== null) {
+            $queryBuilder->andWhere('a.id <> :id')->setParameter('id', $blogArticle->getId());
+        }
+
+        return (int) $queryBuilder->getQuery()->getSingleScalarResult() > 0;
+    }
+
+    private function runner(): BlogKitTransactionRunner
+    {
+        return $this->transactionRunner ?? BlogKitTransactionRunner::unmanaged($this->entityManager);
     }
 
     /**
@@ -207,23 +255,19 @@ final class BlogArticleController extends AbstractController
         ]);
     }
 
-    private function handleInlineSubmit(
-        BlogArticle $blogArticle,
-        Request $request,
-        EntityManagerInterface $entityManager,
-    ): Response {
+    private function handleInlineSubmit(BlogArticle $blogArticle, Request $request): Response
+    {
         $locale = $request->getLocale();
         $form   = $this->createInlineForm($blogArticle);
         $form->handleRequest($request);
 
-        if (!$form->isSubmitted() || !$form->isValid()) {
+        if (!$form->isSubmitted() || !$form->isValid() || !$this->save($blogArticle)) {
             return $this->render('@NowoBlogKitBundle/admin/_modal_form.html.twig', [
                 'form'   => $form,
                 'locale' => $locale,
             ], new Response('', Response::HTTP_UNPROCESSABLE_ENTITY));
         }
 
-        $entityManager->flush();
         $this->addFlash('success', 'admin.flash.article_updated');
 
         // Back to the public article (never to the Referer header: open redirect, SEC-004 I1).

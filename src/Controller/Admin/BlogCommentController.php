@@ -186,11 +186,8 @@ final class BlogCommentController extends AbstractController
 
         /** @var array{body: string} $data */
         $data = $form->getData();
-        $this->blogCommentManager->createStaffReply($blogComment, $user, $data['body']);
-
-        if ($blogComment->getStatus() === BlogCommentStatus::Pending) {
-            $this->blogCommentManager->approve($blogComment, $user);
-        }
+        // Since 1.10.0: the reply and the approval of a pending parent are one unit (REQ-RUNTIME-003 rule 1).
+        $this->blogCommentManager->createStaffReply($blogComment, $user, $data['body'], approvePendingParent: true);
 
         $this->addFlash('success', 'admin.flash.reply_published');
 

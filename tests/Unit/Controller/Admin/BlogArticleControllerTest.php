@@ -20,6 +20,7 @@ use Nowo\BlogKitBundle\Tests\Support\LocaleTestSupport;
 use Nowo\BlogKitBundle\Tests\Support\PageFixtures;
 use Nowo\BlogKitBundle\Tests\Support\PlainHostUser;
 use Nowo\BlogKitBundle\Tests\Support\TestUser;
+use Nowo\BlogKitBundle\Tests\Support\UniqueViolationSupport;
 use Nowo\BlogKitBundle\User\BlogUsers;
 use Nowo\BlogKitBundle\ValueObject\BlogUserRef;
 use Nowo\FormKitBundle\Form\CsrfOnlyFormFactory;
@@ -39,6 +40,8 @@ use Twig\Environment;
 
 final class BlogArticleControllerTest extends TestCase
 {
+    use UniqueViolationSupport;
+
     protected function setUp(): void
     {
         LocaleTestSupport::bindDefaults();
@@ -542,6 +545,66 @@ final class BlogArticleControllerTest extends TestCase
         $this->expectExceptionMessage('Invalid CSRF token.');
 
         $controller->delete($article, $request);
+    }
+
+    #[Test]
+    public function aSlugTakenByAConcurrentAdminShowsTheArticleFormAgain(): void
+    {
+        $request = Request::create('/admin/blog/new', 'POST');
+        $form    = $this->createConfiguredMock(FormInterface::class, ['isSubmitted' => true, 'isValid' => true, 'createView' => new FormView()]);
+
+        $entityManager = $this->createMock(EntityManagerInterface::class);
+        $entityManager->expects(self::once())->method('persist');
+        $entityManager->method('flush')->willThrowException(self::uniqueViolation());
+        $repository = $this->createMock(BlogArticleRepository::class);
+        $repository->expects(self::once())->method('createQueryBuilder')->with('a')->willReturn($this->countQueryBuilder(1, 1));
+        $twig = $this->createMock(Environment::class);
+        $twig->expects(self::once())->method('render')->with('@NowoBlogKitBundle/admin/form.html.twig')->willReturn('form again');
+
+        $controller = $this->createController(request: $request, repository: $repository, entityManager: $entityManager, formFactory: $this->createArticleFormFactory($form), twig: $twig);
+        $response   = $controller->new($request);
+
+        self::assertSame('form again', $response->getContent());
+        self::assertSame(['admin.flash.slug_taken'], $request->getSession()->getFlashBag()->get('error'));
+    }
+
+    #[Test]
+    public function aConcurrentTranslationRowOfAnEditAsksToReload(): void
+    {
+        $request = Request::create('/admin/blog/4/edit', 'POST');
+        $form    = $this->createConfiguredMock(FormInterface::class, ['isSubmitted' => true, 'isValid' => true, 'createView' => new FormView()]);
+
+        $entityManager = $this->createMock(EntityManagerInterface::class);
+        $entityManager->method('flush')->willThrowException(self::uniqueViolation());
+        $repository = $this->createMock(BlogArticleRepository::class);
+        $repository->method('createQueryBuilder')->willReturn($this->countQueryBuilder(0, 2));
+        $twig = $this->createMock(Environment::class);
+        $twig->method('render')->willReturn('form again');
+
+        $controller = $this->createController(request: $request, repository: $repository, entityManager: $entityManager, formFactory: $this->createArticleFormFactory($form), twig: $twig);
+        $controller->edit($this->createArticle(4, 'edited'), $request);
+
+        self::assertSame(['admin.flash.save_conflict'], $request->getSession()->getFlashBag()->get('error'));
+    }
+
+    #[Test]
+    public function aUniqueViolationOfAnInlineEditAnswersTheModalAgain(): void
+    {
+        $request = Request::create('/admin/blog/4/inline', 'POST');
+        $form    = $this->createConfiguredMock(FormInterface::class, ['isSubmitted' => true, 'isValid' => true, 'createView' => new FormView()]);
+
+        $entityManager = $this->createMock(EntityManagerInterface::class);
+        $entityManager->method('flush')->willThrowException(self::uniqueViolation());
+        $repository = $this->createMock(BlogArticleRepository::class);
+        $repository->method('createQueryBuilder')->willReturn($this->countQueryBuilder(0, 2));
+        $twig = $this->createMock(Environment::class);
+        $twig->method('render')->willReturn('modal-again');
+
+        $controller = $this->createController(request: $request, repository: $repository, entityManager: $entityManager, formFactory: $this->createArticleFormFactory($this->createMock(FormInterface::class), $form), twig: $twig);
+        $response   = $controller->inlineUpdate($this->createArticle(4, 'inline'), $request);
+
+        self::assertSame(Response::HTTP_UNPROCESSABLE_ENTITY, $response->getStatusCode());
+        self::assertSame(['admin.flash.save_conflict'], $request->getSession()->getFlashBag()->get('error'));
     }
 
     private function createController(

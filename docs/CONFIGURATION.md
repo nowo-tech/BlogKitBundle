@@ -15,6 +15,7 @@ All options live under the root key `nowo_blog_kit`.
   - [Timeout hierarchy](#timeout-hierarchy)
 - [html](#html)
 - [doctrine](#doctrine)
+- [conflict_response](#conflict_response)
 - [Twig globals](#twig-globals)
 - [FormKit profiles](#formkit-profiles)
 - [Translation overrides](#translation-overrides)
@@ -77,6 +78,9 @@ nowo_blog_kit:
         entity_manager: null           # 1.9.0: a manager dedicated to the blog (opt-in)
         mapping_type: attribute        # 1.9.0: attribute | xml
         user_reference: entity         # 1.9.0: entity | id
+    conflict_response:                 # 1.10.0: lock conflicts of the bundle routes (REQ-RUNTIME-003)
+        status: ~                      # null (transaction-doctrine's, else 409) | 409 | 503
+        error_page: false              # true: render through your error page
 ```
 
 ## Top-level options
@@ -197,6 +201,17 @@ nowo_blog_kit:
     doctrine:
         table_prefix: 'tenant_a_'
 ```
+
+## conflict_response
+
+Since 1.10.0 (REQ-RUNTIME-003 rule 6). A deadlock, lock wait timeout or serialization failure of a Blog Kit route
+answers 409 + `Retry-After` + `CONFLICT_001` (nothing committed) or 409 + `CONFLICT_002` without `Retry-After` (part of
+the request committed), with the `X-Conflict-Code` header. See [CONCURRENCY](CONCURRENCY.md).
+
+| Key | Default | Description |
+| --- | --- | --- |
+| `status` | `null` | `409` or `503`. `null`: `nowo_transaction_doctrine.conflict_response.status` when `NowoTransactionDoctrineBundle` is registered, else `409`. |
+| `error_page` | `false` | `true`: an `HttpException` with the status, `X-Conflict-Code` and (for `CONFLICT_001`) `Retry-After`, rendered by your error page, instead of the platform conflict answer. |
 
 ## Twig globals
 

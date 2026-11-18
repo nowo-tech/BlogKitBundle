@@ -185,6 +185,82 @@ jobs:
           BLOG_KIT_MYSQL_URL: 'mysql://root@127.0.0.1:3306/blog_kit?serverVersion=8.4.0&charset=utf8mb4'
         run: vendor/bin/phpunit --no-coverage --group mysql
 
+  databases:
+    # REQ-RUNTIME-003: two-connection races on real servers (tag / slug "only one" rules, lock wait -> 409 +
+    # CONFLICT_001, conflict after a commit -> CONFLICT_002), on DBAL 4 and DBAL 3.
+    name: Databases (${{ matrix.name }})
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: 'MySQL 8.4', url: 'mysql://root@127.0.0.1:3306/blog_kit?serverVersion=8.4.0&charset=utf8mb4', dbal: '' }
+          - { name: 'MariaDB 11.4', url: 'mysql://root@127.0.0.1:3307/blog_kit?serverVersion=11.4.0-MariaDB&charset=utf8mb4', dbal: '' }
+          - { name: 'PostgreSQL 16', url: 'postgresql://postgres:postgres@127.0.0.1:5432/blog_kit?serverVersion=16&charset=utf8', dbal: '' }
+          - { name: 'MySQL 8.4, DBAL 3', url: 'mysql://root@127.0.0.1:3306/blog_kit?serverVersion=8.4.0&charset=utf8mb4', dbal: '^3.8.2' }
+          - { name: 'MariaDB 11.4, DBAL 3', url: 'mysql://root@127.0.0.1:3307/blog_kit?serverVersion=11.4.0-MariaDB&charset=utf8mb4', dbal: '^3.8.2' }
+          - { name: 'PostgreSQL 16, DBAL 3', url: 'postgresql://postgres:postgres@127.0.0.1:5432/blog_kit?serverVersion=16&charset=utf8', dbal: '^3.8.2' }
+
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+          MYSQL_DATABASE: blog_kit
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd "mysqladmin ping -h127.0.0.1 -uroot --silent"
+          --health-interval 5s --health-timeout 5s --health-retries 30
+      mariadb:
+        image: mariadb:11.4
+        env:
+          MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: '1'
+          MARIADB_DATABASE: blog_kit
+        ports: ['3307:3306']
+        options: >-
+          --health-cmd "healthcheck.sh --connect --innodb_initialized"
+          --health-interval 5s --health-timeout 5s --health-retries 30
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: blog_kit
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: pdo_mysql, pdo_pgsql
+          tools: composer:v2
+          coverage: none
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      # DoctrineBundle 3 needs DBAL 4, and DoctrineBundle 2.x stops at Symfony 7.4: the DBAL 3 legs run on
+      # Symfony 7.4 + DoctrineBundle 2.x (composer.json allows both).
+      - name: DBAL 3 (Symfony 7.4, DoctrineBundle 2.x)
+        if: matrix.dbal != ''
+        run: |
+          symfony=$(php -r '$c = json_decode(file_get_contents("composer.json"), true); foreach (array_keys($c["require"] + $c["require-dev"]) as $p) { if (str_starts_with($p, "symfony/") && !str_contains($p, "contracts")) { echo $p, ":^7.4 "; } }')
+          composer require --no-update --no-interaction $symfony "doctrine/dbal:${{ matrix.dbal }}" "doctrine/doctrine-bundle:^2.10"
+          composer update --with-all-dependencies --prefer-dist --no-progress --no-interaction
+          composer show | grep -E '^(doctrine/dbal|doctrine/doctrine-bundle|symfony/http-kernel) '
+
+      - name: Concurrency suite
+        env:
+          BLOG_KIT_DATABASE_URL: ${{ matrix.url }}
+        run: vendor/bin/phpunit --no-coverage --group database --fail-on-skipped
+
   static-analysis:
     name: Static analysis (PHPStan, Rector, Igor)
     runs-on: ubuntu-latest

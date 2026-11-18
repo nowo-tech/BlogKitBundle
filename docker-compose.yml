@@ -18,6 +18,49 @@ services:
     networks:
       - blog-kit-bundle-network
 
+  # REQ-RUNTIME-003: the real-database concurrency suite (group database). From the php service:
+  #   BLOG_KIT_MYSQL_URL=mysql://root@mysql:3306/blog_kit?serverVersion=8.4.0&charset=utf8mb4
+  #   BLOG_KIT_MARIADB_URL=mysql://root@mariadb:3306/blog_kit?serverVersion=11.4.0-MariaDB&charset=utf8mb4
+  #   BLOG_KIT_POSTGRES_URL=postgresql://postgres:postgres@postgres:5432/blog_kit?serverVersion=16&charset=utf8
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+      MYSQL_DATABASE: blog_kit
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h127.0.0.1", "-uroot", "--silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    networks:
+      - blog-kit-bundle-network
+
+  mariadb:
+    image: mariadb:11.4
+    environment:
+      MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: "1"
+      MARIADB_DATABASE: blog_kit
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    networks:
+      - blog-kit-bundle-network
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: blog_kit
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    networks:
+      - blog-kit-bundle-network
+
 volumes:
   composer-cache:
     driver: local

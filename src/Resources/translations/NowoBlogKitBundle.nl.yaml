@@ -65,7 +65,9 @@ admin:
     comment_rejected: Reactie afgewezen.
     reply_invalid: Ongeldig antwoord.
     reply_published: Antwoord gepubliceerd.
+    save_conflict: 'Iemand anders wijzigde dezelfde gegevens op hetzelfde moment: er is niets opgeslagen. Laad de pagina opnieuw en probeer het nog eens.'
     settings_saved: Instellingen opgeslagen.
+    slug_taken: 'Deze slug is al in gebruik: kies een andere.'
     tag_created: Tag aangemaakt.
     tag_deleted: Tag verwijderd.
     tag_in_use: Deze tag wordt nog door artikelen gebruikt.

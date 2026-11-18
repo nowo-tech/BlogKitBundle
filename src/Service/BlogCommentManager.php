@@ -11,6 +11,7 @@ use Nowo\BlogKitBundle\Entity\BlogCommentStatus;
 use Nowo\BlogKitBundle\Model\BlogStaffDisplayNameInterface;
 use Nowo\BlogKitBundle\Model\BlogUserInterface;
 use Nowo\BlogKitBundle\Repository\BlogCommentRepository;
+use Nowo\BlogKitBundle\Transaction\BlogKitTransactionRunner;
 use Psr\Clock\ClockInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
@@ -23,9 +24,15 @@ use Symfony\Component\HttpFoundation\Request;
  *
  * Moderation timestamps come from the injected PSR-20 clock (REQ-DI-001). Moderation actions are
  * logged with the comment id only — never the author name, e-mail, body or IP (REQ-OBS-001).
+ *
+ * Since 1.10.0 (REQ-RUNTIME-003): each method is one unit of {@see BlogKitTransactionRunner} (the entities are built
+ * and changed inside it, so the host's manager is clean when it starts); a lock conflict leaves as
+ * TransientStorageFailure (409 + CONFLICT_001 on the bundle's routes). Logs follow the commit.
  */
 final readonly class BlogCommentManager
 {
+    private BlogKitTransactionRunner $transactionRunner;
+
     public function __construct(
         private EntityManagerInterface $entityManager,
         private BlogCommentRepository $blogCommentRepository,
@@ -33,7 +40,9 @@ final readonly class BlogCommentManager
         private LoggerInterface $logger = new NullLogger(),
         #[Autowire('%nowo_blog_kit.comments.staff_name%')]
         private string $staffName = 'Team',
+        ?BlogKitTransactionRunner $transactionRunner = null,
     ) {
+        $this->transactionRunner = $transactionRunner ?? BlogKitTransactionRunner::unmanaged($entityManager);
     }
 
     public function createPublicComment(
@@ -43,70 +52,89 @@ final readonly class BlogCommentManager
         string $body,
         Request $request,
     ): BlogComment {
-        $blogComment = new BlogComment()
-            ->setArticle($blogArticle)
-            ->setAuthorName(trim($authorName))
-            ->setAuthorEmail(trim($authorEmail))
-            ->setBody(trim($body))
-            ->setStatus(BlogCommentStatus::Pending)
-            ->setIpHash($this->hashIp($request));
+        $ipHash = $this->hashIp($request);
 
-        $this->entityManager->persist($blogComment);
-        $this->entityManager->flush();
+        // @igor-ignore - The closure runs at once inside the unit; the runner keeps no reference to it.
+        return $this->transactionRunner->run(function () use ($blogArticle, $authorName, $authorEmail, $body, $ipHash): BlogComment {
+            $blogComment = new BlogComment()
+                ->setArticle($blogArticle)
+                ->setAuthorName(trim($authorName))
+                ->setAuthorEmail(trim($authorEmail))
+                ->setBody(trim($body))
+                ->setStatus(BlogCommentStatus::Pending)
+                ->setIpHash($ipHash);
 
-        return $blogComment;
+            $this->entityManager->persist($blogComment);
+
+            return $blogComment;
+        });
     }
 
+    /**
+     * Since 1.10.0 `$approvePendingParent`: approve the parent in the same unit when it is still pending (one
+     * transaction for the reply and the approval: a conflict never leaves the reply saved and the parent pending).
+     */
     public function createStaffReply(
         BlogComment $blogComment,
         BlogUserInterface $user,
         string $body,
+        bool $approvePendingParent = false,
     ): BlogComment {
-        $blogArticle = $blogComment->getArticle();
+        $approved = false;
+        // @igor-ignore - The closure runs at once inside the unit; the runner keeps no reference to it.
+        $reply = $this->transactionRunner->run(function () use ($blogComment, $user, $body, $approvePendingParent, &$approved): BlogComment {
+            $reply = new BlogComment()
+                ->setArticle($blogComment->getArticle())
+                ->setParent($blogComment)
+                ->setAuthorName($this->staffDisplayName($user))
+                ->setStaffAuthor($user)
+                ->setBody(trim($body))
+                ->setStatus(BlogCommentStatus::Approved)
+                ->setModeratedAt($this->clock->now())
+                ->setModeratedBy($user);
 
-        $reply = new BlogComment()
-            ->setArticle($blogArticle)
-            ->setParent($blogComment)
-            ->setAuthorName($this->staffDisplayName($user))
-            ->setStaffAuthor($user)
-            ->setBody(trim($body))
-            ->setStatus(BlogCommentStatus::Approved)
-            ->setModeratedAt($this->clock->now())
-            ->setModeratedBy($user);
+            $this->entityManager->persist($reply);
 
-        $this->entityManager->persist($reply);
-        $this->entityManager->flush();
+            $approved = $approvePendingParent && $blogComment->getStatus() === BlogCommentStatus::Pending;
+            if ($approved) {
+                $this->moderate($blogComment, BlogCommentStatus::Approved, $user);
+            }
+
+            return $reply;
+        });
+
+        if ($approved) {
+            $this->logModeration('comment_approved', $blogComment);
+        }
 
         return $reply;
     }
 
     public function approve(BlogComment $blogComment, BlogUserInterface $user): void
     {
-        $blogComment
-            ->setStatus(BlogCommentStatus::Approved)
-            ->setModeratedAt($this->clock->now())
-            ->setModeratedBy($user);
-
-        $this->entityManager->flush();
+        // @igor-ignore - The closure runs at once inside the unit; the runner keeps no reference to it.
+        $this->transactionRunner->run(function () use ($blogComment, $user): void {
+            $this->moderate($blogComment, BlogCommentStatus::Approved, $user);
+        });
         $this->logModeration('comment_approved', $blogComment);
     }
 
     public function reject(BlogComment $blogComment, BlogUserInterface $user): void
     {
-        $blogComment
-            ->setStatus(BlogCommentStatus::Rejected)
-            ->setModeratedAt($this->clock->now())
-            ->setModeratedBy($user);
-
-        $this->entityManager->flush();
+        // @igor-ignore - The closure runs at once inside the unit; the runner keeps no reference to it.
+        $this->transactionRunner->run(function () use ($blogComment, $user): void {
+            $this->moderate($blogComment, BlogCommentStatus::Rejected, $user);
+        });
         $this->logModeration('comment_rejected', $blogComment);
     }
 
     public function delete(BlogComment $blogComment): void
     {
         $commentId = $blogComment->getId();
-        $this->entityManager->remove($blogComment);
-        $this->entityManager->flush();
+        // @igor-ignore - The closure runs at once inside the unit; the runner keeps no reference to it.
+        $this->transactionRunner->run(function () use ($blogComment): void {
+            $this->entityManager->remove($blogComment);
+        });
         $this->logger->info('Blog comment deleted.', ['bundle' => 'blog_kit', 'action' => 'comment_deleted', 'comment_id' => $commentId]);
     }
 
@@ -114,6 +142,14 @@ final readonly class BlogCommentManager
     public function approvedCommentsForArticle(BlogArticle $blogArticle): array
     {
         return $this->blogCommentRepository->findApprovedRootCommentsByArticle($blogArticle);
+    }
+
+    private function moderate(BlogComment $blogComment, BlogCommentStatus $status, BlogUserInterface $user): void
+    {
+        $blogComment
+            ->setStatus($status)
+            ->setModeratedAt($this->clock->now())
+            ->setModeratedBy($user);
     }
 
     private function logModeration(string $action, BlogComment $blogComment): void

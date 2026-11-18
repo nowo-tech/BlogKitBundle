@@ -3,6 +3,9 @@
 ## Table of contents
 
 - [Unreleased](#unreleased)
+  - [Lock conflicts answer 409 with CONFLICT codes](#lock-conflicts-answer-409-with-conflict-codes)
+  - [The host entity manager must be clean before a blog write](#the-host-entity-manager-must-be-clean-before-a-blog-write)
+  - [Other behaviour changes](#other-behaviour-changes)
 - [To 1.9.0](#to-190)
   - [Nothing to do for a standard host](#nothing-to-do-for-a-standard-host)
   - [Deprecations (removed in 2.0)](#deprecations-removed-in-20)
@@ -48,6 +51,42 @@
 - [Future releases](#future-releases)
 
 ## Unreleased
+
+From **1.9.0**:
+
+```bash
+composer update nowo-tech/blog-kit-bundle nowo-tech/transaction-doctrine
+```
+
+No configuration change is required. See [CONCURRENCY](CONCURRENCY.md).
+
+### Lock conflicts answer 409 with CONFLICT codes
+
+A deadlock, lock wait timeout or serialization failure of a Blog Kit route was a 500. It now answers **409** +
+`Retry-After` + `CONFLICT_001` (nothing committed) or **409** without `Retry-After` + `CONFLICT_002` (part of the request
+committed), with `X-Conflict-Code`. The body is nowo-tech/transaction-doctrine's conflict answer (JSON with `code` for
+JSON / XHR requests, else the "try again" page). Only the bundle's own controllers are answered; your routes are not.
+
+- A load balancer that retries on 503 only: `nowo_blog_kit.conflict_response.status: 503`.
+- Your error page instead of the platform page: `conflict_response.error_page: true`.
+- Unique violations are not conflicts: the admin forms show "slug taken" (or "changed meanwhile") instead of a 500.
+
+### The host entity manager must be clean before a blog write
+
+On your default entity manager (no `doctrine.entity_manager`), the bundle's services now write through
+`DoctrineTransactionRunner::forHostEntityManager()`. It throws **`LogicException`** when your manager has pending
+changes (a `persist()`, a `remove()`, an edited entity not flushed yet) when `BlogCommentManager` (create, reply,
+approve, reject, delete), `BlogTagRegistry::syncDefinitions()` or `nowo:blog:sync-hashtags` starts a write: a failed
+unit would otherwise discard your work. Flush (or clear) your own changes before you call them. The bundle's controllers
+and the admin forms are not affected (the admin forms save what they bound in one transaction of the connection).
+
+### Other behaviour changes
+
+- `BlogArticlePublishedEvent` of a bundle write is dispatched after the unit commits (before: at `postFlush`).
+- `nowo:blog:sync-hashtags` commits per article; the admin staff reply and the approval of its pending parent are one
+  transaction (`createStaffReply(..., approvePendingParent: true)`).
+- The services and the admin controllers gain an optional last constructor argument
+  `?BlogKitTransactionRunner $transactionRunner`; without it (direct instantiation) they flush as in 1.9.
 
 ## To 1.9.0
 

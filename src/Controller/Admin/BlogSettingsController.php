@@ -7,6 +7,7 @@ namespace Nowo\BlogKitBundle\Controller\Admin;
 use Doctrine\ORM\EntityManagerInterface;
 use Nowo\BlogKitBundle\Form\BlogSettingsType;
 use Nowo\BlogKitBundle\Repository\BlogSettingsRepository;
+use Nowo\BlogKitBundle\Transaction\BlogKitTransactionRunner;
 use Nowo\BlogKitBundle\Ui\BlogKitAreaNav;
 use Nowo\BlogKitBundle\Ui\BlogKitPageFactory;
 use Nowo\BlogKitBundle\User\BlogUsers;
@@ -18,6 +19,10 @@ use Symfony\Component\Routing\Attribute\Route;
 
 /**
  * Admin singleton form for professional blog configuration (one path per section).
+ *
+ * Since 1.10.0 (REQ-RUNTIME-003): the save is one transaction of {@see BlogKitTransactionRunner}; two admins saving
+ * different sections at once both keep their fields (only changed columns are written), the same field is last write
+ * wins. A lock conflict answers 409 + CONFLICT_001.
  */
 final class BlogSettingsController extends AbstractController
 {
@@ -28,6 +33,7 @@ final class BlogSettingsController extends AbstractController
         private readonly EntityManagerInterface $entityManager,
         private readonly BlogKitPageFactory $pageFactory,
         private readonly ?BlogUsers $users = null,
+        private readonly ?BlogKitTransactionRunner $transactionRunner = null,
     ) {
     }
 
@@ -78,7 +84,7 @@ final class BlogSettingsController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $this->entityManager->flush();
+            ($this->transactionRunner ?? BlogKitTransactionRunner::unmanaged($this->entityManager))->flushPending();
             $this->blogSettingsRepository->reset();
             $this->addFlash('success', 'admin.flash.settings_saved');
 
