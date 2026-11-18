@@ -7,6 +7,7 @@ namespace Nowo\BlogKitBundle;
 use Doctrine\Bundle\DoctrineBundle\DependencyInjection\Compiler\DoctrineOrmMappingsPass;
 use Nowo\BlogKitBundle\DependencyInjection\Compiler\BlogKitEntityManagerPass;
 use Nowo\BlogKitBundle\DependencyInjection\Compiler\BlogKitPortsPass;
+use Nowo\BlogKitBundle\DependencyInjection\Compiler\ConflictResponsePass;
 use Nowo\BlogKitBundle\DependencyInjection\Compiler\CsrfProtectionPass;
 use Nowo\BlogKitBundle\DependencyInjection\Compiler\TwigPathsPass;
 use Nowo\BlogKitBundle\DependencyInjection\NowoBlogKitExtension;
@@ -25,6 +26,8 @@ class NowoBlogKitBundle extends Bundle
         $container->addCompilerPass(new TwigPathsPass());
         $container->addCompilerPass(new CsrfProtectionPass());
         $container->addCompilerPass(new BlogKitPortsPass());
+        // Since 1.10.0 (REQ-RUNTIME-003 rule 6): the conflict answer of the bundle routes.
+        $container->addCompilerPass(new ConflictResponsePass());
 
         // Since 1.9.0: attribute (default) or XML mapping, on the default manager or on doctrine.entity_manager. The
         // extension sets exactly one of the four enabling parameters.

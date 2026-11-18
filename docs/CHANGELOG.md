@@ -46,10 +46,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - The demo is built on UiKit and FormKit (REQ-DEMO-014 / REQ-DEMO-015): `templates/base.html.twig` is UiKit's admin layout with its default theme and a UiKit masthead (active item, theme toggle) instead of the Bootstrap CDN shell, the host `layouts/admin.html.twig` / `guest.html.twig` bridges and `demo-blog.css` (token overrides) are gone, `nowo_ui_kit` uses `css_framework: custom` with `icon_set: svg_inline`, FormKit uses `css_framework: none` with the `demo` profile on UiKit's form theme, and no Bootstrap CSS/JS or icon font is loaded from a CDN. The demo requires `nowo-tech/ui-kit-bundle` `^2.52` and `nowo-tech/form-kit-bundle` `^2.23`. No bundle runtime change.
 
+### Added
+
+- Concurrency (REQ-RUNTIME-003): `Nowo\BlogKitBundle\Transaction\BlogKitTransactionRunner` (nowo-tech/transaction-contract `TransactionRunnerInterface` on nowo-tech/transaction-doctrine ^1.6): every write of the bundle is one transaction, savepoint aware inside yours, and never clears or resets your open entity manager.
+- `conflict_response` option (`status`: null / 409 / 503, `error_page`) and `BlogKitConflictSubscriber`: a deadlock, lock wait timeout or serialization failure of a Blog Kit route answers **409** + `Retry-After` + `CONFLICT_001` (nothing committed) or **409** + `CONFLICT_002` without `Retry-After` (part of the request committed, transaction-doctrine's request commit mark), with the `X-Conflict-Code` header. Only the bundle's controllers; unique violations and connection loss are not mapped.
+- `docs/CONCURRENCY.md`: write paths, codes, host options, residual risks.
+- CI job `Databases` (MySQL 8.4, MariaDB 11.4, PostgreSQL 16; DBAL 4 and 3): two-connection race tests (`tests/Database`, group `database`); `docker-compose.yml` has the three servers and the image `pdo_mysql` / `pdo_pgsql`.
+- Translations `admin.flash.slug_taken` and `admin.flash.save_conflict` (7 locales).
+
 ### Changed
 
+- The admin staff reply saves the reply and the approval of a pending parent in one transaction (`BlogCommentManager::createStaffReply()` gains `$approvePendingParent`, default false).
+- `nowo:blog:sync-hashtags` writes one transaction per article instead of one flush for the whole run (a conflict stops the run with an error; the articles before it stay saved).
+- `BlogArticlePublishedEvent` of a bundle write is dispatched after the unit's commit (it was dispatched at `postFlush`, inside the transaction when the flush ran in one). A flush of yours outside a bundle unit dispatches at `postFlush` as before.
+- Requires `nowo-tech/transaction-contract` `^1.0` and `nowo-tech/transaction-doctrine` `^1.6`.
 - Spec Kit: `specs/001-baseline/code-inventory.md` maps the 1.9.0 files (host port twins, snapshots, user references, entity manager, worker boundaries, XML mappings) and lists every Twig view and translation catalogue on its own row (185/185 files); `spec.md` documents that existing behaviour as FR-ARC-001, FR-ORM-002…004 and FR-WORKER-006 (REQ-SPECKIT-001/003)
 - CI: Dependabot npm updates for `demo/symfony8/e2e` (REQ-GH-002)
+
+### Fixed
+
+- A tag created at the same moment by two writers (`BlogTagRegistry::syncDefinitions()`, `nowo:blog:sync-hashtags`, the admin) no longer ends in a 500: the unique violation is caught, the registry and the command run the unit once more and use the winner's tag, the admin form shows "slug taken". The same for an article slug in the admin (it had no `UniqueEntity` check: a duplicate slug was always a 500).
+- A lock conflict (deadlock, lock wait timeout) of a Blog Kit route answers 409 + `CONFLICT_001` instead of a 500.
 
 ## [1.9.0] - 2026-11-13
 

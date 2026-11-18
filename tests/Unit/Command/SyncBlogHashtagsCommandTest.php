@@ -15,8 +15,12 @@ use Nowo\BlogKitBundle\Repository\BlogArticleRepository;
 use Nowo\BlogKitBundle\Repository\BlogTagRepository;
 use Nowo\BlogKitBundle\Service\BlogHashtagProcessor;
 use Nowo\BlogKitBundle\Tests\Support\LocaleTestSupport;
+use Nowo\BlogKitBundle\Transaction\BlogKitTransactionRunner;
+use Nowo\TransactionContract\TransientStorageFailure;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use ReflectionProperty;
+use RuntimeException;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Tester\CommandTester;
 
@@ -92,6 +96,7 @@ final class SyncBlogHashtagsCommandTest extends TestCase
                 return $entity instanceof BlogTag;
             }));
         $entityManager->expects(self::once())->method('flush');
+        $entityManager->method('contains')->willReturn(true);
 
         $tester = new CommandTester(new SyncBlogHashtagsCommand(
             $articleRepository,
@@ -143,6 +148,7 @@ final class SyncBlogHashtagsCommandTest extends TestCase
         $entityManager = $this->createMock(EntityManagerInterface::class);
         $entityManager->expects(self::never())->method('persist');
         $entityManager->expects(self::once())->method('flush');
+        $entityManager->method('contains')->willReturn(true);
 
         $tester = new CommandTester(new SyncBlogHashtagsCommand(
             $articleRepository,
@@ -158,6 +164,41 @@ final class SyncBlogHashtagsCommandTest extends TestCase
             preg_replace('/\s+/', ' ', $tester->getDisplay()) ?? '',
         );
         self::assertCount(1, $article->getTags());
+    }
+
+    #[Test]
+    public function aLockConflictStopsTheRunAndAnArticleDeletedMeanwhileIsSkipped(): void
+    {
+        $gone        = $this->createArticleWithBody('Gone');
+        $unsaved     = $this->createArticleWithBody('Unsaved');
+        $conflicting = $this->createArticleWithBody('Conflict');
+        new ReflectionProperty(BlogArticle::class, 'id')->setValue($gone, 8);
+        new ReflectionProperty(BlogArticle::class, 'id')->setValue($conflicting, 9);
+        $articleRepository = $this->createArticleRepositoryReturning([$gone, $unsaved, $conflicting]);
+        $articleRepository->method('find')->willReturnCallback(static fn (int $id): ?BlogArticle => $id === 9 ? $conflicting : null);
+        $tagRepository = $this->createMock(BlogTagRepository::class);
+        $tagRepository->method('findAllOrdered')->willReturn([]);
+        $processor = $this->createMock(BlogHashtagProcessor::class);
+        $processor->method('processHtmlBody')->willReturn(['body' => 'Conflict', 'hashtags' => []]);
+        $processor->method('mapToTagDefinitions')->willReturn([]);
+
+        $entityManager = $this->createMock(EntityManagerInterface::class);
+        $entityManager->method('contains')->willReturn(false);
+        $runner = $this->createMock(BlogKitTransactionRunner::class);
+        $calls  = 0;
+        $runner->method('runRereadingOnDuplicate')->willReturnCallback(static function (callable $unit) use (&$calls): mixed {
+            if (++$calls === 3) {
+                throw TransientStorageFailure::fromPrevious(new RuntimeException('deadlock'));
+            }
+
+            return $unit();
+        });
+
+        $tester = new CommandTester(new SyncBlogHashtagsCommand($articleRepository, $tagRepository, $processor, $entityManager, LocaleTestSupport::create(), $runner));
+
+        self::assertSame(Command::FAILURE, $tester->execute([]));
+        self::assertStringContainsString('Run the command again', preg_replace('/\s+/', ' ', $tester->getDisplay()) ?? '');
+        self::assertSame(3, $calls, 'the deleted and the unsaved article were skipped, the third unit conflicted');
     }
 
     private function createArticleWithBody(string $body): BlogArticle

@@ -139,6 +139,58 @@ final class BlogArticlePublishedDoctrineSubscriberTest extends TestCase
         $subscriber->postFlush($this->createMock(PostFlushEventArgs::class));
     }
 
+    #[Test]
+    public function aUnitHoldsTheEventsUntilItsOutermostCommit(): void
+    {
+        $first      = new BlogArticle()->setSlug('first')->setPublished(true);
+        $second     = new BlogArticle()->setSlug('second')->setPublished(true);
+        $dispatched = [];
+        $dispatcher = $this->createMock(EventDispatcherInterface::class);
+        $dispatcher->method('dispatch')->willReturnCallback(static function (object $event) use (&$dispatched): object {
+            self::assertInstanceOf(BlogArticlePublishedEvent::class, $event);
+            $dispatched[] = $event->getArticle()->getSlug();
+
+            return $event;
+        });
+        $subscriber = new BlogArticlePublishedDoctrineSubscriber($dispatcher);
+
+        $outer = $subscriber->hold();
+        self::assertSame(0, $outer);
+        $subscriber->onFlush($this->createOnFlushEventArgs([$first]));
+        $subscriber->postFlush($this->createMock(PostFlushEventArgs::class));
+
+        $inner = $subscriber->hold();
+        self::assertSame(1, $inner);
+        $subscriber->onFlush($this->createOnFlushEventArgs([$second]));
+        $subscriber->postFlush($this->createMock(PostFlushEventArgs::class));
+        $subscriber->discard($inner);
+        self::assertSame([], $dispatched, 'nothing before the outermost commit');
+
+        $subscriber->release();
+        self::assertSame(['first'], $dispatched, 'the rolled-back inner unit is never announced');
+
+        $subscriber->release();
+        self::assertSame(['first'], $dispatched, 'an extra release dispatches nothing');
+    }
+
+    #[Test]
+    public function resetDropsHeldEventsAndOpenUnits(): void
+    {
+        $dispatcher = $this->createMock(EventDispatcherInterface::class);
+        $dispatcher->expects(self::once())->method('dispatch')->willReturnArgument(0);
+        $subscriber = new BlogArticlePublishedDoctrineSubscriber($dispatcher);
+
+        $subscriber->hold();
+        $subscriber->onFlush($this->createOnFlushEventArgs([new BlogArticle()->setPublished(true)]));
+        $subscriber->postFlush($this->createMock(PostFlushEventArgs::class));
+        $subscriber->reset();
+        $subscriber->release();
+
+        // No unit open any more: a flush dispatches at postFlush again.
+        $subscriber->onFlush($this->createOnFlushEventArgs([new BlogArticle()->setPublished(true)]));
+        $subscriber->postFlush($this->createMock(PostFlushEventArgs::class));
+    }
+
     /**
      * @param list<object> $insertions
      * @param list<object> $updates

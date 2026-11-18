@@ -65,7 +65,7 @@ A bundle that is safe under **B** is safe under **A** and under classic mode / P
 | `Repository\BlogArticleRepository` | yes | `$tagsByArticleCache` keyed `locale:articleId` | ✅ reset | ✅ cleared per main request |
 | `Repository\BlogTagRepository` | yes | `$publishedTagSummariesCache` keyed by locale | ✅ reset | ✅ cleared per main request |
 | `Service\BlogSettingsProvider` | yes | `?array $cached` (public settings array) | ✅ reset | ✅ cleared per main request |
-| `EventSubscriber\BlogArticlePublishedDoctrineSubscriber` | yes | `$pending` (entities), `$flushing` flag | ✅ reset, buffer cleared per flush | ✅ buffer cleared per flush and per main request |
+| `EventSubscriber\BlogArticlePublishedDoctrineSubscriber` | yes | `$pending` (entities), `$flushing` flag; since 1.10.0 `$held` (articles of an open runner unit) and `$holds` | ✅ reset, buffer cleared per flush, held articles dropped on rollback | ✅ buffer cleared per flush and per main request |
 | `EventSubscriber\BlogKitWorkerStateSubscriber` | yes | none (`final readonly`) | ✅ | ✅ |
 | `Worker\UnitOfWorkBoundaries` (1.9.0) | yes | stacks of running commands / workers / main requests, `WeakMap` verdicts (no request data; process lifetime by design, not reset) | ✅ | ✅ self-healing (failed frames, aborted runs, unbalanced request stack) |
 | `Worker\BlogKitOwnEntityManagerSubscriber` (1.9.0, `doctrine.entity_manager` only) | yes | none (`final readonly`); clears / recreates the own manager | ✅ | ✅ |

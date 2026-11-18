@@ -65,7 +65,9 @@ admin:
     comment_rejected: Commentaire rejeté.
     reply_invalid: Réponse invalide.
     reply_published: Réponse publiée.
+    save_conflict: 'Quelqu''un d''autre a modifié les mêmes données au même moment : rien n''a été enregistré. Rechargez la page et réessayez.'
     settings_saved: Paramètres enregistrés.
+    slug_taken: 'Ce slug est déjà utilisé : choisissez-en un autre.'
     tag_created: Tag créé.
     tag_deleted: Tag supprimé.
     tag_in_use: Ce tag est encore utilisé par des articles.

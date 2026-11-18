@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Nowo\BlogKitBundle\Controller\Admin;
 
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\ORM\EntityManagerInterface;
 use Nowo\BlogKitBundle\Controller\RequiresValidFormTrait;
 use Nowo\BlogKitBundle\Entity\BlogTag;
@@ -12,6 +13,7 @@ use Nowo\BlogKitBundle\Form\BlogTagType;
 use Nowo\BlogKitBundle\Locale\BlogLocales;
 use Nowo\BlogKitBundle\Repository\BlogTagRepository;
 use Nowo\BlogKitBundle\Security\BlogKitAccessDenied;
+use Nowo\BlogKitBundle\Transaction\BlogKitTransactionRunner;
 use Nowo\BlogKitBundle\Ui\BlogKitPageFactory;
 use Nowo\BlogKitBundle\User\BlogUsers;
 use Nowo\FormKitBundle\Form\CsrfOnlyFormFactory;
@@ -26,6 +28,10 @@ use Symfony\Component\Routing\Attribute\Route;
 
 /**
  * Admin CRUD for blog tags.
+ *
+ * Since 1.10.0 (REQ-RUNTIME-003): every save is one transaction of {@see BlogKitTransactionRunner}. The slug is
+ * unique: a tag created with the same slug between the form check and the insert is caught, and the form is shown
+ * again with "slug taken" (a domain answer, no CONFLICT_* code). A lock conflict answers 409 + CONFLICT_001.
  */
 final class BlogTagController extends AbstractController
 {
@@ -42,6 +48,7 @@ final class BlogTagController extends AbstractController
         private readonly BlogKitAccessDenied $accessDenied,
         private readonly BlogKitPageFactory $pageFactory,
         private readonly ?BlogUsers $users = null,
+        private readonly ?BlogKitTransactionRunner $transactionRunner = null,
     ) {
     }
 
@@ -90,9 +97,7 @@ final class BlogTagController extends AbstractController
         $form = $this->createForm(BlogTagType::class, $blogTag);
         $form->handleRequest($request);
 
-        if ($form->isSubmitted() && $form->isValid()) {
-            $this->entityManager->persist($blogTag);
-            $this->entityManager->flush();
+        if ($form->isSubmitted() && $form->isValid() && $this->save($blogTag, persist: true)) {
             $this->addFlash('success', 'admin.flash.tag_created');
 
             return $this->redirectToRoute('admin_blog_tags_index');
@@ -110,8 +115,7 @@ final class BlogTagController extends AbstractController
         $form = $this->createForm(BlogTagType::class, $blogTag);
         $form->handleRequest($request);
 
-        if ($form->isSubmitted() && $form->isValid()) {
-            $this->entityManager->flush();
+        if ($form->isSubmitted() && $form->isValid() && $this->save($blogTag)) {
             $this->addFlash('success', 'admin.flash.tag_updated');
 
             return $this->redirectToRoute('admin_blog_tags_index');
@@ -140,10 +144,51 @@ final class BlogTagController extends AbstractController
         }
 
         $this->entityManager->remove($blogTag);
-        $this->entityManager->flush();
+        $this->runner()->flushPending();
         $this->addFlash('success', 'admin.flash.tag_deleted');
 
         return $this->redirectToRoute('admin_blog_tags_index');
+    }
+
+    /**
+     * Since 1.10.0: saves the bound form in one transaction; false (with an error flash) when a concurrent write took
+     * the slug, or a translation row of the same locale, first.
+     */
+    private function save(BlogTag $blogTag, bool $persist = false): bool
+    {
+        if ($persist) {
+            $this->entityManager->persist($blogTag);
+        }
+
+        try {
+            $this->runner()->flushPending();
+        } catch (UniqueConstraintViolationException) {
+            $this->addFlash('error', $this->slugTaken($blogTag) ? 'admin.flash.slug_taken' : 'admin.flash.save_conflict');
+
+            return false;
+        }
+
+        return true;
+    }
+
+    /** Whether another tag holds the slug (a scalar query: the failed flush closed the manager's unit of work). */
+    private function slugTaken(BlogTag $blogTag): bool
+    {
+        $queryBuilder = $this->blogTagRepository->createQueryBuilder('t')
+            ->select('COUNT(t.id)')
+            ->andWhere('t.slug = :slug')
+            ->setParameter('slug', $blogTag->getSlug());
+
+        if ($blogTag->getId() !== null) {
+            $queryBuilder->andWhere('t.id <> :id')->setParameter('id', $blogTag->getId());
+        }
+
+        return (int) $queryBuilder->getQuery()->getSingleScalarResult() > 0;
+    }
+
+    private function runner(): BlogKitTransactionRunner
+    {
+        return $this->transactionRunner ?? BlogKitTransactionRunner::unmanaged($this->entityManager);
     }
 
     /**

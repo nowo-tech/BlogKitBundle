@@ -16,12 +16,18 @@
         <testsuite name="Integration">
             <directory>tests/Integration</directory>
         </testsuite>
+        <!-- REQ-RUNTIME-003: two-connection races on a real server (group database, BLOG_KIT_DATABASE_URL). -->
+        <testsuite name="Database">
+            <directory>tests/Database</directory>
+        </testsuite>
     </testsuites>
 
-    <!-- REQ-SEC-006: the MySQL look-alike id test runs in its own CI job (group mysql, BLOG_KIT_MYSQL_URL). -->
+    <!-- REQ-SEC-006: the MySQL look-alike id test runs in its own CI job (group mysql, BLOG_KIT_MYSQL_URL).
+         REQ-RUNTIME-003: the concurrency suite runs in the CI job "Databases" (group database, BLOG_KIT_DATABASE_URL). -->
     <groups>
         <exclude>
             <group>mysql</group>
+            <group>database</group>
         </exclude>
     </groups>
 

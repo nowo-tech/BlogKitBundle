@@ -3,9 +3,9 @@
 **Baseline spec**: [`spec.md`](spec.md)  
 **Package**: `nowo-tech/blog-kit-bundle`  
 **Last audited**: 2026-11-16  
-**Coverage summary**: **185/185** files tracked under `src/` mapped (see [Coverage summary](#coverage-summary)); audit command: `git ls-files src | wc -l`.
+**Coverage summary**: **188/188** files tracked under `src/` mapped (see [Coverage summary](#coverage-summary)); audit command: `git ls-files src | wc -l`.
 
-Maps **100%** of the files under `src/` (133 PHP classes + Twig views, translations, config, public assets, TypeScript sources and co-located Vitest specs). Paths are relative to `src/`. Test and demo trees outside `src/` are out of Packagist scope unless promoted in the spec.
+Maps **100%** of the files under `src/` (136 PHP classes + Twig views, translations, config, public assets, TypeScript sources and co-located Vitest specs). Paths are relative to `src/`. Test and demo trees outside `src/` are out of Packagist scope unless promoted in the spec.
 
 ## Bundle entry
 
@@ -24,6 +24,7 @@ Maps **100%** of the files under `src/` (133 PHP classes + Twig views, translati
 | `DependencyInjection/TablePrefixListener.php` | Optional table prefix | FR-ORM-001 |
 | `DependencyInjection/Compiler/BlogKitEntityManagerPass.php` | Keeps the blog entities on the opt-in `doctrine.entity_manager` only (1.9) | FR-ORM-002 |
 | `DependencyInjection/Compiler/BlogKitPortsPass.php` | Fails the build when a configured port service implements neither the 1.x interface nor its twin (1.9) | FR-ARC-001 |
+| `DependencyInjection/Compiler/ConflictResponsePass.php` | Wires the conflict policy and responder of `BlogKitConflictSubscriber` (`conflict_response`, transaction-doctrine's when registered) (1.10) | FR-CONC-002 |
 
 ## Controllers
 
@@ -91,7 +92,8 @@ Maps **100%** of the files under `src/` (133 PHP classes + Twig views, translati
 | `Service/BlogSettingsProvider.php` | Settings access (request-scoped memo) | FR-SET-001, FR-WORKER-001 |
 | `Service/BlogCommentManager.php` | Comment lifecycle | FR-CMT-001, FR-CMT-002, FR-CMT-003 |
 | `Service/BlogHashtagProcessor.php` | Hashtag parse/format | FR-TAG-002 |
-| `Service/BlogTagRegistry.php` | Tag lookup/create | FR-TAG-001 |
+| `Service/BlogTagRegistry.php` | Tag lookup/create; one unit, replayed once on a concurrent duplicate slug (1.10) | FR-TAG-001, FR-CONC-003 |
+| `Transaction/BlogKitTransactionRunner.php` | The bundle's transaction runner on transaction-doctrine: units, replay on duplicate, bound-form flush, publish events after commit (1.10) | FR-CONC-001 |
 | `Service/BlogArticleBodyEnhancer.php` | Body post-processing | FR-ART-001 |
 | `Service/BlogPostBodyFormatter.php` | Body formatting | FR-ART-001 |
 | `Service/BlogLocalesLocaleResolver.php` | Request locale vs config | FR-I18N-003 |
@@ -105,7 +107,8 @@ Maps **100%** of the files under `src/` (133 PHP classes + Twig views, translati
 | `EventSubscriber/BlogKitWorkerStateSubscriber.php` | Clears bundle memos and recovers a closed EM on each main request | FR-WORKER-001, FR-WORKER-004 |
 | `EventSubscriber/BlogKitAdminAccessSubscriber.php` | Admin route guard | FR-UI-002 |
 | `EventSubscriber/BlogArticleHtmlSanitizeSubscriber.php` | Sanitize article HTML on persist | FR-SEC-005 |
-| `Command/SyncBlogHashtagsCommand.php` | CLI hashtag sync | FR-TAG-002 |
+| `EventSubscriber/BlogKitConflictSubscriber.php` | Lock conflicts of the bundle's controllers answer 409 + `CONFLICT_001` / `CONFLICT_002` + `X-Conflict-Code` (1.10) | FR-CONC-002 |
+| `Command/SyncBlogHashtagsCommand.php` | CLI hashtag sync; one unit per article, replayed once on a concurrent duplicate slug (1.10) | FR-TAG-002, FR-CONC-003 |
 
 ## Forms
 
@@ -280,12 +283,12 @@ Vitest specs live next to the TypeScript sources under `src/`; they are not load
 | Category | Files | Mapped |
 | --- | ---: | ---: |
 | Bundle entry | 1 | 1 |
-| DependencyInjection | 7 | 7 |
+| DependencyInjection | 8 | 8 |
 | Controllers | 9 | 9 |
 | Entity & persistence | 17 | 17 |
 | Domain model & enums | 17 | 17 |
-| Services | 8 | 8 |
-| HTTP, events, command | 6 | 6 |
+| Services | 9 | 9 |
+| HTTP, events, command | 7 | 7 |
 | Forms | 15 | 15 |
 | Security | 24 | 24 |
 | Doctrine — entity manager and user references | 9 | 9 |
@@ -295,4 +298,4 @@ Vitest specs live next to the TypeScript sources under `src/`; they are not load
 | Twig | 1 | 1 |
 | Non-PHP production assets (documented) | 47 | 47 |
 | Co-located Vitest sources (`FR-TEST-*`) | 5 | 5 |
-| **Total production files (`git ls-files src`)** | **185** | **185** |
+| **Total production files (`git ls-files src`)** | **188** | **188** |

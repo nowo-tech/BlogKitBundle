@@ -65,7 +65,9 @@ admin:
     comment_rejected: Kommentar abgelehnt.
     reply_invalid: Ungültige Antwort.
     reply_published: Antwort veröffentlicht.
+    save_conflict: 'Jemand anderes hat dieselben Daten im selben Moment geändert: Es wurde nichts gespeichert. Lade die Seite neu und versuche es erneut.'
     settings_saved: Einstellungen gespeichert.
+    slug_taken: 'Dieser Slug wird bereits verwendet: Wähle einen anderen.'
     tag_created: Tag erstellt.
     tag_deleted: Tag gelöscht.
     tag_in_use: Dieses Tag wird noch von Artikeln verwendet.

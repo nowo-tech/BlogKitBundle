@@ -270,6 +270,7 @@ final class CoverageGapsTest extends TestCase
 
         $em = $this->createMock(EntityManagerInterface::class);
         $em->expects(self::once())->method('flush');
+        $em->method('contains')->willReturn(true);
 
         $tester = new CommandTester(new SyncBlogHashtagsCommand($articleRepository, $tagRepository, $processor, $em, LocaleTestSupport::create()));
         self::assertSame(Command::SUCCESS, $tester->execute([]));

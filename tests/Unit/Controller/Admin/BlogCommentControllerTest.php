@@ -397,8 +397,9 @@ final class BlogCommentControllerTest extends TestCase
         $form->expects(self::once())->method('handleRequest')->with($request);
 
         $manager = $this->createMock(BlogCommentManager::class);
-        $manager->expects(self::once())->method('createStaffReply')->with($comment, $user, 'Thanks for your comment');
-        $manager->expects(self::once())->method('approve')->with($comment, $user);
+        // Since 1.10.0: the reply and the approval of the pending parent are one unit of the manager.
+        $manager->expects(self::once())->method('createStaffReply')->with($comment, $user, 'Thanks for your comment', true);
+        $manager->expects(self::never())->method('approve');
 
         $controller = $this->createController(
             request: $request,

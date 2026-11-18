@@ -8,6 +8,7 @@ use Doctrine\Bundle\DoctrineBundle\DependencyInjection\Configuration as Doctrine
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Events;
 use LogicException;
+use Nowo\BlogKitBundle\DependencyInjection\Compiler\ConflictResponsePass;
 use Nowo\BlogKitBundle\DependencyInjection\Configuration as BundleConfiguration;
 use Nowo\BlogKitBundle\Doctrine\BlogKitEntityManagerFactory;
 use Nowo\BlogKitBundle\Doctrine\BlogUserBlameListener;
@@ -348,6 +349,7 @@ final class NowoBlogKitExtension extends Extension implements PrependExtensionIn
         $container->setParameter('nowo_blog_kit.web_ui.page_size', $config['web_ui']['page_size']);
         $container->setParameter('nowo_blog_kit.web_ui.privacy_url', $config['web_ui']['privacy_url']);
         $container->setParameter('nowo_blog_kit.comments.staff_name', (string) $config['comments']['staff_name']);
+        $container->setParameter(ConflictResponsePass::PARAMETER, $config['conflict_response']);
         $container->setParameter('nowo_blog_kit.listing.mode', (string) $config['listing']['mode']);
         $container->setParameter('nowo_blog_kit.listing.masonry.strategy', (string) $config['listing']['masonry']['strategy']);
         $container->setParameter('nowo_blog_kit.listing.masonry.columns_mobile', (int) $config['listing']['masonry']['columns_mobile']);

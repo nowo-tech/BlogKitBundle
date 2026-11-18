@@ -168,6 +168,15 @@ As a maintainer, I run the Symfony 8 FrankenPHP demo and smoke checks.
 | FR-WORKER-005 | Default captcha HTTP client timeout is configurable (`comments.captcha.timeout_seconds`) |
 | FR-WORKER-006 | The opt-in own entity manager is kept usable in a kept-alive kernel, acting only at the outermost request / message / command boundary; port request contexts are built per call (1.9) |
 
+### Concurrency (`FR-CONC-*`, REQ-RUNTIME-003, 1.10)
+
+| ID | Requirement |
+| --- | --- |
+| FR-CONC-001 | Every write of the bundle is one transaction of `BlogKitTransactionRunner` (transaction-doctrine ^1.6): savepoint aware inside the host's transaction, the host's open entity manager never cleared or reset, publish events dispatched after the unit's commit |
+| FR-CONC-002 | A deadlock, lock wait timeout or serialization failure of a bundle controller answers 409 (configurable to 503) + `X-Conflict-Code`: `CONFLICT_001` with `Retry-After` when nothing was committed, `CONFLICT_002` without it when part of the request was; unique violations and connection loss are not mapped |
+| FR-CONC-003 | The unique tag and article slugs are "only one" rules: a concurrent duplicate never answers 500 (admin forms show "slug taken", the tag registry and the hashtag command replay the unit once and use the winner's tag) |
+| FR-CONC-004 | Two-connection race tests run on MySQL 8.4, MariaDB 11.4 and PostgreSQL 16 (CI job `Databases`, DBAL 4 and 3) |
+
 ### Frontend tests (`FR-TEST-*`)
 
 | ID | Requirement |

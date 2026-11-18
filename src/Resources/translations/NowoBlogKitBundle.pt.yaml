@@ -65,7 +65,9 @@ admin:
     comment_rejected: Comentário rejeitado.
     reply_invalid: Resposta inválida.
     reply_published: Resposta publicada.
+    save_conflict: 'Outra pessoa alterou os mesmos dados no mesmo momento: nada foi guardado. Recarregue a página e tente novamente.'
     settings_saved: Definições guardadas.
+    slug_taken: 'Este slug já está em uso: escolha outro.'
     tag_created: Etiqueta criada.
     tag_deleted: Etiqueta eliminada.
     tag_in_use: Esta etiqueta ainda é usada por artigos.

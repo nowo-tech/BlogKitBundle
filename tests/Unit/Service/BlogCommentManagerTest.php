@@ -119,6 +119,27 @@ final class BlogCommentManagerTest extends TestCase
     }
 
     #[Test]
+    public function aStaffReplyApprovesItsPendingParentInTheSameUnit(): void
+    {
+        $logger  = new RecordingLogger();
+        $manager = new BlogCommentManager($this->entityManager, $this->repository, logger: $logger);
+        $pending = new BlogComment()->setArticle(new BlogArticle())->setStatus(BlogCommentStatus::Pending);
+        $user    = new TestUser();
+
+        $this->entityManager->expects(self::exactly(2))->method('flush');
+        $manager->createStaffReply($pending, $user, 'Thanks', approvePendingParent: true);
+
+        self::assertSame(BlogCommentStatus::Approved, $pending->getStatus());
+        self::assertSame($user, $pending->getModeratedBy());
+        self::assertSame(['comment_approved'], array_map(static fn (array $record): mixed => $record['context']['action'], $logger->records));
+
+        $rejected = new BlogComment()->setArticle(new BlogArticle())->setStatus(BlogCommentStatus::Rejected);
+        $manager->createStaffReply($rejected, $user, 'Thanks', approvePendingParent: true);
+        self::assertSame(BlogCommentStatus::Rejected, $rejected->getStatus(), 'only a pending parent is approved');
+        self::assertCount(1, $logger->records);
+    }
+
+    #[Test]
     public function itUsesTheStaffDisplayNameOfTheUserWhenProvided(): void
     {
         $parent = new BlogComment()->setArticle(new BlogArticle());
