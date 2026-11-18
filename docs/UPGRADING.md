@@ -3,6 +3,7 @@
 ## Table of contents
 
 - [Unreleased](#unreleased)
+- [To 1.10.0](#to-1100)
   - [Lock conflicts answer 409 with CONFLICT codes](#lock-conflicts-answer-409-with-conflict-codes)
   - [The host entity manager must be clean before a blog write](#the-host-entity-manager-must-be-clean-before-a-blog-write)
   - [Other behaviour changes](#other-behaviour-changes)
@@ -51,6 +52,14 @@
 - [Future releases](#future-releases)
 
 ## Unreleased
+
+## To 1.10.0
+
+From **1.9.0**:
+
+```bash
+composer update nowo-tech/blog-kit-bundle
+```
 
 From **1.9.0**:
 
