@@ -30,6 +30,7 @@ use function array_slice;
 use function count;
 use function function_exists;
 use function gc_collect_cycles;
+use function implode;
 use function intdiv;
 use function max;
 use function memory_get_usage;
@@ -89,7 +90,7 @@ final class WorkerKeptAliveKernelTest extends TestCase
             $this->sample($i, $samples);
         }
 
-        self::assertLessThan(self::MEMORY_MARGIN, $this->growth($samples), 'memory stays flat over many requests');
+        self::assertLessThan(self::MEMORY_MARGIN, $this->growth($samples), 'memory stays flat over many requests (samples: ' . implode(', ', $samples) . ')');
         self::assertTrue($host->getUnitOfWork()->isScheduledForInsert($note), 'the host manager is never flushed nor cleared');
     }
 
@@ -168,7 +169,7 @@ final class WorkerKeptAliveKernelTest extends TestCase
             $this->sample($i, $samples);
         }
 
-        self::assertLessThan(self::MEMORY_MARGIN, $this->growth($samples), 'memory stays flat over many requests');
+        self::assertLessThan(self::MEMORY_MARGIN, $this->growth($samples), 'memory stays flat over many requests (samples: ' . implode(', ', $samples) . ')');
         self::assertTrue($default->getUnitOfWork()->isScheduledForInsert($note), 'the bundle never clears the host default manager (rule 7)');
     }
 
