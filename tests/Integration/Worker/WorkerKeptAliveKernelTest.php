@@ -28,6 +28,7 @@ use Symfony\Component\HttpKernel\TerminableInterface;
 
 use function array_slice;
 use function count;
+use function function_exists;
 use function gc_collect_cycles;
 use function intdiv;
 use function max;
@@ -244,6 +245,13 @@ final class WorkerKeptAliveKernelTest extends TestCase
      */
     private function sample(int $request, array &$samples): void
     {
+        if ($request === 50 && function_exists('pcov\\stop')) {
+            // The warm-up requests ran every line the later ones run, so coverage loses nothing; PCOV's own line
+            // tables are counted by memory_get_usage() and grow while it collects (CI, Symfony 7.4: +5.7 MB with a
+            // flat heap), so it stops for the rest of the test (PHPUnit stops it after each test anyway).
+            \pcov\stop();
+        }
+
         if ($request >= 50 && $request % 50 === 0) {
             $samples[] = $this->collectedMemory();
         }
