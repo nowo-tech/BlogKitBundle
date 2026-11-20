@@ -308,7 +308,8 @@ final readonly class BlogUserBlameListener
      * Audit XD3-1: after a to-one of one of your entities was reverted, your next flush recomputes its change set and
      * replaces the stale one. So that the recomputed set still holds your own changes (a field you changed in the same
      * flush), the data the refused flush copied over is rewound: a new entity of yours gets no original data (it is
-     * inserted with all its values), a managed one gets the old value of every changed field back.
+     * inserted with all its values), a managed one gets the old value of every changed field back and loses its stale
+     * scheduled update (audit XD4-1: it still named the forgotten entity), so the next flush recomputes it.
      */
     private function rewind(UnitOfWork $unitOfWork, object $entity): void
     {
@@ -325,6 +326,9 @@ final readonly class BlogUserBlameListener
             foreach ($changes as $field => $change) {
                 $unitOfWork->originalEntityData[$id][$field] = is_array($change) ? $change[0] : $change;
             }
+
+            // Audit XD4-1: the stale update still names the forgotten entity; the next flush recomputes it from scratch.
+            unset($unitOfWork->entityUpdates[$id], $unitOfWork->entityChangeSets[$id]);
         }, null, UnitOfWork::class)($unitOfWork, $entity);
     }
 

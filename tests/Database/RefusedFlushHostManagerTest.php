@@ -196,6 +196,46 @@ final class RefusedFlushHostManagerTest extends DatabaseTestCase
         self::assertNull($db->fetchOne('SELECT article_id FROM host_ref_article_link WHERE id = ?', [$fresh->id]));
     }
 
+    /**
+     * Audit XD4-1 (ported from the auditor's re-check 4): the only pending change of your managed entity is its to-one to
+     * a new article. Your next flushes succeed, your manager stays open, the old article is kept and your other pending
+     * work is written.
+     */
+    #[Test]
+    public function onlyChangeIsToOneToNewArticle(): void
+    {
+        $manager = $this->entityManager;
+        $this->login('alice');
+        $victim = $this->article('victim');
+        $link   = new HostArticleLink($victim);
+        $manager->persist($victim);
+        $manager->persist($link);
+        $manager->flush();
+
+        $intruder      = $this->article('intruder');
+        $link->article = $intruder;
+        $manager->persist($intruder);
+        $manager->persist(new HostNote('host pending'));
+
+        $this->login(str_repeat('x', 129));
+        try {
+            $manager->flush();
+            self::fail('The flush must be refused.');
+        } catch (AccessDeniedException) {
+        }
+
+        $this->login('bob');
+        $manager->flush();
+        $manager->persist(new HostNote('later'));
+        $manager->flush();
+
+        self::assertTrue($manager->isOpen());
+        self::assertSame(0, $this->registry->resets);
+        self::assertSame((int) $victim->getId(), (int) $this->writer->fetchOne('SELECT article_id FROM host_ref_article_link WHERE id = ?', [$link->id]));
+        self::assertSame(1, (int) $this->writer->fetchOne('SELECT COUNT(*) FROM content_blog_article'));
+        self::assertSame(['host pending', 'later'], $this->writer->fetchFirstColumn('SELECT text FROM worker_host_note ORDER BY id'));
+    }
+
     protected function tearDown(): void
     {
         // The host tables reference the blog tables: dropped here, so the next test can drop and recreate its schema.

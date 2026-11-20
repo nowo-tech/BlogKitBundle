@@ -186,6 +186,42 @@ final class AuditOnRefusedFlushTest extends DoctrineTestCase
         self::assertSame(1, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM blog_kit_test_user WHERE email = ?', ['later@example.com']));
     }
 
+    /**
+     * Audit XD4-1: the only pending change of your managed entity is its to-one to a new article. Your next flushes
+     * succeed, your manager stays open, the old article is kept and your other pending work is written.
+     */
+    #[Test]
+    public function aToOneToARefusedNewArticleIsYourOnlyChange(): void
+    {
+        $this->listen($this->registry);
+        [$id, $article] = $this->seed();
+        $link           = new HostArticleLink($article);
+        $this->entityManager->persist($link);
+        $this->entityManager->flush();
+
+        $intruder      = new BlogArticle()->setSlug('intruder');
+        $link->article = $intruder;
+        $this->entityManager->persist($intruder);
+        $this->entityManager->persist(new MappedTestUser()->setEmail('host@example.com'));
+
+        $this->login(str_repeat('x', 129));
+        try {
+            $this->entityManager->flush();
+            self::fail('The flush must be refused.');
+        } catch (AccessDeniedException) {
+        }
+
+        $this->login('bob');
+        $this->entityManager->flush();
+        $this->entityManager->flush();
+
+        self::assertTrue($this->entityManager->isOpen());
+        self::assertSame($article, $link->article);
+        self::assertSame($id, (int) $this->connection->fetchOne('SELECT article_id FROM host_ref_article_link WHERE id = ?', [$link->id]));
+        self::assertSame(1, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM content_blog_article'));
+        self::assertSame(1, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM blog_kit_test_user WHERE email = ?', ['host@example.com']));
+    }
+
     /** Audit XD-3: a refused removal of a blog entity on your manager is undone, not run by the next flush. */
     #[Test]
     public function aRefusedRemovalIsForgottenOnYourManager(): void
