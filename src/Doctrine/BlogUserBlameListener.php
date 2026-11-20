@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Nowo\BlogKitBundle\Doctrine;
 
 use Closure;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Event\OnFlushEventArgs;
 use Doctrine\ORM\PersistentCollection;
@@ -18,8 +19,15 @@ use Nowo\TransactionDoctrine\PrivateManager\PrivateManagerRegistry;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
 use function array_diff_key;
+use function array_filter;
+use function array_flip;
+use function array_intersect_key;
 use function array_keys;
 use function array_map;
+use function array_merge;
+use function array_values;
+use function is_array;
+use function is_object;
 use function spl_object_id;
 use function str_starts_with;
 
@@ -99,14 +107,14 @@ final readonly class BlogUserBlameListener
      *   manager is replaced at the next use (transaction-doctrine's private manager, DoctrineBundle, and
      *   {@see BlogKitWorkerStateSubscriber}).
      * - One of your managers (host mode, audit XD-3): it is never closed, cleared or reset. Only the blog's own work is
-     *   forgotten (see forgetBlogWork()); your own pending changes stay on it, for you to flush or clear.
+     *   undone (see undoBlogWork()); your own pending changes stay on it, for you to flush or clear.
      *
      * @throws AccessDeniedException always
      */
     private function refuse(EntityManagerInterface $manager): never
     {
         if ($this->isHostManager($manager)) {
-            $this->forgetBlogWork($manager->getUnitOfWork());
+            $this->undoBlogWork($manager);
         } else {
             $unitOfWork = $manager->getUnitOfWork();
             foreach ([...$unitOfWork->getScheduledEntityInsertions(), ...$unitOfWork->getScheduledEntityUpdates(), ...$unitOfWork->getScheduledEntityDeletions()] as $entity) {
@@ -136,33 +144,89 @@ final readonly class BlogUserBlameListener
     }
 
     /**
-     * Forgets the blog's pending work on one of your managers without closing it: every blog entity scheduled for
-     * insertion, update or removal and every blog entity owning a scheduled collection change (tags, translations) is
-     * dropped from the unit of work entirely (identity map, scheduled work, change sets, orphan removals, original data),
-     * and the collection changes they own are unscheduled. A later flush then neither writes the refused change nor
-     * re-detects it (the dirty entities are no longer managed); a later find() reads the row again from the database.
-     * Your own entities and their pending changes are left untouched. Same private properties throughout ORM 3.x (the
-     * bundle requires ^3.7), as in transaction-doctrine's runner.
+     * Undoes the blog's pending work on one of your managers without closing, clearing or resetting it (audits XD-3,
+     * XD2-1). Nothing of the refused write is written by a later flush, and the manager stays usable:
+     *
+     * - A managed blog entity with pending work (an update, a removal, an orphan removal, a changed collection) is
+     *   restored, not detached: its fields and to-one associations get their original values back, each of its
+     *   collections is emptied and marked uninitialized (it is read again from the database on its next use), its
+     *   scheduled work is dropped, and a removed one is managed again. It stays in the identity map, so an unchanged
+     *   entity pointing at it (a translation, one of your entities) is still valid.
+     * - A new blog entity (scheduled for insertion) is forgotten, and unlinked from your entities: a to-one association of
+     *   yours pointing at it gets its original value back (null for a new entity of yours), and it leaves your
+     *   collections.
+     *
+     * Your own entities' other pending changes are left untouched, for your next flush. Same private properties
+     * throughout ORM 3.x (the bundle requires ^3.7), as in transaction-doctrine's restorer.
      */
-    private function forgetBlogWork(UnitOfWork $unitOfWork): void
+    private function undoBlogWork(EntityManagerInterface $manager): void
     {
-        $entities = [];
-        foreach ([...$unitOfWork->getScheduledEntityInsertions(), ...$unitOfWork->getScheduledEntityUpdates(), ...$unitOfWork->getScheduledEntityDeletions()] as $entity) {
+        $unitOfWork = $manager->getUnitOfWork();
+        $new        = [];
+        $managed    = [];
+        foreach ($unitOfWork->getScheduledEntityInsertions() as $entity) {
             if ($this->isBlogEntity($entity)) {
-                $entities[spl_object_id($entity)] = $entity;
+                $new[spl_object_id($entity)] = $entity;
+            }
+        }
+
+        foreach ([...$unitOfWork->getScheduledEntityUpdates(), ...$unitOfWork->getScheduledEntityDeletions()] as $entity) {
+            if ($this->isBlogEntity($entity)) {
+                $managed[spl_object_id($entity)] = $entity;
             }
         }
 
         foreach ([...$unitOfWork->getScheduledCollectionUpdates(), ...$unitOfWork->getScheduledCollectionDeletions()] as $collection) {
             $owner = $collection->getOwner();
-            if ($owner !== null && $this->isBlogEntity($owner)) {
-                $entities[spl_object_id($owner)] = $owner;
+            if ($owner !== null && $this->isBlogEntity($owner) && !isset($new[spl_object_id($owner)])) {
+                $managed[spl_object_id($owner)] = $owner;
             }
         }
 
-        Closure::bind(static function (UnitOfWork $unitOfWork, array $entities): void {
-            /** @var array<int, object> $entities */
-            $owned = static fn (PersistentCollection $collection): bool => isset($entities[spl_object_id($collection->getOwner() ?? $collection)]);
+        // Your entities that may point at a new blog entity: the managed ones (loaded) and your own new ones.
+        $yours = [];
+        foreach ([...array_merge(...array_values($unitOfWork->getIdentityMap())), ...$unitOfWork->getScheduledEntityInsertions()] as $entity) {
+            if (!$this->isBlogEntity($entity) && !$unitOfWork->isUninitializedObject($entity)) {
+                $yours[spl_object_id($entity)] = $entity;
+            }
+        }
+
+        $this->dropScheduledWork($unitOfWork, $new, $managed);
+
+        foreach ($managed as $entity) {
+            $metadata = $manager->getClassMetadata($entity::class);
+            $original = $unitOfWork->getOriginalEntityData($entity);
+            foreach (array_intersect_key($original, array_flip([...$metadata->getFieldNames(), ...$metadata->getAssociationNames()])) as $field => $value) {
+                if ($value instanceof PersistentCollection) {
+                    $value->unwrap()->clear();
+                    $value->setDirty(false);
+                    $value->setInitialized(false);
+                }
+
+                $metadata->setFieldValue($entity, $field, $value);
+            }
+        }
+
+        foreach ($yours as $entity) {
+            $this->unlink($manager, $entity, $new);
+        }
+    }
+
+    /**
+     * Drops the scheduled work of the refused blog entities: the new ones are forgotten entirely, the managed ones (a
+     * removed one included) are managed again with nothing scheduled and their original data as it was before the
+     * flush, and the collection changes they own are unscheduled.
+     *
+     * @param array<int, object> $new The new blog entities, by spl_object_id
+     * @param array<int, object> $managed The managed blog entities to restore, by spl_object_id
+     */
+    private function dropScheduledWork(UnitOfWork $unitOfWork, array $new, array $managed): void
+    {
+        Closure::bind(static function (UnitOfWork $unitOfWork, array $new, array $managed): void {
+            /** @var array<int, object> $new */
+            /** @var array<int, object> $managed */
+            $all   = $new + $managed;
+            $owned = static fn (PersistentCollection $collection): bool => isset($all[spl_object_id($collection->getOwner() ?? $collection)]);
             foreach ($unitOfWork->collectionUpdates as $id => $collection) {
                 if ($owned($collection)) {
                     unset($unitOfWork->collectionUpdates[$id], $unitOfWork->visitedCollections[$id], $unitOfWork->pendingCollectionElementRemovals[$id]);
@@ -176,27 +240,61 @@ final readonly class BlogUserBlameListener
             }
 
             // Deferred-explicit change tracking only (none of the blog entities uses it; kept for a host that remaps them).
-            $unitOfWork->scheduledForSynchronization = array_map(static fn (array $byId): array => array_diff_key($byId, $entities), $unitOfWork->scheduledForSynchronization);
+            $unitOfWork->scheduledForSynchronization = array_map(static fn (array $byId): array => array_diff_key($byId, $all), $unitOfWork->scheduledForSynchronization);
 
-            foreach ($entities as $id => $entity) {
-                // The identity-map entry first: removeFromIdentityMap() reads the identifier.
-                if ($unitOfWork->isInIdentityMap($entity)) {
-                    $unitOfWork->removeFromIdentityMap($entity);
+            // A computed change set replaced the original data with the changed values (UnitOfWork::computeChangeSet()):
+            // the original value of each changed field (the old PersistentCollection of a replaced collection) goes back.
+            foreach (array_keys($managed) as $id) {
+                /** @var array<string, mixed> $changes [old, new] per field; the old PersistentCollection of a replaced collection */
+                $changes = $unitOfWork->entityChangeSets[$id] ?? [];
+                foreach ($changes as $field => $change) {
+                    $unitOfWork->originalEntityData[$id][$field] = is_array($change) ? $change[0] : $change;
                 }
-
-                unset(
-                    $unitOfWork->entityInsertions[$id],
-                    $unitOfWork->entityUpdates[$id],
-                    $unitOfWork->entityDeletions[$id],
-                    $unitOfWork->extraUpdates[$id],
-                    $unitOfWork->orphanRemovals[$id],
-                    $unitOfWork->entityChangeSets[$id],
-                    $unitOfWork->entityStates[$id],
-                    $unitOfWork->entityIdentifiers[$id],
-                    $unitOfWork->originalEntityData[$id],
-                );
             }
-        }, null, UnitOfWork::class)($unitOfWork, $entities);
+
+            foreach ($all as $id => $entity) {
+                unset($unitOfWork->entityInsertions[$id], $unitOfWork->entityUpdates[$id], $unitOfWork->entityDeletions[$id], $unitOfWork->extraUpdates[$id], $unitOfWork->orphanRemovals[$id], $unitOfWork->entityChangeSets[$id]);
+            }
+
+            // A pre-insert identifier (sequence, UUID) put a new entity in the identity map: its entry goes too.
+            $unitOfWork->identityMap = array_map(static fn (array $byId): array => array_filter($byId, static fn (object $entity): bool => !isset($new[spl_object_id($entity)])), $unitOfWork->identityMap);
+
+            foreach (array_keys($new) as $id) {
+                unset($unitOfWork->entityStates[$id], $unitOfWork->entityIdentifiers[$id], $unitOfWork->originalEntityData[$id]);
+            }
+
+            foreach (array_keys($managed) as $id) {
+                // A removed entity keeps its identity-map entry: managed again.
+                $unitOfWork->entityStates[$id] = UnitOfWork::STATE_MANAGED;
+            }
+        }, null, UnitOfWork::class)($unitOfWork, $new, $managed);
+    }
+
+    /**
+     * Removes the forgotten new blog entities from one of your entities: a to-one association pointing at one gets its
+     * value from before the change back (null when your entity is new), a collection loses them.
+     *
+     * @param array<int, object> $new
+     */
+    private function unlink(EntityManagerInterface $manager, object $entity, array $new): void
+    {
+        $metadata = $manager->getClassMetadata($entity::class);
+        // The computed change set holds [old, new]; the original data already holds the new value (computeChangeSet()).
+        $changes = $manager->getUnitOfWork()->getEntityChangeSet($entity);
+        foreach ($metadata->getAssociationNames() as $field) {
+            $value = $metadata->getFieldValue($entity, $field);
+            if ($value instanceof Collection) {
+                // unwrap(): no orphan removal scheduled, and no load of an uninitialized collection.
+                $elements = $value instanceof PersistentCollection ? $value->unwrap() : $value;
+                foreach ($elements->toArray() as $key => $element) {
+                    if (is_object($element) && isset($new[spl_object_id($element)])) {
+                        $elements->remove($key);
+                    }
+                }
+            } elseif (is_object($value) && isset($new[spl_object_id($value)])) {
+                $metadata->setFieldValue($entity, $field, $changes[$field][0] ?? null);
+            }
+        }
     }
 
     private function isBlogEntity(object $entity): bool
