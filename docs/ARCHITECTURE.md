@@ -168,8 +168,10 @@ The id columns of `user_reference: id` hold identities a host supplies, so they 
    `BlogArticleSnapshot::$createdByUnreadable` deny it; only a really NULL column is unowned. A signed-in user whose
    id cannot be kept exactly gets HTTP 403 on every admin route that writes articles, tags or settings, before the
    form touches an entity; as a backstop any article flush made as that user is refused (`AccessDeniedException`):
-   the blog entities of that flush are detached and the manager is closed, as after any failed flush, so the next
-   flush (another user, a later request of a kept-alive worker) cannot save the refused write.
+   nothing of the refused blog write stays on the manager, so the next flush (another user, a later request of a
+   kept-alive worker) cannot save it. The bundle's own manager (private or dedicated) is closed, as after any failed
+   flush; one of your managers is never closed (since 1.12.0): the blog entities of the flush and the collection
+   changes they own are forgotten, your own pending changes stay.
 2. The owner listing re-checks every row with `===` in PHP after the query; the owner policy compares ids with `===`
    and never falls back to a login identifier for a reference. The re-check runs after `LIMIT`: with the id mode the
    SQL is already exact (item 3), so it drops nothing; in the entity mode under a folding collation of a string user

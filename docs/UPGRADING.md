@@ -98,6 +98,13 @@ What changes for you once you opt in:
   manager yourself (the probe below lists these cases);
 - a blog entity you load through your own manager (`$yourManager->find(BlogArticle::class, $id)`) is not the instance
   the bundle writes; use the bundle's repositories (also returned by `$yourManager->getRepository(BlogArticle::class)`).
+- change blog entities only through the bundle's services, or through the `nowo_blog_kit.entity_manager` service (and
+  flush that one): a blog entity loaded from the bundle's repositories belongs to the private manager, so editing it and
+  calling `$yourManager->flush()` saves nothing (only a warning is logged);
+- an entity of yours pointing at a blog entity (a to-one association such as `Page::$article`) must hold a reference of
+  your own manager, `$yourManager->getReference(BlogArticle::class, $id)`, not the instance the bundle's repositories
+  return: your manager does not know that instance and would take it for a new entity ("A new entity was found through
+  the relationship").
 
 `private_entity_manager: false` keeps the 1.x behaviour, with its own notice: the value `false` is **removed in 2.0**.
 `doctrine.entity_manager: <name>` (a manager dedicated to the blog, see "To 1.9.0") stays the DDD option in 2.0, triggers

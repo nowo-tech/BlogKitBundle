@@ -57,9 +57,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Requires `nowo-tech/transaction-doctrine` ^1.9 (1.8.1 fixed GHSA-9wh3-m3m5-jffx and GHSA-65w2-9r4h-848g; 1.9 adds the private-manager kit and the host-flush probe).
+- Requires `nowo-tech/transaction-doctrine` ^1.9.1 (1.8.1 fixed GHSA-9wh3-m3m5-jffx and GHSA-65w2-9r4h-848g; 1.9 adds the private-manager kit and the host-flush probe; 1.9.1 fixes it).
 - Accepts `nowo-tech/audit-kit-bundle` `^1.1 || ^2.0`.
 - `Worker\BlogKitOwnEntityManagerSubscriber` is registered in every mode: it also resets the private manager and the probe at the boundaries.
+
+### Fixed
+
+- **A refused blog write no longer closes your entity manager** (affects 1.9.0 to 1.11.x, `doctrine.user_reference: id`). When the signed-in user has no id that can be kept exactly, `Doctrine\BlogUserBlameListener` refuses the flush (403, unchanged). It used to close the flushing manager, which without `doctrine.entity_manager` is your default one: the rest of the request (or of a FrankenPHP worker request) could no longer use it. Now only the bundle's own manager (the private one of `private_entity_manager: true`, or the dedicated `doctrine.entity_manager`) is closed; on one of your managers the refused blog work is forgotten (the blog entities of the flush and the collection changes they own leave the unit of work, so no later flush writes them) and the manager stays open with your own pending changes. No GHSA.
 
 ## [1.11.0] - 2026-11-20
 

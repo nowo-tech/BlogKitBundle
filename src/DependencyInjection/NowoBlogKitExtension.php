@@ -651,8 +651,9 @@ final class NowoBlogKitExtension extends Extension implements PrependExtensionIn
             $container->register(BlogUserReferenceMetadataListener::class, BlogUserReferenceMetadataListener::class)
                 ->setArguments([new Reference('logger', ContainerInterface::NULL_ON_INVALID_REFERENCE)])
                 ->addTag('doctrine.event_listener', ['event' => Events::loadClassMetadata]);
+            // Since 1.12.0 (audit XD-3): a refused flush closes only the bundle's own manager, never one of yours.
             $container->register(BlogUserBlameListener::class, BlogUserBlameListener::class)
-                ->setArguments([new Reference(BlogUsers::class)])
+                ->setArguments([new Reference(BlogUsers::class), new Reference('doctrine'), $entityManager])
                 ->addTag('doctrine.event_listener', ['event' => Events::onFlush]);
         }
 

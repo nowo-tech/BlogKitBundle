@@ -61,6 +61,8 @@ final class NowoBlogKitExtensionPersistenceTest extends TestCase
         self::assertEquals(new Reference('app.blog_users'), $container->getDefinition(BlogUsers::class)->getArgument(2));
         self::assertSame([['event' => Events::loadClassMetadata]], $container->getDefinition(BlogUserReferenceMetadataListener::class)->getTag('doctrine.event_listener'));
         self::assertSame([['event' => Events::onFlush]], $container->getDefinition(BlogUserBlameListener::class)->getTag('doctrine.event_listener'));
+        // Audit XD-3: the registry tells your managers apart (never closed); no dedicated manager.
+        self::assertEquals([new Reference(BlogUsers::class), new Reference('doctrine'), null], $container->getDefinition(BlogUserBlameListener::class)->getArguments());
     }
 
     #[Test]
@@ -71,6 +73,7 @@ final class NowoBlogKitExtensionPersistenceTest extends TestCase
         self::assertSame('blog', $container->getParameter(NowoBlogKitExtension::ENTITY_MANAGER_PARAMETER));
         self::assertTrue($container->hasParameter(NowoBlogKitExtension::MAPPING_XML_DEDICATED));
         self::assertSame('doctrine.orm.blog_entity_manager', (string) $container->getAlias(NowoBlogKitExtension::ENTITY_MANAGER_SERVICE));
+        self::assertSame('blog', $container->getDefinition(BlogUserBlameListener::class)->getArgument(2));
         $subscriber = $container->getDefinition(BlogKitOwnEntityManagerSubscriber::class);
         self::assertTrue($subscriber->hasTag('kernel.event_subscriber'));
         self::assertSame('blog', $subscriber->getArgument(3));
