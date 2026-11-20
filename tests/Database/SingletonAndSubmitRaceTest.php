@@ -21,6 +21,7 @@ use Symfony\Component\HttpKernel\HttpKernelInterface;
 use Throwable;
 
 use function hash;
+use function method_exists;
 
 /**
  * 1.11 (REQ-RUNTIME-003 rule 4) on a real server, two connections: the settings table holds one row however many first
@@ -151,6 +152,7 @@ final class SingletonAndSubmitRaceTest extends DatabaseTestCase
         $request = Request::create('/blog/post/comments', 'POST', server: ['REMOTE_ADDR' => '203.0.113.7']);
         $key     = $this->keyFor($article->getId() ?? 0, 'ana@example.com', 'Hello there');
 
+        $this->nestWithSavepoints();
         $this->blog->beginTransaction();
         self::assertSame(0, (int) $this->blog->fetchOne('SELECT COUNT(*) FROM content_blog_comment'), 'the snapshot is fixed, empty');
         $winner = $this->insertCommentFromWriter($article->getId() ?? 0, $key);
@@ -186,6 +188,18 @@ final class SingletonAndSubmitRaceTest extends DatabaseTestCase
         self::assertSame($winner, $stored->getId());
         self::assertSame(1, (int) $this->blog->fetchOne('SELECT COUNT(*) FROM content_blog_comment'));
         $this->assertConnectionUsable();
+    }
+
+    /**
+     * DBAL 3 only nests transactions on savepoints when asked (`doctrine.dbal.use_savepoints: true`, required by the
+     * bundle's docs); without it a failed unit inside a host transaction marks the host transaction rollback-only.
+     * DBAL 4 always uses savepoints.
+     */
+    private function nestWithSavepoints(): void
+    {
+        if (method_exists($this->blog, 'setNestTransactionsWithSavepoints')) {
+            $this->blog->setNestTransactionsWithSavepoints(true);
+        }
     }
 
     private function commentRequest(): Request
