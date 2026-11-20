@@ -6,6 +6,9 @@
             <index name="IDX_BLOG_COMMENT_ARTICLE_STATUS" columns="article_id,status,created_at"/>
             <index name="IDX_BLOG_COMMENT_PARENT" columns="parent_id"/>
         </indexes>
+        <unique-constraints>
+            <unique-constraint name="uniq_blog_comment_submit_key" columns="submit_key"/>
+        </unique-constraints>
         <id name="id" type="integer">
             <generator strategy="AUTO"/>
         </id>
@@ -16,6 +19,7 @@
         <field name="createdAt" type="datetime_immutable" column="created_at"/>
         <field name="moderatedAt" type="datetime_immutable" nullable="true"/>
         <field name="ipHash" type="string" length="64" nullable="true"/>
+        <field name="submitKey" type="string" column="submit_key" length="64" nullable="true"/>
         <many-to-one field="blogArticle" target-entity="Nowo\BlogKitBundle\Entity\BlogArticle">
             <join-columns>
                 <join-column name="article_id" nullable="false" on-delete="CASCADE"/>

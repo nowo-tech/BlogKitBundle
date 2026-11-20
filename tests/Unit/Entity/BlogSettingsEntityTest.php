@@ -18,6 +18,7 @@ final class BlogSettingsEntityTest extends TestCase
         $settings = new BlogSettings();
 
         self::assertNull($settings->getId());
+        self::assertSame(BlogSettings::SINGLETON_KEY, $settings->getSingletonKey());
         self::assertSame('inherit', $settings->getListingMode());
         self::assertSame(BlogListingMode::Paginated, $settings->listingMode());
         self::assertSame('inherit', $settings->getMasonryStrategy());

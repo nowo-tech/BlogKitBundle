@@ -85,6 +85,43 @@ final class BlogCommentManagerTest extends TestCase
     }
 
     #[Test]
+    public function aSubmissionWithATokenStoresItsIdempotencyKey(): void
+    {
+        $article = new BlogArticle();
+        $request = Request::create('/', 'POST', server: ['REMOTE_ADDR' => '203.0.113.10']);
+        $key     = hash('sha256', 'a1b2c3d4e5f60718293a4b5c6d7e8f90' . "\0" . 0 . "\0" . 'a@b.com' . "\0" . 'Hello');
+        $this->repository->expects(self::once())->method('findOneBy')->with(['submitKey' => $key])->willReturn(null);
+        $this->entityManager->expects(self::once())->method('persist')->with(self::isInstanceOf(BlogComment::class));
+
+        $comment = $this->manager->createPublicComment($article, 'Ana', ' a@b.com ', ' Hello ', $request, 'a1b2c3d4e5f60718293a4b5c6d7e8f90');
+
+        self::assertSame($key, $comment->getSubmitKey());
+    }
+
+    #[Test]
+    public function aSubmissionAlreadyStoredReturnsTheStoredCommentAndPersistsNothing(): void
+    {
+        $stored = new BlogComment()->setArticle(new BlogArticle());
+        $this->repository->method('findOneBy')->willReturn($stored);
+        $this->entityManager->expects(self::never())->method('persist');
+
+        $comment = $this->manager->createPublicComment(new BlogArticle(), 'Ana', 'a@b.com', 'Hello', Request::create('/', 'POST'), 'a1b2c3d4e5f60718293a4b5c6d7e8f90');
+
+        self::assertSame($stored, $comment);
+    }
+
+    #[Test]
+    public function aMalformedTokenIsNoToken(): void
+    {
+        $this->repository->expects(self::never())->method('findOneBy');
+        $this->entityManager->expects(self::once())->method('persist');
+
+        $comment = $this->manager->createPublicComment(new BlogArticle(), 'Ana', 'a@b.com', 'Hello', Request::create('/', 'POST'), 'short');
+
+        self::assertNull($comment->getSubmitKey());
+    }
+
+    #[Test]
     public function itCreatesPublicCommentWithoutIpHashWhenClientIpIsEmpty(): void
     {
         $request = Request::create('/', 'POST', server: ['REMOTE_ADDR' => '']);

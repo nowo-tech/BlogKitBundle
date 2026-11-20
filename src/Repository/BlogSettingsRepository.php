@@ -6,6 +6,7 @@ namespace Nowo\BlogKitBundle\Repository;
 
 use BackedEnum;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\ORM\Query;
 use Doctrine\Persistence\ManagerRegistry;
 use LogicException;
@@ -18,6 +19,8 @@ use Symfony\Contracts\Service\ResetInterface;
  */
 final class BlogSettingsRepository extends ServiceEntityRepository implements ResetInterface
 {
+    private const string SAVEPOINT = 'blog_kit_settings_singleton';
+
     private ?BlogSettings $blogSettings = null;
 
     public function __construct(ManagerRegistry $registry)
@@ -32,6 +35,9 @@ final class BlogSettingsRepository extends ServiceEntityRepository implements Re
 
     /**
      * Returns the settings row, creating it with the default values when the table is empty.
+     *
+     * Two first requests on an empty table: the unique `singleton_key` lets one INSERT win. The loser's violation is
+     * the expected race, answered by reading the winner's row (never an error, never a second row; 1.11).
      *
      * The row is created with a single DBAL INSERT on the connection of the entity manager that
      * manages BlogSettings, never with a flush: rendering a page must not commit unrelated pending
@@ -84,7 +90,23 @@ final class BlogSettingsRepository extends ServiceEntityRepository implements Re
             $types[$idColumn] = (string) $metadata->getTypeOfField($idField);
         }
 
-        $connection->insert($quoteStrategy->getTableName($metadata, $platform), $data, $types);
+        // Inside a host transaction a failed INSERT would abort it on PostgreSQL: the INSERT runs in a savepoint, and the
+        // unique violation of a concurrent first request rolls back to it (the winner's row is read afterwards).
+        $inTransaction = $connection->isTransactionActive();
+        if ($inTransaction) {
+            $connection->createSavepoint(self::SAVEPOINT);
+        }
+
+        try {
+            $connection->insert($quoteStrategy->getTableName($metadata, $platform), $data, $types);
+            if ($inTransaction) {
+                $connection->releaseSavepoint(self::SAVEPOINT);
+            }
+        } catch (UniqueConstraintViolationException) {
+            if ($inTransaction) {
+                $connection->rollbackSavepoint(self::SAVEPOINT);
+            }
+        }
     }
 
     /**

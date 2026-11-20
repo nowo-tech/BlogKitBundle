@@ -43,6 +43,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **The settings table holds one row** (REQ-RUNTIME-003 rule 4). `content_blog_settings` gains `singleton_key` (always `main`) with a unique key, so two first requests on an empty table can no longer both insert a row. The loser's violation is the expected race: it is caught (in a savepoint inside a host transaction, so PostgreSQL does not abort it) and the winner's row is read. **Schema change:** see UPGRADING (delete extra settings rows first).
+- **A public comment submitted twice is stored once.** The comment form carries a one-time `submitToken`; the comment gets `submit_key`, a unique hash of the token, the article, the email and the text. The second submission (a double click, a retry, or a concurrent one that loses the unique key and replays) returns the stored comment and shows the same "pending" message. A cached page that hands the same token to two visitors still stores both comments (different email or text, different key). Comments without a token (a form rendered before the upgrade) are stored as before. **Schema change:** nullable `submit_key` with a unique index.
+
+### Tests
+
+- `tests/Database/SingletonAndSubmitRaceTest.php` (group `database`, MySQL, MariaDB, PostgreSQL, two connections): a first request losing the insert, the same inside a host transaction, a comment submitted twice, a concurrent insert of the same submission, and a double submit while the first is in flight (409 `CONFLICT_001`, then the stored comment).
+
 ## [1.10.0] - 2026-11-18
 
 ### Demo

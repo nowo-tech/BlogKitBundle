@@ -17,15 +17,25 @@ use Nowo\BlogKitBundle\Repository\BlogSettingsRepository;
 
 #[ORM\Entity(repositoryClass: BlogSettingsRepository::class)]
 #[ORM\Table(name: 'content_blog_settings')]
+#[ORM\UniqueConstraint(name: 'uniq_blog_settings_singleton', columns: ['singleton_key'])]
 /**
  * Singleton professional blog configuration (listing, asides, detail).
  */
 class BlogSettings
 {
+    public const string SINGLETON_KEY = 'main';
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
     private ?int $id = null;
+
+    /**
+     * Always {@see self::SINGLETON_KEY}: with the unique key it makes the table hold one row, so two first requests on
+     * an empty table cannot both insert one (1.11, REQ-RUNTIME-003 rule 4).
+     */
+    #[ORM\Column(name: 'singleton_key', length: 16, options: ['default' => self::SINGLETON_KEY])]
+    private string $singletonKey = self::SINGLETON_KEY;
 
     #[ORM\Column(length: 16, options: ['default' => 'inherit'])]
     private string $listingMode = 'inherit';
@@ -128,6 +138,11 @@ class BlogSettings
         $this->id = $id;
 
         return $this;
+    }
+
+    public function getSingletonKey(): string
+    {
+        return $this->singletonKey;
     }
 
     public function getListingMode(): string
