@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Nowo\BlogKitBundle\Repository;
 
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\ORM\Tools\Pagination\Paginator;
 use Doctrine\Persistence\ManagerRegistry;
@@ -34,6 +35,28 @@ final class BlogCommentRepository extends ServiceEntityRepository
     {
         parent::__construct($registry, BlogComment::class);
         $this->users = $users ?? new BlogUsers();
+    }
+
+    /**
+     * The comment stored for an idempotency key (1.11). With `$locking` and an open transaction the read is a locking read
+     * (`FOR SHARE`): under MySQL / MariaDB REPEATABLE READ a plain read keeps the snapshot of the transaction's first read
+     * and would miss a winner that committed since, which is exactly the row this lookup exists to find. Use it only when
+     * the key is known to exist (the replay after a unique violation): a locking read of a missing key takes a gap lock.
+     */
+    public function findOneBySubmitKey(string $submitKey, bool $locking = false): ?BlogComment
+    {
+        $query = $this->createQueryBuilder('comment')
+            ->andWhere('comment.submitKey = :key')
+            ->setParameter('key', $submitKey)
+            ->setMaxResults(1)
+            ->getQuery();
+        if ($locking && $this->getEntityManager()->getConnection()->isTransactionActive()) {
+            $query->setLockMode(LockMode::PESSIMISTIC_READ);
+        }
+
+        $stored = $query->getOneOrNullResult();
+
+        return $stored instanceof BlogComment ? $stored : null;
     }
 
     /** @return list<BlogComment> */

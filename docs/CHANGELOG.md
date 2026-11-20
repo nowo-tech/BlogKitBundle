@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Table of contents
 
 - [[Unreleased]](#unreleased)
+- [[1.11.0] - 2026-11-20](#1110---2026-11-20)
 - [[1.10.0] - 2026-11-18](#1100---2026-11-18)
 - [[1.9.0] - 2026-11-13](#190---2026-11-13)
 - [[1.8.3] - 2026-11-10](#183---2026-11-10)
@@ -46,6 +47,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Requires `nowo-tech/transaction-doctrine` ^1.8.1 (fixes GHSA-9wh3-m3m5-jffx and GHSA-65w2-9r4h-848g).
+
+## [1.11.0] - 2026-11-20
+
+### Fixed
+
+- **The settings table holds one row** (REQ-RUNTIME-003 rule 4). `content_blog_settings` gains `singleton_key` (always `main`) with a unique key, so two first requests on an empty table can no longer both insert a row. The loser's violation is the expected race: it is caught (in a savepoint inside a host transaction, so PostgreSQL does not abort it) and the winner's row is read. **Schema change:** see UPGRADING (delete extra settings rows first).
+- Inside a host transaction on MySQL / MariaDB (REPEATABLE READ) the first read of the transaction fixes its snapshot, so a winner that committed afterwards was invisible to a plain re-read. The settings re-read after a refused insert, and the comment lookup of the replay (`BlogCommentRepository::findOneBySubmitKey($key, true)`; the first lookup stays a plain read, because a locking read of a missing key takes a gap lock), are now locking reads (`FOR SHARE`) when a transaction is open, and the replayed comment points at a reference of the article in the current unit of work (a detached article made the replay fail with `ORMInvalidArgumentException`).
+- **A public comment submitted twice is stored once.** The comment form carries a one-time `submitToken`; the comment gets `submit_key`, a unique hash of the token, the article, the email and the text. The second submission (a double click, a retry, or a concurrent one that loses the unique key and replays) returns the stored comment and shows the same "pending" message. A cached page that hands the same token to two visitors still stores both comments (different email or text, different key). Comments without a token (a form rendered before the upgrade) are stored as before. **Schema change:** nullable `submit_key` with a unique index.
+
+### Tests
+
+- `tests/Database/SingletonAndSubmitRaceTest.php` (group `database`, MySQL, MariaDB, PostgreSQL, two connections): a first request losing the insert, the same inside a host transaction, a comment submitted twice, a concurrent insert of the same submission, and a double submit while the first is in flight (409 `CONFLICT_001`, then the stored comment).
 
 ## [1.10.0] - 2026-11-18
 
@@ -564,7 +577,8 @@ Initial public release of **Blog Kit Bundle** (`nowo-tech/blog-kit-bundle`).
 - CSRF-protected admin mutations and public comment forms; deletes go through native confirm dialogs
 - Comment bodies escaped in Twig; article HTML documented as trusted-editor `|raw`
 
-[Unreleased]: https://github.com/nowo-tech/BlogKitBundle/compare/v1.10.0...HEAD
+[Unreleased]: https://github.com/nowo-tech/BlogKitBundle/compare/v1.11.0...HEAD
+[1.11.0]: https://github.com/nowo-tech/BlogKitBundle/compare/v1.10.0...v1.11.0
 [1.10.0]: https://github.com/nowo-tech/BlogKitBundle/compare/v1.9.0...v1.10.0
 [1.9.0]: https://github.com/nowo-tech/BlogKitBundle/compare/v1.8.3...v1.9.0
 [1.8.3]: https://github.com/nowo-tech/BlogKitBundle/compare/v1.8.2...v1.8.3

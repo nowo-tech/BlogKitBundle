@@ -3,6 +3,7 @@
 ## Table of contents
 
 - [Unreleased](#unreleased)
+- [To 1.11.0](#to-1110)
 - [To 1.10.0](#to-1100)
   - [Lock conflicts answer 409 with CONFLICT codes](#lock-conflicts-answer-409-with-conflict-codes)
   - [The host entity manager must be clean before a blog write](#the-host-entity-manager-must-be-clean-before-a-blog-write)
@@ -52,6 +53,39 @@
 - [Future releases](#future-releases)
 
 ## Unreleased
+
+## To 1.11.0
+
+From **1.10.0**:
+
+```bash
+composer update nowo-tech/blog-kit-bundle
+```
+
+Two schema changes (REQ-RUNTIME-003 rule 4). **Deploy order: run the migration first, then deploy the code.** Both
+columns are backward compatible (a column with a default, a nullable column, unique indexes that allow NULLs), so the old
+code keeps working on the migrated schema; the new code selects the new columns, so on an unmigrated database every
+blog page that reads the settings or the comments fails. Generate and run a migration (`doctrine:migrations:diff`, then `migrate`), or
+`doctrine:schema:update --force` in development:
+
+- `content_blog_settings.singleton_key VARCHAR(16) NOT NULL DEFAULT 'main'` with the unique index
+  `uniq_blog_settings_singleton`. **Delete the extra settings rows first** (before 1.11 two first requests could each
+  insert one; every read used the lowest id), or the unique index cannot be created:
+
+  ```sql
+  -- MySQL / MariaDB
+  DELETE s FROM content_blog_settings s JOIN (SELECT MIN(id) AS keep_id FROM content_blog_settings) k ON s.id > k.keep_id;
+  -- PostgreSQL / SQLite
+  DELETE FROM content_blog_settings WHERE id > (SELECT MIN(id) FROM content_blog_settings);
+  ```
+
+  (With a table prefix, use your table name.) The kept row is the one the bundle already read.
+- `content_blog_comment.submit_key VARCHAR(64) NULL` with the unique index `uniq_blog_comment_submit_key`. Existing
+  comments keep `NULL` (no guard).
+
+`doctrine.mapping_type: xml` hosts get the same columns from the shipped XML mapping. No configuration change. The public
+comment form gets a hidden `submitToken` field: if you render the form field by field, render the rest of the form too
+(the default template does), or double submits are not detected (the comment is still stored).
 
 ## To 1.10.0
 

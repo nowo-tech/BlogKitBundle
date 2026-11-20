@@ -19,6 +19,9 @@ use Symfony\Component\Clock\NativeClock;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\Request;
 
+use function hash;
+use function preg_match;
+
 /**
  * Creates and moderates blog comments.
  *
@@ -45,29 +48,70 @@ final readonly class BlogCommentManager
         $this->transactionRunner = $transactionRunner ?? BlogKitTransactionRunner::unmanaged($entityManager);
     }
 
+    /**
+     * Creates the pending comment of a public submission. With the one-time `$submitToken` of the rendered form
+     * (1.11, REQ-RUNTIME-003 rule 4) a form posted twice stores one comment: the idempotency key is a hash of the token,
+     * the article, the email and the text, unique in the table, and the second submission (also a concurrent one: the
+     * unit runs once more after the unique violation and finds the winner) returns the stored comment. Another
+     * visitor on a cached page with the same token has another email or text, so another key.
+     */
     public function createPublicComment(
         BlogArticle $blogArticle,
         string $authorName,
         string $authorEmail,
         string $body,
         Request $request,
+        ?string $submitToken = null,
     ): BlogComment {
-        $ipHash = $this->hashIp($request);
+        $ipHash    = $this->hashIp($request);
+        $submitKey = $this->submitKey($submitToken, $blogArticle, trim($authorEmail), trim($body));
+        $articleId = $blogArticle->getId();
+
+        // True once the unit has run: the second run is the replay after a unique violation.
+        $replay = false;
 
         // @igor-ignore - The closure runs at once inside the unit; the runner keeps no reference to it.
-        return $this->transactionRunner->run(function () use ($blogArticle, $authorName, $authorEmail, $body, $ipHash): BlogComment {
+        return $this->transactionRunner->runRereadingOnDuplicate(function () use ($blogArticle, $articleId, $authorName, $authorEmail, $body, $ipHash, $submitKey, &$replay): BlogComment {
+            if ($submitKey !== null) {
+                // The first look is a plain read: a locking read of a missing key takes a gap lock, and two concurrent
+                // submissions would then deadlock on their inserts. The replay (the key exists now) is a locking read: a
+                // winner that committed after this transaction's snapshot (REPEATABLE READ) is still found.
+                $stored = $this->blogCommentRepository->findOneBySubmitKey($submitKey, $replay);
+                if ($stored instanceof BlogComment) {
+                    return $stored;
+                }
+            }
+            $replay = true;
+
+            // The replay runs on a replaced manager: the article captured before the failure is detached, so the
+            // comment points at a reference of the same row in the current unit of work.
+            $article = $articleId === null ? $blogArticle : $this->entityManager->getReference(BlogArticle::class, $articleId);
+
             $blogComment = new BlogComment()
-                ->setArticle($blogArticle)
+                ->setArticle($article instanceof BlogArticle ? $article : $blogArticle)
                 ->setAuthorName(trim($authorName))
                 ->setAuthorEmail(trim($authorEmail))
                 ->setBody(trim($body))
                 ->setStatus(BlogCommentStatus::Pending)
-                ->setIpHash($ipHash);
+                ->setIpHash($ipHash)
+                ->setSubmitKey($submitKey);
 
             $this->entityManager->persist($blogComment);
 
             return $blogComment;
         });
+    }
+
+    /**
+     * Idempotency key of a submission, null without a well-formed token (a form rendered before 1.11, host code).
+     */
+    private function submitKey(?string $token, BlogArticle $blogArticle, string $email, string $body): ?string
+    {
+        if ($token === null || preg_match('/^[A-Za-z0-9]{16,64}$/', $token) !== 1) {
+            return null;
+        }
+
+        return hash('sha256', $token . "\0" . ($blogArticle->getId() ?? 0) . "\0" . $email . "\0" . $body);
     }
 
     /**

@@ -12,21 +12,25 @@ paths, the conflict answer and its codes, the host options and the residual risk
 - [Host options](#host-options)
 - [Workers and entity managers](#workers-and-entity-managers)
 - [Tests and CI](#tests-and-ci)
+- [Singleton settings row](#singleton-settings-row)
+- [Double-submitted comments](#double-submitted-comments)
 - [Residual risks](#residual-risks)
 
 ## Write paths
 
 The public pages (index, article, search, tags, feeds) only read. The only exception is the settings row: the first
-read of an empty table inserts it with one DBAL `INSERT` (see [Residual risks](#residual-risks)).
+read of an empty table inserts it with one DBAL `INSERT`, which the unique `singleton_key` keeps to one row (see
+[Singleton settings row](#singleton-settings-row)).
 
 | Path | Transaction | Concurrency control | Conflict answer |
 | --- | --- | --- | --- |
-| Public comment (`POST /blog/{slug}/comments`) | One unit of `BlogKitTransactionRunner::run()` (a savepoint inside your transaction) | Plain insert, no "only one" rule; rate limit and captcha before the unit | 409 + `CONFLICT_001` + `Retry-After` on a lock conflict |
+| Public comment (`POST /blog/{slug}/comments`) | One unit of `BlogKitTransactionRunner::runRereadingOnDuplicate()` (a savepoint inside your transaction) | Unique `submit_key` (hash of the form's one-time token, the article, the email and the text): a form posted twice stores one comment; rate limit and captcha before the unit | 409 + `CONFLICT_001` + `Retry-After` on a lock conflict; a duplicate submission is answered as the first (the stored comment), no code |
 | Staff reply (public page or admin) | One unit; in the admin, the reply **and** the approval of a pending parent (1.9 used two flushes) | Plain insert + update of the parent row | 409 + `CONFLICT_001` |
 | Comment approve / reject / delete (admin) | One unit | Row update or delete; last write wins on the status | 409 + `CONFLICT_001` |
 | Article create / edit / inline edit / delete (admin) | One transaction of `BlogKitTransactionRunner::flushPending()` | Unique `slug` and unique (`article`, `locale`) translation; a violation is caught: the form is shown again with "slug taken" (or "changed meanwhile, reload") | Lock conflict: 409 + `CONFLICT_001`; duplicate key: the form, no code |
 | Tag create / edit / delete (admin) | One transaction of `flushPending()` | Unique `slug` and unique (`tag`, `locale`) translation, caught as above (the `UniqueEntity` check alone was a check-then-insert) | As above |
 | Settings sections (admin) | One transaction of `flushPending()` | Only the changed columns are written; the same field is last write wins | 409 + `CONFLICT_001` |
+| Settings row, first read of an empty table | One `INSERT` (in a savepoint inside a host transaction) | Unique `singleton_key`; the loser's violation is caught and the winner's row is read | None (a lock wait on the winner's uncommitted insert is the server's lock timeout) |
 | `BlogTagRegistry::syncDefinitions()` | One unit for all the definitions, `runRereadingOnDuplicate()` | Unique `slug`: a tag created at the same moment by another writer fails the unit, which runs once more, finds the winner's tag and updates its names | `TransientStorageFailure` to your caller |
 | `nowo:blog:sync-hashtags` | One unit **per article** (1.9: one flush for the whole run), `runRereadingOnDuplicate()` | Same unique `slug` and replay; the article and the tags are read again when the manager was replaced | Lock conflict: the command stops with an error, the articles before it stay saved; run it again |
 | `BlogArticlePublishedEvent` | After the commit of the unit that published the article | Never dispatched for a unit that rolled back | None |
@@ -123,6 +127,13 @@ REQ-RUNTIME-002 rule 4. Standard and DDD hosts: see [ARCHITECTURE](ARCHITECTURE.
     the connection usable;
   - a conflict after a commit of the same request: `CONFLICT_002`, no `Retry-After`, the first unit stays;
   - the publish event follows the commit and never a rolled-back unit.
+- `tests/Database/SingletonAndSubmitRaceTest.php` (group `database`), the same two-connection setup:
+  - a first request losing the settings insert reads the winner's row, also inside a host transaction (the savepoint:
+    PostgreSQL's transaction is not aborted), and an empty table gets exactly one row;
+  - a comment submitted twice is stored once; another visitor with the same token stores another comment; no token, no
+    guard;
+  - a concurrent insert of the same submission: the unique key refuses the second, the replay reads the winner;
+  - a double submit while the first is in flight: 409 `CONFLICT_001`, then the stored comment, one row.
 - `tests/Unit/EventSubscriber/BlogKitConflictSubscriberTest.php`, `tests/Integration/Transaction/BlogKitTransactionRunnerTest.php`,
   `tests/Unit/DependencyInjection/Compiler/ConflictResponsePassTest.php`: the mapping, the 409 / 503 option, the error
   page mode, the wiring, the runner on SQLite.
@@ -130,14 +141,31 @@ REQ-RUNTIME-002 rule 4. Standard and DDD hosts: see [ARCHITECTURE](ARCHITECTURE.
   on `main`. Locally: `docker compose up -d mysql mariadb postgres`, then
   `BLOG_KIT_DATABASE_URL=… vendor/bin/phpunit --group database` in the `php` service (URLs in `docker-compose.yml`).
 
+## Singleton settings row
+
+`content_blog_settings.singleton_key` is always `main` and unique, so the table holds one row. Two first requests on an
+empty table both read nothing and both insert: the second waits for the first's key, fails with a unique violation, and
+the bundle answers it as the domain result "the row exists": it reads the winner's row (never an error, never a second
+row). Inside a host transaction the `INSERT` runs in a savepoint and the loser rolls back to it, so on PostgreSQL the
+violation does not abort your transaction; the host's entity manager is not involved (the row is a plain DBAL insert).
+Reads still use the lowest id. Inside a host transaction the re-read after the refused insert is a locking read (`FOR SHARE`): under MySQL / MariaDB REPEATABLE READ the transaction's first (empty) read fixed its snapshot, and a plain read would never see the winner.
+
+## Double-submitted comments
+
+The public comment form carries a one-time `submitToken` (random, per rendered form). The comment stores
+`submit_key = sha256(token, article id, email, text)`, unique. A form posted twice (double click, browser retry, a
+proxy replay) therefore stores one comment: the second submission finds the first one's key and returns the stored
+comment, with the same "pending moderation" message. A concurrent second submission waits for the first's key; if the
+first has not committed within the lock wait it answers 409 `CONFLICT_001` (retry is safe), and if it lost the unique
+key the unit runs once more and finds the winner (`runRereadingOnDuplicate()`). The key mixes in the email and the
+text so that a page served from a shared cache (every visitor gets the same token) never merges two visitors'
+comments. The first lookup of a stored submission is a plain read (a locking read of a missing key takes a gap lock, and two concurrent submissions would deadlock on their inserts); the replay after the unique violation is a locking read inside a transaction, for the same snapshot reason as above, and it re-attaches the article by id in the current unit of work. A submission without a valid token (a form rendered before 1.11, host code) is stored without the guard.
+Staff replies and admin moderation are not part of this guard (they are not browser forms posted twice by a visitor).
+
 ## Residual risks
 
 - **Last write wins** on the same field of the same article, tag, comment or settings section: no optimistic
   `version` column (it would need a migration). Edits of different fields merge.
-- **Settings row on an empty table:** two first requests at the same moment may each insert a settings row. Every read
-  uses the lowest id, so the extra row is ignored; delete it if you see two.
-- **A double-submitted public comment** gives two pending comments (no idempotency key); moderation removes the extra
-  one.
 - **The hashtag command is not atomic** over the whole run: a conflict mid-run leaves the articles before it saved.
   Running it again is safe (it is idempotent).
 - **Inside your transaction**, a unit is a savepoint: a lock conflict rolls back to it, but the server may already have
