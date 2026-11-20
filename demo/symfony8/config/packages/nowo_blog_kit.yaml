@@ -33,3 +33,5 @@ nowo_blog_kit:
             strategy: allowlist
     doctrine:
         table_prefix: ''
+        # 1.12.0: the 2.0 persistence now (a private entity manager on the default one; never flushes app changes).
+        private_entity_manager: true

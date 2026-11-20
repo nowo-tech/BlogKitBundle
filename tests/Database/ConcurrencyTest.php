@@ -172,7 +172,8 @@ final class ConcurrencyTest extends DatabaseTestCase
     {
         $seen = [];
         $this->dispatcher->addListener(BlogArticlePublishedEvent::class, function (BlogArticlePublishedEvent $event) use (&$seen): void {
-            $seen[] = [$event->getArticle()->getSlug(), $this->blog->isTransactionActive(), (int) $this->writer->fetchOne('SELECT COUNT(*) FROM content_blog_article WHERE slug = ?', [$event->getArticle()->getSlug()])];
+            $slug   = $event->getArticleSnapshot()->slug;
+            $seen[] = [$slug, $this->blog->isTransactionActive(), (int) $this->writer->fetchOne('SELECT COUNT(*) FROM content_blog_article WHERE slug = ?', [$slug])];
         });
 
         $article = $this->newArticle('released');

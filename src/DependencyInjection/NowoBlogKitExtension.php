@@ -11,13 +11,17 @@ use LogicException;
 use Nowo\BlogKitBundle\DependencyInjection\Compiler\ConflictResponsePass;
 use Nowo\BlogKitBundle\DependencyInjection\Configuration as BundleConfiguration;
 use Nowo\BlogKitBundle\Doctrine\BlogKitEntityManagerFactory;
+use Nowo\BlogKitBundle\Doctrine\BlogKitHostFlushReporter;
+use Nowo\BlogKitBundle\Doctrine\BlogKitPrivateUserReferenceListener;
 use Nowo\BlogKitBundle\Doctrine\BlogUserBlameListener;
 use Nowo\BlogKitBundle\Doctrine\BlogUserReferenceMetadataListener;
 use Nowo\BlogKitBundle\Doctrine\Type\BlogUserRefType;
+use Nowo\BlogKitBundle\Entity\BlogArticle;
 use Nowo\BlogKitBundle\Enum\BlogObjectAccessStrategy;
 use Nowo\BlogKitBundle\Enum\CommentCaptchaStrategy;
 use Nowo\BlogKitBundle\Enum\CommentRateLimitStrategy;
 use Nowo\BlogKitBundle\Enum\HtmlSanitizeStrategy;
+use Nowo\BlogKitBundle\EventSubscriber\BlogKitWorkerStateSubscriber;
 use Nowo\BlogKitBundle\Form\PublicBlogCommentType;
 use Nowo\BlogKitBundle\Locale\BlogLocales;
 use Nowo\BlogKitBundle\Model\BlogUserInterface;
@@ -39,9 +43,14 @@ use Nowo\BlogKitBundle\Security\OwnerBlogKitResourceAccessChecker;
 use Nowo\BlogKitBundle\Security\RateLimit\BlogCommentRateLimiterInterface;
 use Nowo\BlogKitBundle\Security\RateLimit\BlogCommentRateLimitPolicyInterface;
 use Nowo\BlogKitBundle\Service\BlogSettingsProvider;
+use Nowo\BlogKitBundle\Transaction\BlogKitTransactionRunner;
 use Nowo\BlogKitBundle\User\BlogUsers;
 use Nowo\BlogKitBundle\Worker\BlogKitOwnEntityManagerSubscriber;
 use Nowo\BlogKitBundle\Worker\UnitOfWorkBoundaries;
+use Nowo\TransactionDoctrine\HostFlushProbe;
+use Nowo\TransactionDoctrine\PrivateManager\PrivateEntityManager;
+use Nowo\TransactionDoctrine\PrivateManager\PrivateEntityManagerMiddleware;
+use Nowo\TransactionDoctrine\PrivateManager\PrivateManagerRegistry;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Config\Definition\ArrayNode;
 use Symfony\Component\Config\Definition\PrototypedArrayNode;
@@ -59,6 +68,8 @@ use function array_key_exists;
 use function is_array;
 use function is_string;
 use function sprintf;
+use function str_starts_with;
+use function trigger_deprecation;
 
 /**
  * Loads BlogKit services and publishes configuration parameters.
@@ -82,6 +93,33 @@ final class NowoBlogKitExtension extends Extension implements PrependExtensionIn
     public const string MAPPING_ATTRIBUTE_DEDICATED = 'nowo_blog_kit.doctrine.mapping.attribute_dedicated';
 
     public const string MAPPING_XML_DEDICATED = 'nowo_blog_kit.doctrine.mapping.xml_dedicated';
+
+    /** Since 1.12.0: container parameter holding `doctrine.private_entity_manager` (true, false or null). */
+    public const string PRIVATE_ENTITY_MANAGER_PARAMETER = 'nowo_blog_kit.doctrine.private_entity_manager';
+
+    /**
+     * Since 1.12.0: container parameter holding the name of your manager the private one is created on (empty outside
+     * the private mode; resolved to `doctrine.default_entity_manager` by {@see Compiler\BlogKitPrivateEntityManagerPass}).
+     */
+    public const string PRIVATE_SOURCE_MANAGER_PARAMETER = 'nowo_blog_kit.private_entity_manager.source_manager';
+
+    /** Since 1.12.0: the bundle's private entity manager (`doctrine.private_entity_manager: true`). */
+    public const string PRIVATE_ENTITY_MANAGER_SERVICE = 'nowo_blog_kit.private_entity_manager';
+
+    /** Since 1.12.0: the registry the bundle's services get in the private mode (blog entities → the private manager). */
+    public const string PRIVATE_REGISTRY_SERVICE = 'nowo_blog_kit.private_manager_registry';
+
+    /** Since 1.12.0: tells the private manager how the connection's transactions end (tagged by the compiler pass). */
+    public const string PRIVATE_MIDDLEWARE_SERVICE = 'nowo_blog_kit.private_entity_manager_middleware';
+
+    /** Since 1.12.0: savepoints of the bundle itself (the settings singleton insert): their rollback keeps the private manager. */
+    public const string OWN_SAVEPOINT_PREFIX = 'blog_kit_';
+
+    /** Since 1.12.0: the notice of a host that sets neither `doctrine.private_entity_manager` nor `doctrine.entity_manager`. */
+    public const string PRIVATE_ENTITY_MANAGER_UNSET_DEPRECATION = 'Not setting "nowo_blog_kit.doctrine.private_entity_manager" is deprecated: blog writes flush your default entity manager, including your own pending changes. 2.0 always writes through a private entity manager on the same connection and tables, which never flushes them. Opt in now with "nowo_blog_kit: { doctrine: { private_entity_manager: true } }" (see UPGRADING.md "To 1.12.0").';
+
+    /** Since 1.12.0: the notice of `doctrine.private_entity_manager: false` (without `doctrine.entity_manager`). */
+    public const string PRIVATE_ENTITY_MANAGER_FALSE_DEPRECATION = 'Setting "nowo_blog_kit.doctrine.private_entity_manager" to false is deprecated: the value false is removed in 2.0, which always writes through a private entity manager on the same connection and tables and never flushes your pending changes. Set it to true now with "nowo_blog_kit: { doctrine: { private_entity_manager: true } }", or name a dedicated manager with "doctrine.entity_manager" (see UPGRADING.md "To 1.12.0").';
 
     /** Since 1.9.0: the configured host port services the ports pass checks (config key => [service id, 1.x interface, twin]). */
     public const string PORTS_PARAMETER = 'nowo_blog_kit.ports';
@@ -576,11 +614,16 @@ final class NowoBlogKitExtension extends Extension implements PrependExtensionIn
      */
     private function registerPersistence(ContainerBuilder $container, array $config): void
     {
-        /** @var array{entity_manager: ?string, mapping_type: string, user_reference: string} $doctrine */
+        /** @var array{entity_manager: ?string, private_entity_manager: ?bool, mapping_type: string, user_reference: string} $doctrine */
         $doctrine      = $config['doctrine'];
         $entityManager = $doctrine['entity_manager'];
+        $private       = $doctrine['private_entity_manager'] ?? null;
         $userReference = $doctrine['user_reference'];
         $dedicated     = $entityManager !== null;
+
+        if ($dedicated && $private === true) {
+            throw new LogicException(sprintf('nowo_blog_kit.doctrine.private_entity_manager: true cannot be combined with nowo_blog_kit.doctrine.entity_manager "%s": the dedicated manager already keeps the blog writes apart from yours. Keep one of the two options.', $entityManager));
+        }
 
         if ($dedicated && $userReference !== BlogUsers::ID) {
             throw new LogicException(sprintf('nowo_blog_kit.doctrine.entity_manager "%s" needs nowo_blog_kit.doctrine.user_reference: id: the default "entity" mode is a relation to your user entity, which the bundle\'s own entity manager does not map.', $entityManager));
@@ -613,25 +656,114 @@ final class NowoBlogKitExtension extends Extension implements PrependExtensionIn
                 ->addTag('doctrine.event_listener', ['event' => Events::onFlush]);
         }
 
-        if (!$dedicated) {
+        // Since 1.12.0: the host-flush probe runs while the bundle flushes your manager (no option, or private: false).
+        $hostMode = !$dedicated && $private !== true;
+        if ($hostMode) {
+            trigger_deprecation('nowo-tech/blog-kit-bundle', '1.12.0', $private === false ? self::PRIVATE_ENTITY_MANAGER_FALSE_DEPRECATION : self::PRIVATE_ENTITY_MANAGER_UNSET_DEPRECATION);
+        }
+
+        $container->setParameter(self::PRIVATE_ENTITY_MANAGER_PARAMETER, $private);
+        $container->setParameter(self::PRIVATE_SOURCE_MANAGER_PARAMETER, '');
+        $container->register(BlogKitHostFlushReporter::class, BlogKitHostFlushReporter::class)
+            ->setAutowired(false)
+            ->setAutoconfigured(false)
+            ->setArguments([
+                $hostMode,
+                new Reference(HostFlushProbe::SERVICE_ID, ContainerInterface::NULL_ON_INVALID_REFERENCE),
+                new Reference('logger', ContainerInterface::NULL_ON_INVALID_REFERENCE),
+            ])
+            ->addTag('kernel.reset', ['method' => 'reset']);
+
+        // Only services the unit of work already built: a boundary never builds one (REQ-RUNTIME-002).
+        $resettables = [new Reference(BlogKitHostFlushReporter::class, ContainerInterface::IGNORE_ON_UNINITIALIZED_REFERENCE)];
+        $managers    = [];
+        $managerName = null;
+
+        if ($dedicated) {
+            $managerId   = sprintf('doctrine.orm.%s_entity_manager', $entityManager);
+            $managerName = $entityManager;
+            $managers[]  = new Reference($managerId, ContainerInterface::IGNORE_ON_UNINITIALIZED_REFERENCE);
+            $container->setAlias(self::ENTITY_MANAGER_SERVICE, $managerId);
+        } elseif ($private === true) {
+            $this->registerPrivateEntityManager($container, $userReference);
+            $resettables[] = new Reference(self::PRIVATE_ENTITY_MANAGER_SERVICE, ContainerInterface::IGNORE_ON_UNINITIALIZED_REFERENCE);
+        } else {
             $container->register(self::ENTITY_MANAGER_SERVICE, EntityManagerInterface::class)
                 ->setFactory([BlogKitEntityManagerFactory::class, 'create'])
                 ->setArguments([new Reference('doctrine')]);
-
-            return;
         }
 
-        $managerId = sprintf('doctrine.orm.%s_entity_manager', $entityManager);
-        $container->setAlias(self::ENTITY_MANAGER_SERVICE, $managerId);
-        // Only a manager the unit of work already built: a boundary never builds one (REQ-RUNTIME-002).
         $container->register(BlogKitOwnEntityManagerSubscriber::class, BlogKitOwnEntityManagerSubscriber::class)
             ->setArguments([
                 new Reference(UnitOfWorkBoundaries::class),
-                new IteratorArgument([new Reference($managerId, ContainerInterface::IGNORE_ON_UNINITIALIZED_REFERENCE)]),
+                new IteratorArgument($managers),
                 new Reference('doctrine'),
-                $entityManager,
+                $managerName,
+                new IteratorArgument($resettables),
             ])
             ->addTag('kernel.event_subscriber');
+    }
+
+    /**
+     * Since 1.12.0 (`doctrine.private_entity_manager: true`, REQ-ARCH-001 rule 6): the bundle's repositories, its entity
+     * manager service (`nowo_blog_kit.entity_manager`, which the controllers and services get), its transaction runner
+     * and its worker-state subscriber work through transaction-doctrine's {@see PrivateEntityManager}, created on the
+     * connection, configuration and event manager of your default entity manager. Same tables, no host configuration.
+     * It is dropped at every outermost unit-of-work boundary ({@see BlogKitOwnEntityManagerSubscriber}; also by
+     * transaction-doctrine's bundle through the {@see PrivateEntityManager::TAG} tag, and at `kernel.reset`) and replaced
+     * when closed. Your managers are never flushed, cleared, closed or reset by the bundle.
+     */
+    private function registerPrivateEntityManager(ContainerBuilder $container, string $userReference): void
+    {
+        $source = '%' . self::PRIVATE_SOURCE_MANAGER_PARAMETER . '%';
+        $container->register(self::PRIVATE_ENTITY_MANAGER_SERVICE, PrivateEntityManager::class)
+            ->setAutowired(false)
+            ->setAutoconfigured(false)
+            ->setArguments([
+                new Reference('doctrine'),
+                $source,
+                BlogArticle::class,
+                BlogKitHostFlushReporter::BUNDLE_NAME,
+                new Reference('logger', ContainerInterface::NULL_ON_INVALID_REFERENCE),
+            ])
+            ->addTag(PrivateEntityManager::TAG)
+            ->addTag('kernel.reset', ['method' => 'reset']);
+        $container->register(self::PRIVATE_REGISTRY_SERVICE, PrivateManagerRegistry::class)
+            ->setAutowired(false)
+            ->setAutoconfigured(false)
+            ->setArguments([
+                new Reference('doctrine'),
+                new Reference(self::PRIVATE_ENTITY_MANAGER_SERVICE),
+                BlogKitHostFlushReporter::OWN_NAMESPACES,
+                $source,
+            ]);
+        // Tagged doctrine.middleware for the source manager's connection by BlogKitPrivateEntityManagerPass.
+        $container->register(self::PRIVATE_MIDDLEWARE_SERVICE, PrivateEntityManagerMiddleware::class)
+            ->setAutowired(false)
+            ->setAutoconfigured(false)
+            ->setArguments([new Reference(self::PRIVATE_ENTITY_MANAGER_SERVICE), self::OWN_SAVEPOINT_PREFIX]);
+        $container->setAlias(self::ENTITY_MANAGER_SERVICE, self::PRIVATE_ENTITY_MANAGER_SERVICE);
+
+        // Service repositories (also served by your manager's getRepository(), e.g. to entity value resolvers and
+        // EntityType), the runner and the worker-state subscriber resolve the blog entities to the private manager.
+        $registry = new Reference(self::PRIVATE_REGISTRY_SERVICE);
+        foreach ($container->getDefinitions() as $id => $definition) {
+            $class = $definition->getClass() ?? $id;
+            if (str_starts_with($class, 'Nowo\\BlogKitBundle\\Repository\\') && !$definition->isAbstract()) {
+                $definition->setArgument('$registry', $registry);
+            }
+        }
+
+        $container->getDefinition(BlogKitTransactionRunner::class)->setArgument('$registry', $registry);
+        $container->getDefinition(BlogKitWorkerStateSubscriber::class)->setArgument('$managerRegistry', $registry);
+
+        if ($userReference === BlogUsers::ENTITY) {
+            // Your user entities assigned to blog rows (author, moderator) become references of the private manager.
+            $container->register(BlogKitPrivateUserReferenceListener::class, BlogKitPrivateUserReferenceListener::class)
+                ->setAutowired(false)
+                ->setAutoconfigured(false)
+                ->addTag('doctrine.event_listener', ['event' => Events::preFlush]);
+        }
     }
 
     private function optionalServiceId(mixed $serviceId): ?string

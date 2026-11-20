@@ -8,6 +8,7 @@ use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\Persistence\ManagerRegistry;
 use LogicException;
+use Nowo\BlogKitBundle\Doctrine\BlogKitHostFlushReporter;
 use Nowo\BlogKitBundle\Entity\BlogArticle;
 use Nowo\BlogKitBundle\EventSubscriber\BlogArticlePublishedDoctrineSubscriber;
 use Nowo\BlogKitBundle\EventSubscriber\BlogKitConflictSubscriber;
@@ -40,6 +41,14 @@ use Throwable;
  * aware; inside your transaction, to the savepoint). {@see BlogArticlePublishedDoctrineSubscriber} holds the publish
  * events of the unit until it committed.
  *
+ * Since 1.12.0:
+ *
+ * - `doctrine.private_entity_manager: true`: the manager is the bundle's private one and the registry the private
+ *   registry; units run with {@see DoctrineTransactionRunner::forEntityManager()} (a failure closes and drops only the
+ *   private manager; yours is never touched).
+ * - While the bundle flushes your manager (no option, or `false`), {@see BlogKitHostFlushReporter} reports your pending
+ *   changes right before each flush (one deprecation per class and unit of work).
+ *
  * Stateless (the transaction-doctrine runner is built per call): safe in a FrankenPHP worker with the kernel kept.
  */
 final readonly class BlogKitTransactionRunner implements TransactionRunnerInterface
@@ -47,6 +56,9 @@ final readonly class BlogKitTransactionRunner implements TransactionRunnerInterf
     /**
      * @param string|null $ownManagerName `nowo_blog_kit.doctrine.entity_manager`: a manager dedicated to the blog (null: the host's)
      * @param bool $direct internal: {@see unmanaged()}
+     * @param string|null $privateSourceManager since 1.12.0: in the private mode, the name your manager the private one
+     *                                          is created on has in the registry (null or '': not the private mode)
+     * @param BlogKitHostFlushReporter|null $hostFlushReporter since 1.12.0: the host-flush probe of the host mode
      */
     public function __construct(
         private EntityManagerInterface $entityManager,
@@ -57,6 +69,9 @@ final readonly class BlogKitTransactionRunner implements TransactionRunnerInterf
         private ?LoggerInterface $logger = null,
         private int $retryAfterSeconds = 1,
         private bool $direct = false,
+        #[Autowire('%nowo_blog_kit.private_entity_manager.source_manager%')]
+        private ?string $privateSourceManager = null,
+        private ?BlogKitHostFlushReporter $hostFlushReporter = null,
     ) {
     }
 
@@ -92,7 +107,13 @@ final readonly class BlogKitTransactionRunner implements TransactionRunnerInterf
             return $result;
         }
 
-        return $this->holdingPublishedEvents(fn (): mixed => $this->unitRunner()->run($operation));
+        return $this->holdingPublishedEvents(fn (): mixed => $this->unitRunner()->run(function () use ($operation): mixed {
+            $result = $operation();
+            // The runner flushes right after the operation: what it would write of yours is reported first.
+            $this->hostFlushReporter?->beforeFlush($this->entityManager);
+
+            return $result;
+        }));
     }
 
     /**
@@ -133,6 +154,7 @@ final readonly class BlogKitTransactionRunner implements TransactionRunnerInterf
 
         $this->holdingPublishedEvents(fn (): mixed => DoctrineTransactionRunner::forConnection($this->entityManager->getConnection(), $this->retryAfterSeconds, $this->logger)
             ->run(function (): null {
+                $this->hostFlushReporter?->beforeFlush($this->entityManager);
                 $this->entityManager->flush();
 
                 return null;
@@ -165,6 +187,10 @@ final readonly class BlogKitTransactionRunner implements TransactionRunnerInterf
 
     private function unitRunner(): DoctrineTransactionRunner
     {
+        if ($this->privateSourceManager !== null && $this->privateSourceManager !== '') {
+            return DoctrineTransactionRunner::forEntityManager($this->entityManager, $this->registry, $this->privateSourceManager, $this->retryAfterSeconds, $this->logger);
+        }
+
         if ($this->ownManagerName !== null) {
             return DoctrineTransactionRunner::forEntityManager($this->entityManager, $this->registry, $this->ownManagerName, $this->retryAfterSeconds, $this->logger);
         }

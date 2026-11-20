@@ -13,6 +13,7 @@ use Nowo\BlogKitBundle\Repository\BlogTagRepository;
 use Nowo\BlogKitBundle\Service\BlogSettingsProvider;
 use Nowo\BlogKitBundle\Worker\BlogKitOwnEntityManagerSubscriber;
 use Nowo\BlogKitBundle\Worker\UnitOfWorkBoundaries;
+use Nowo\TransactionDoctrine\PrivateManager\PrivateEntityManager;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
@@ -95,7 +96,8 @@ final readonly class BlogKitWorkerStateSubscriber implements EventSubscriberInte
     {
         $manager = $this->managerRegistry->getManagerForClass(BlogArticle::class);
 
-        if (!$manager instanceof EntityManagerInterface || $manager->isOpen()) {
+        // Since 1.12.0: the private manager replaces itself when closed; asking it here would build one at a boundary.
+        if ($manager instanceof PrivateEntityManager || !$manager instanceof EntityManagerInterface || $manager->isOpen()) {
             return;
         }
 

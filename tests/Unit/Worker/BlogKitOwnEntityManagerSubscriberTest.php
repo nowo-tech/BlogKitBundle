@@ -15,6 +15,7 @@ use RuntimeException;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
 use Symfony\Component\HttpKernel\KernelEvents;
+use Symfony\Contracts\Service\ResetInterface;
 
 /**
  * REQ-RUNTIME-002 rule 4 (1.9.0): the bundle's own manager is cleared only at the OUTERMOST unit-of-work boundary,
@@ -46,6 +47,47 @@ final class BlogKitOwnEntityManagerSubscriberTest extends TestCase
         $registry->expects(self::never())->method(self::anything());
 
         new BlogKitOwnEntityManagerSubscriber(new UnitOfWorkBoundaries(), [], $registry, 'blog_kit')->clearState();
+    }
+
+    /**
+     * Since 1.12.0: the private entity manager and the host-flush reporter are reset at the same outermost boundaries
+     * (no own manager needed), so nothing survives into the next request, message or command.
+     */
+    #[Test]
+    public function theResettablesAreResetAtEveryOutermostBoundary(): void
+    {
+        $resets     = 0;
+        $resettable = new class($resets) implements ResetInterface {
+            public function __construct(private int &$resets)
+            {
+            }
+
+            public function reset(): void
+            {
+                ++$this->resets;
+            }
+        };
+        $boundaries = new UnitOfWorkBoundaries();
+        $registry   = $this->createMock(ManagerRegistry::class);
+        $registry->expects(self::never())->method(self::anything());
+        $events = new BoundaryEvents($boundaries, new BlogKitOwnEntityManagerSubscriber($boundaries, [], $registry, null, [$resettable]));
+
+        $events->request();
+        $events->finishRequest();
+        $events->kernelTerminate();
+        self::assertSame(2, $resets, 'request start and terminate');
+
+        $outer  = new Command('app:outer');
+        $nested = new Command('app:nested');
+        $events->command($outer);
+        $events->command($nested);
+        $events->terminate($nested);
+        $events->terminate($outer);
+        self::assertSame(4, $resets, 'the outermost command only');
+
+        $events->message(UnitOfWorkBoundaries::MESSENGER_WORKER_MESSAGE_RECEIVED);
+        $events->message(UnitOfWorkBoundaries::MESSENGER_WORKER_MESSAGE_HANDLED);
+        self::assertSame(6, $resets, 'message received and handled');
     }
 
     #[Test]

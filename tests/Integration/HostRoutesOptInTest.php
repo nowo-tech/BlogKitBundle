@@ -7,6 +7,7 @@ namespace Nowo\BlogKitBundle\Tests\Integration;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Tools\SchemaTool;
 use Nowo\BlogKitBundle\Tests\Integration\Kernel\HostRoutesKernel;
+use PHPUnit\Framework\Attributes\IgnoreDeprecations;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Filesystem\Filesystem;
@@ -25,6 +26,7 @@ use function sys_get_temp_dir;
  * routing is only `routing.controllers` gets no blog route; with the documented routing.yaml import the routes exist
  * once and the pages are served (the explicit service subscriber tag keeps AbstractController working).
  */
+#[IgnoreDeprecations]
 final class HostRoutesOptInTest extends TestCase
 {
     private ?HostRoutesKernel $kernel = null;

@@ -25,6 +25,7 @@ use Nowo\BlogKitBundle\Security\OwnerBlogKitResourceAccessChecker;
 use Nowo\BlogKitBundle\Security\RateLimit\BlogCommentRateLimiterInterface;
 use Nowo\BlogKitBundle\Security\RateLimit\BlogCommentRateLimitPolicyInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\IgnoreDeprecations;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
@@ -35,6 +36,7 @@ use Symfony\Component\DependencyInjection\Reference;
 
 use function dirname;
 
+#[IgnoreDeprecations]
 final class NowoBlogKitExtensionTest extends TestCase
 {
     #[Test]

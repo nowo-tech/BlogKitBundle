@@ -13,8 +13,10 @@ use Nowo\BlogKitBundle\Doctrine\BlogUserReferenceMetadataListener;
 use Nowo\BlogKitBundle\Doctrine\Type\BlogUserRefType;
 use Nowo\BlogKitBundle\User\BlogUsers;
 use Nowo\BlogKitBundle\Worker\BlogKitOwnEntityManagerSubscriber;
+use PHPUnit\Framework\Attributes\IgnoreDeprecations;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\DependencyInjection\Argument\IteratorArgument;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\DependencyInjection\Extension\Extension;
@@ -24,6 +26,7 @@ use Symfony\Component\DependencyInjection\Reference;
  * REQ-ARCH-001 rules 2 and 6 (1.9.0): `doctrine.user_reference`, `doctrine.mapping_type`, `doctrine.entity_manager`,
  * `user_directory`.
  */
+#[IgnoreDeprecations]
 final class NowoBlogKitExtensionPersistenceTest extends TestCase
 {
     #[Test]
@@ -43,7 +46,10 @@ final class NowoBlogKitExtensionPersistenceTest extends TestCase
         self::assertSame(BlogKitEntityManagerFactory::class . '::create', implode('::', (array) $container->getDefinition(NowoBlogKitExtension::ENTITY_MANAGER_SERVICE)->getFactory()));
         self::assertFalse($this->registered($container, BlogUserReferenceMetadataListener::class));
         self::assertFalse($this->registered($container, BlogUserBlameListener::class));
-        self::assertFalse($this->registered($container, BlogKitOwnEntityManagerSubscriber::class));
+        // Since 1.12.0 the boundary subscriber is always registered: it resets the host-flush reporter; no own manager.
+        $subscriber = $container->getDefinition(BlogKitOwnEntityManagerSubscriber::class);
+        self::assertEquals(new IteratorArgument([]), $subscriber->getArgument(1));
+        self::assertNull($subscriber->getArgument(3));
     }
 
     #[Test]
