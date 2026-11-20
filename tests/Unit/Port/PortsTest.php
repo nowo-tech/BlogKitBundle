@@ -11,11 +11,15 @@ use Nowo\BlogKitBundle\Port\BlogCommentRequestContexts;
 use Nowo\BlogKitBundle\Port\BlogKitResourcePolicyGate;
 use Nowo\BlogKitBundle\Port\Ports;
 use Nowo\BlogKitBundle\Security\AllowAllBlogKitResourceAccessChecker;
+use Nowo\BlogKitBundle\Security\BlogKitResourceAccessCheckerInterface;
 use Nowo\BlogKitBundle\Security\BlogKitResourcePolicyInterface;
+use Nowo\BlogKitBundle\Security\Captcha\BlogCommentCaptchaStrategyInterface;
 use Nowo\BlogKitBundle\Security\Captcha\BlogCommentCaptchaVerifierInterface;
 use Nowo\BlogKitBundle\Security\Captcha\NoneCommentCaptchaStrategy;
+use Nowo\BlogKitBundle\Security\RateLimit\BlogCommentRateLimiterInterface;
 use Nowo\BlogKitBundle\Security\RateLimit\BlogCommentRateLimitPolicyInterface;
 use Nowo\BlogKitBundle\Security\RateLimit\NullBlogCommentRateLimiter;
+use Nowo\BlogKitBundle\Tests\Support\CollectsDeprecations;
 use Nowo\BlogKitBundle\ValueObject\BlogCommentCaptchaWidget;
 use Nowo\BlogKitBundle\ValueObject\BlogCommentRequestContext;
 use PHPUnit\Framework\Attributes\Test;
@@ -32,6 +36,8 @@ use Symfony\Component\HttpFoundation\RequestStack;
  */
 final class PortsTest extends TestCase
 {
+    use CollectsDeprecations;
+
     #[Test]
     public function legacyServicesAreAskedAsBefore(): void
     {
@@ -39,9 +45,28 @@ final class PortsTest extends TestCase
         $limiter = new NullBlogCommentRateLimiter();
         $captcha = new NoneCommentCaptchaStrategy();
 
-        self::assertSame($access, Ports::resourceAccess($access));
-        self::assertSame($limiter, Ports::rateLimiter($limiter));
-        self::assertSame($captcha, Ports::captcha($captcha, new RequestStack()));
+        $deprecations = self::deprecationsOf(static function () use ($access, $limiter, $captcha): void {
+            self::assertSame($access, Ports::resourceAccess($access));
+            self::assertSame($limiter, Ports::rateLimiter($limiter));
+            self::assertSame($captcha, Ports::captcha($captcha, new RequestStack()));
+        });
+
+        // Since 1.12.0: one notice per legacy-only service, when it is built.
+        self::assertSame([
+            'Since nowo-tech/blog-kit-bundle 1.12.0: The service "' . AllowAllBlogKitResourceAccessChecker::class . '" of "nowo_blog_kit.security.object_access.service" implements the deprecated ' . BlogKitResourceAccessCheckerInterface::class . ', removed in 2.0. Implement ' . BlogKitResourcePolicyInterface::class . ' instead (the same configuration key takes it now; see UPGRADING.md "To 1.9.0").',
+            'Since nowo-tech/blog-kit-bundle 1.12.0: The service "' . NullBlogCommentRateLimiter::class . '" of "nowo_blog_kit.comments.rate_limit.service" implements the deprecated ' . BlogCommentRateLimiterInterface::class . ', removed in 2.0. Implement ' . BlogCommentRateLimitPolicyInterface::class . ' instead (the same configuration key takes it now; see UPGRADING.md "To 1.9.0").',
+            'Since nowo-tech/blog-kit-bundle 1.12.0: The service "' . NoneCommentCaptchaStrategy::class . '" of "nowo_blog_kit.comments.captcha.service" implements the deprecated ' . BlogCommentCaptchaStrategyInterface::class . ', removed in 2.0. Implement ' . BlogCommentCaptchaVerifierInterface::class . ' instead (the same configuration key takes it now; see UPGRADING.md "To 1.9.0").',
+        ], $deprecations);
+    }
+
+    #[Test]
+    public function servicesImplementingTheTwinTriggerNoNotice(): void
+    {
+        self::assertSame([], self::deprecationsOf(function (): void {
+            Ports::resourceAccess($this->createStub(BlogKitResourcePolicyInterface::class));
+            Ports::rateLimiter($this->createStub(BlogCommentRateLimitPolicyInterface::class));
+            Ports::captcha($this->createStub(BlogCommentCaptchaVerifierInterface::class), new RequestStack());
+        }));
     }
 
     #[Test]

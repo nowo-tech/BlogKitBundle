@@ -44,9 +44,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`doctrine.private_entity_manager: true`** (REQ-ARCH-001 rule 6, opt-in, zero-config): the bundle reads and writes its entities through a private entity manager of its own (transaction-doctrine 1.9 `PrivateManager\` kit), created on the connection, mapping and event listeners of your default entity manager. Same tables, no other configuration. A blog write never flushes, clears, closes or resets your manager, so your pending changes stay yours. The private manager is dropped at every request, Messenger message and console command boundary (FrankenPHP worker mode with the kernel reset off included) and at `kernel.reset`, and replaced when closed or after a rollback undid its rows. Your user entity assigned to a blog row (author, moderator, `user_reference: entity`) is stored as a reference of the private manager. The repositories, the transaction runner (409 `CONFLICT_001` / `CONFLICT_002` unchanged) and the entity value resolvers of the admin routes all go through it. It cannot be combined with `doctrine.entity_manager`, which stays the DDD option.
+- **Host-flush probe:** while the bundle flushes your default manager (`private_entity_manager` unset or `false`), each entity class of yours with pending changes in it triggers one deprecation per unit of work before the flush: "Your pending changes to App\X were flushed by NowoBlogKitBundle; 2.0 no longer does." The deprecation log becomes your migration list. Read-only; a failing probe never breaks the write.
+
+### Deprecated
+
+- Not setting `doctrine.private_entity_manager` (without `doctrine.entity_manager`): a deprecation notice when the container is built. 2.0 always uses the private manager.
+- `doctrine.private_entity_manager: false`: a deprecation notice; the value `false` is removed in 2.0.
+- Runtime notices for what 2.0 removes (announced in 1.9.0): a host port service (`security.object_access.service`, `comments.rate_limit.service`, `comments.captcha.service`) that implements only `BlogKitResourceAccessCheckerInterface`, `BlogCommentRateLimiterInterface` or `BlogCommentCaptchaStrategyInterface` (once, when the service is built), and `BlogArticlePublishedEvent::getArticle()` (per call).
+
 ### Changed
 
-- Requires `nowo-tech/transaction-doctrine` ^1.8.1 (fixes GHSA-9wh3-m3m5-jffx and GHSA-65w2-9r4h-848g).
+- Requires `nowo-tech/transaction-doctrine` ^1.9.1 (1.8.1 fixed GHSA-9wh3-m3m5-jffx and GHSA-65w2-9r4h-848g; 1.9 adds the private-manager kit and the host-flush probe; 1.9.1 fixes it).
+- Accepts `nowo-tech/audit-kit-bundle` `^1.1 || ^2.0`.
+- `Worker\BlogKitOwnEntityManagerSubscriber` is registered in every mode: it also resets the private manager and the probe at the boundaries.
+
+### Fixed
+
+- **A refused blog write no longer closes your entity manager** (affects 1.9.0 to 1.11.x, `doctrine.user_reference: id`). When the signed-in user has no id that can be kept exactly, `Doctrine\BlogUserBlameListener` refuses the flush (403, unchanged). It used to close the flushing manager, which without `doctrine.entity_manager` is your default one: the rest of the request (or of a FrankenPHP worker request) could no longer use it. Now only the bundle's own manager (the private one of `private_entity_manager: true`, or the dedicated `doctrine.entity_manager`) is closed; on one of your managers the refused blog work is undone and the manager stays open and usable with your own pending changes: a managed blog entity of the flush gets its original values back and stays managed (its collections are read again from the database), so an untouched translation or an entity of yours pointing at it stays valid; a new blog entity is forgotten and unlinked from your entities (your to-one association gets its original value back, null on a new entity of yours, and your other changes to that entity are still written; it leaves your collections). No later flush writes the refused change. No GHSA.
 
 ## [1.11.0] - 2026-11-20
 

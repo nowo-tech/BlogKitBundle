@@ -12,6 +12,7 @@ use Doctrine\ORM\Query;
 use Doctrine\Persistence\ManagerRegistry;
 use LogicException;
 use Nowo\BlogKitBundle\Entity\BlogSettings;
+use Nowo\TransactionDoctrine\PrivateManager\PrivateEntityManager;
 use SortDirection;
 use Symfony\Contracts\Service\ResetInterface;
 
@@ -104,6 +105,11 @@ final class BlogSettingsRepository extends ServiceEntityRepository implements Re
 
         try {
             $connection->insert($quoteStrategy->getTableName($metadata, $platform), $data, $types);
+            if ($entityManager instanceof PrivateEntityManager) {
+                // 1.12.0: a rollback of this level makes the private manager's identity map stale (it reads the row next).
+                $entityManager->noteWrite();
+            }
+
             if ($inTransaction) {
                 $connection->releaseSavepoint(self::SAVEPOINT);
             }

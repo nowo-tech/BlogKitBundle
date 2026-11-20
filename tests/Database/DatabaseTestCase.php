@@ -7,6 +7,7 @@ namespace Nowo\BlogKitBundle\Tests\Database;
 use DateTimeImmutable;
 use Doctrine\Common\EventManager;
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Driver\Middleware;
 use Doctrine\DBAL\DriverManager;
 use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
@@ -75,7 +76,7 @@ abstract class DatabaseTestCase extends TestCase
         $this->writer  = DriverManager::getConnection($params);
         $this->ledger  = new CommitLedger();
         $configuration = $this->ormConfiguration();
-        $configuration->setMiddlewares([new CommitTrackingMiddleware($this->ledger)]);
+        $configuration->setMiddlewares([new CommitTrackingMiddleware($this->ledger), ...$this->extraMiddlewares()]);
         $this->blog = DriverManager::getConnection($params, $configuration);
 
         $events = new EventManager();
@@ -198,9 +199,29 @@ abstract class DatabaseTestCase extends TestCase
         self::assertSame(1, (int) $this->blog->fetchOne('SELECT 1'));
     }
 
+    /**
+     * Since 1.12.0: more DBAL middlewares of the "blog" connection (the private manager's).
+     *
+     * @return list<Middleware>
+     */
+    protected function extraMiddlewares(): array
+    {
+        return [];
+    }
+
+    /**
+     * Since 1.12.0: more mapped entity directories (an application's entities).
+     *
+     * @return list<string>
+     */
+    protected function extraEntityPaths(): array
+    {
+        return [];
+    }
+
     private function ormConfiguration(): Configuration
     {
-        $configuration = ORMSetup::createAttributeMetadataConfiguration([dirname(__DIR__, 2) . '/src/Entity'], true);
+        $configuration = ORMSetup::createAttributeMetadataConfiguration([dirname(__DIR__, 2) . '/src/Entity', ...$this->extraEntityPaths()], true);
         $configuration->enableNativeLazyObjects(true);
         $configuration->setNamingStrategy(new UnderscoreNamingStrategy(CASE_LOWER, true));
 

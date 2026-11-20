@@ -13,8 +13,10 @@ use Nowo\BlogKitBundle\Doctrine\BlogUserReferenceMetadataListener;
 use Nowo\BlogKitBundle\Doctrine\Type\BlogUserRefType;
 use Nowo\BlogKitBundle\User\BlogUsers;
 use Nowo\BlogKitBundle\Worker\BlogKitOwnEntityManagerSubscriber;
+use PHPUnit\Framework\Attributes\IgnoreDeprecations;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\DependencyInjection\Argument\IteratorArgument;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\DependencyInjection\Extension\Extension;
@@ -24,6 +26,7 @@ use Symfony\Component\DependencyInjection\Reference;
  * REQ-ARCH-001 rules 2 and 6 (1.9.0): `doctrine.user_reference`, `doctrine.mapping_type`, `doctrine.entity_manager`,
  * `user_directory`.
  */
+#[IgnoreDeprecations]
 final class NowoBlogKitExtensionPersistenceTest extends TestCase
 {
     #[Test]
@@ -43,7 +46,10 @@ final class NowoBlogKitExtensionPersistenceTest extends TestCase
         self::assertSame(BlogKitEntityManagerFactory::class . '::create', implode('::', (array) $container->getDefinition(NowoBlogKitExtension::ENTITY_MANAGER_SERVICE)->getFactory()));
         self::assertFalse($this->registered($container, BlogUserReferenceMetadataListener::class));
         self::assertFalse($this->registered($container, BlogUserBlameListener::class));
-        self::assertFalse($this->registered($container, BlogKitOwnEntityManagerSubscriber::class));
+        // Since 1.12.0 the boundary subscriber is always registered: it resets the host-flush reporter; no own manager.
+        $subscriber = $container->getDefinition(BlogKitOwnEntityManagerSubscriber::class);
+        self::assertEquals(new IteratorArgument([]), $subscriber->getArgument(1));
+        self::assertNull($subscriber->getArgument(3));
     }
 
     #[Test]
@@ -55,6 +61,8 @@ final class NowoBlogKitExtensionPersistenceTest extends TestCase
         self::assertEquals(new Reference('app.blog_users'), $container->getDefinition(BlogUsers::class)->getArgument(2));
         self::assertSame([['event' => Events::loadClassMetadata]], $container->getDefinition(BlogUserReferenceMetadataListener::class)->getTag('doctrine.event_listener'));
         self::assertSame([['event' => Events::onFlush]], $container->getDefinition(BlogUserBlameListener::class)->getTag('doctrine.event_listener'));
+        // Audit XD-3: the registry tells your managers apart (never closed); no dedicated manager.
+        self::assertEquals([new Reference(BlogUsers::class), new Reference('doctrine'), null], $container->getDefinition(BlogUserBlameListener::class)->getArguments());
     }
 
     #[Test]
@@ -65,6 +73,7 @@ final class NowoBlogKitExtensionPersistenceTest extends TestCase
         self::assertSame('blog', $container->getParameter(NowoBlogKitExtension::ENTITY_MANAGER_PARAMETER));
         self::assertTrue($container->hasParameter(NowoBlogKitExtension::MAPPING_XML_DEDICATED));
         self::assertSame('doctrine.orm.blog_entity_manager', (string) $container->getAlias(NowoBlogKitExtension::ENTITY_MANAGER_SERVICE));
+        self::assertSame('blog', $container->getDefinition(BlogUserBlameListener::class)->getArgument(2));
         $subscriber = $container->getDefinition(BlogKitOwnEntityManagerSubscriber::class);
         self::assertTrue($subscriber->hasTag('kernel.event_subscriber'));
         self::assertSame('blog', $subscriber->getArgument(3));

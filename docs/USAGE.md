@@ -16,6 +16,7 @@ make -C demo/symfony8 demo-screenshots
 
 - [Screenshots](#screenshots)
 - [Standard Symfony host](#standard-symfony-host)
+  - [Preparing for 2.0](#preparing-for-20)
 - [DDD / hexagonal host](#ddd--hexagonal-host)
 - [Public pages](#public-pages)
 - [Admin screens](#admin-screens)
@@ -36,6 +37,22 @@ make -C demo/symfony8 demo-screenshots
 The default. Your user entity implements `Nowo\BlogKitBundle\Model\BlogUserInterface` and is named in `user_class`; the
 blog entities are mapped with attributes on your default entity manager; the host ports below take the bundle entities.
 Nothing else to configure. See [ARCHITECTURE](ARCHITECTURE.md) for the full picture.
+
+### Preparing for 2.0
+
+Since 1.12.0, opt in to the 2.0 persistence now (the notice asks you to):
+
+```yaml
+nowo_blog_kit:
+    doctrine:
+        private_entity_manager: true
+```
+
+Blog writes then go through a private entity manager on your default manager's connection and tables and never flush
+your pending changes. Before switching, read the probe deprecations ("Your pending changes to App\X were flushed by
+NowoBlogKitBundle; 2.0 no longer does.") as the list of places to flush yourself: see
+[UPGRADING "To 1.12.0"](UPGRADING.md#to-1120). 2.0 contains only deprecations announced in 1.x; the 1.x line gets 6
+months of security support after 2.0 (Moderate and higher backported).
 
 ## DDD / hexagonal host
 

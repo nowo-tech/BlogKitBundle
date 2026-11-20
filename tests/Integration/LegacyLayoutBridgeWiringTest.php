@@ -6,6 +6,7 @@ namespace Nowo\BlogKitBundle\Tests\Integration;
 
 use Nowo\BlogKitBundle\Tests\Integration\Kernel\LegacyBridgeKernel;
 use Nowo\BlogKitBundle\Ui\BlogKitPages;
+use PHPUnit\Framework\Attributes\IgnoreDeprecations;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Filesystem\Filesystem;
@@ -19,6 +20,7 @@ use function uniqid;
  * `#[Autowire('@?twig')]`, which is not an optional reference (the id became "?twig") and compiled to null: the bridge
  * was never taken.
  */
+#[IgnoreDeprecations]
 final class LegacyLayoutBridgeWiringTest extends TestCase
 {
     private string $dir;

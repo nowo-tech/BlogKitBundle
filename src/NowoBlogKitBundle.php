@@ -7,6 +7,7 @@ namespace Nowo\BlogKitBundle;
 use Doctrine\Bundle\DoctrineBundle\DependencyInjection\Compiler\DoctrineOrmMappingsPass;
 use Nowo\BlogKitBundle\DependencyInjection\Compiler\BlogKitEntityManagerPass;
 use Nowo\BlogKitBundle\DependencyInjection\Compiler\BlogKitPortsPass;
+use Nowo\BlogKitBundle\DependencyInjection\Compiler\BlogKitPrivateEntityManagerPass;
 use Nowo\BlogKitBundle\DependencyInjection\Compiler\ConflictResponsePass;
 use Nowo\BlogKitBundle\DependencyInjection\Compiler\CsrfProtectionPass;
 use Nowo\BlogKitBundle\DependencyInjection\Compiler\TwigPathsPass;
@@ -42,6 +43,10 @@ class NowoBlogKitBundle extends Bundle
         $container->addCompilerPass(DoctrineOrmMappingsPass::createAttributeMappingDriver([$namespace], [$entities], $dedicated, NowoBlogKitExtension::MAPPING_ATTRIBUTE_DEDICATED));
         $container->addCompilerPass(DoctrineOrmMappingsPass::createXmlMappingDriver([$xml => $namespace], $dedicated, NowoBlogKitExtension::MAPPING_XML_DEDICATED));
         $container->addCompilerPass(new BlogKitEntityManagerPass(), PassConfig::TYPE_BEFORE_OPTIMIZATION, -10);
+
+        // Since 1.12.0 (doctrine.private_entity_manager: true): the private manager's source and its DBAL middleware,
+        // before DoctrineBundle's MiddlewaresPass (priority 0).
+        $container->addCompilerPass(new BlogKitPrivateEntityManagerPass(), PassConfig::TYPE_BEFORE_OPTIMIZATION, 5);
     }
 
     public function getContainerExtension(): ExtensionInterface

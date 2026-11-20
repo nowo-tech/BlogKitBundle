@@ -17,6 +17,7 @@ use Nowo\BlogKitBundle\Tests\Support\MappedTestUser;
 use Nowo\BlogKitBundle\ValueObject\BlogUserRef;
 use Nowo\BlogKitBundle\Worker\BlogKitOwnEntityManagerSubscriber;
 use Nowo\BlogKitBundle\Worker\UnitOfWorkBoundaries;
+use PHPUnit\Framework\Attributes\IgnoreDeprecations;
 use PHPUnit\Framework\TestCase;
 use stdClass;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -47,6 +48,7 @@ use function uniqid;
  *   behind Doctrine's back is read fresh, a closed own manager is recreated, the host's manager keeps its pending change.
  * - Standard host: the host's default manager is never cleared by the bundle (rule 7: that is the host's job).
  */
+#[IgnoreDeprecations]
 final class WorkerKeptAliveKernelTest extends TestCase
 {
     private const int ITERATIONS = 1000;

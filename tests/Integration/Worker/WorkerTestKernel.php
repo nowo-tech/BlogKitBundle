@@ -40,6 +40,8 @@ use const DIRECTORY_SEPARATOR;
  * - {@see self::DDD}: a strict DDD host. The blog on its own manager `blog` (`doctrine.entity_manager`), XML mapping,
  *   `user_reference: id` with plain PHP users, and twin-only host ports (snapshots / request VOs). The host's default
  *   manager maps only the host's `HostNote`.
+ * - {@see self::PRIVATE}: the standard host with `doctrine.private_entity_manager: true` (1.12.0): the blog writes through
+ *   the bundle's private manager on the default manager's connection, mapping and tables.
  */
 final class WorkerTestKernel extends Kernel
 {
@@ -49,9 +51,12 @@ final class WorkerTestKernel extends Kernel
 
     public const string DDD = 'ddd';
 
+    public const string PRIVATE = 'private';
+
     public const array USER_IDS = [
         self::STANDARD => ['alice' => 1, 'bob' => 2],
         self::DDD      => ['alice' => 'u-alice', 'bob' => 'u-bob'],
+        self::PRIVATE  => ['alice' => 1, 'bob' => 2],
     ];
 
     public function __construct(
@@ -161,6 +166,10 @@ final class WorkerTestKernel extends Kernel
                 'rate_limit' => ['strategy' => 'service', 'service' => 'app.blog_rate_limit'],
                 'captcha'    => ['strategy' => 'service', 'service' => 'app.blog_captcha'],
             ];
+        }
+
+        if ($this->mode === self::PRIVATE) {
+            $blog['doctrine'] = ['private_entity_manager' => true];
         }
 
         $container->extension('nowo_blog_kit', $blog);
