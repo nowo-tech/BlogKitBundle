@@ -3,6 +3,7 @@
 ## Table of contents
 
 - [Unreleased](#unreleased)
+- [To 1.11.0](#to-1110)
 - [To 1.10.0](#to-1100)
   - [Lock conflicts answer 409 with CONFLICT codes](#lock-conflicts-answer-409-with-conflict-codes)
   - [The host entity manager must be clean before a blog write](#the-host-entity-manager-must-be-clean-before-a-blog-write)
@@ -52,6 +53,14 @@
 - [Future releases](#future-releases)
 
 ## Unreleased
+
+## To 1.11.0
+
+From **1.10.0**:
+
+```bash
+composer update nowo-tech/blog-kit-bundle
+```
 
 Two schema changes (REQ-RUNTIME-003 rule 4). **Deploy order: run the migration first, then deploy the code.** Both
 columns are backward compatible (a column with a default, a nullable column, unique indexes that allow NULLs), so the old
