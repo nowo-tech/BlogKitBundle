@@ -17,7 +17,6 @@ use Nowo\BlogKitBundle\Entity\BlogArticle;
 use Nowo\BlogKitBundle\Tests\Integration\Worker\Entity\HostNote;
 use Nowo\BlogKitBundle\Tests\Support\CollectsDeprecations;
 use Nowo\BlogKitBundle\Tests\Support\RecordingLogger;
-use Nowo\TransactionDoctrine\HostFlushProbe;
 use Nowo\TransactionDoctrine\PrivateManager\PrivateEntityManager;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
@@ -93,7 +92,7 @@ final class BlogKitHostFlushReporterTest extends TestCase
         $entityManager->method('getUnitOfWork')->willThrowException(new RuntimeException('broken'));
         $logger = new RecordingLogger();
 
-        new BlogKitHostFlushReporter(true, new HostFlushProbe(), $logger)->beforeFlush($entityManager);
+        new BlogKitHostFlushReporter(true, null, $logger)->beforeFlush($entityManager);
 
         self::assertNotSame([], $logger->records, 'the failure is logged');
     }

@@ -11,7 +11,6 @@ use Nowo\TransactionDoctrine\HostFlushProbe;
 use Nowo\TransactionDoctrine\PrivateManager\PrivateEntityManager;
 use Psr\Log\LoggerInterface;
 use Symfony\Contracts\Service\ResetInterface;
-use Throwable;
 
 /**
  * Since 1.12.0 (REQ-ARCH-001 rule 6 deprecation layer): reports your pending changes that a blog write flushes while
@@ -48,14 +47,14 @@ final readonly class BlogKitHostFlushReporter implements ResetInterface
 
     /**
      * @param bool $enabled true only while the bundle writes through your manager
-     * @param HostFlushProbe|null $probe transaction-doctrine's shared probe (null: one of its own)
+     * @param HostFlushProbe|null $probe transaction-doctrine's shared probe (null: one of its own, logging to $logger)
      */
     public function __construct(
         private bool $enabled = false,
         ?HostFlushProbe $probe = null,
         private ?LoggerInterface $logger = null,
     ) {
-        $this->probe = $probe ?? new HostFlushProbe();
+        $this->probe = $probe ?? new HostFlushProbe($this->logger);
     }
 
     public function isEnabled(): bool
@@ -72,12 +71,8 @@ final readonly class BlogKitHostFlushReporter implements ResetInterface
             return;
         }
 
-        try {
-            $this->probe->beforeHostFlush($entityManager, self::BUNDLE_NAME, self::OWN_NAMESPACES);
-        } catch (Throwable $exception) {
-            // The probe is a migration aid: it must never break the write it observes.
-            $this->logger?->warning('NowoBlogKitBundle: the host-flush probe failed ({exception}); the write goes on.', ['exception' => $exception::class]);
-        }
+        // Never throws since transaction-doctrine 1.9.1 (audit XA-3): a failed inspection is logged by the probe.
+        $this->probe->beforeHostFlush($entityManager, self::BUNDLE_NAME, self::OWN_NAMESPACES);
     }
 
     /** A new unit of work (request, message, command) starts: nothing was reported yet. */
