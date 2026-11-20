@@ -29,7 +29,7 @@ use function hash;
 #[Group('database')]
 final class SingletonAndSubmitRaceTest extends DatabaseTestCase
 {
-    private const string TOKEN = 'a1b2c3d4e5f60718293a4b5c6d7e8f90';
+    private const string TOKEN = 'formtoken0000000000000000000001';
 
     #[Test]
     public function aFirstRequestLosingTheInsertReadsTheWinnersRow(): void

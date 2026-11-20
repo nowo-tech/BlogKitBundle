@@ -89,11 +89,11 @@ final class BlogCommentManagerTest extends TestCase
     {
         $article = new BlogArticle();
         $request = Request::create('/', 'POST', server: ['REMOTE_ADDR' => '203.0.113.10']);
-        $key     = hash('sha256', 'a1b2c3d4e5f60718293a4b5c6d7e8f90' . "\0" . 0 . "\0" . 'a@b.com' . "\0" . 'Hello');
+        $key     = hash('sha256', 'formtoken0000000000000000000001' . "\0" . 0 . "\0" . 'a@b.com' . "\0" . 'Hello');
         $this->repository->expects(self::once())->method('findOneBy')->with(['submitKey' => $key])->willReturn(null);
         $this->entityManager->expects(self::once())->method('persist')->with(self::isInstanceOf(BlogComment::class));
 
-        $comment = $this->manager->createPublicComment($article, 'Ana', ' a@b.com ', ' Hello ', $request, 'a1b2c3d4e5f60718293a4b5c6d7e8f90');
+        $comment = $this->manager->createPublicComment($article, 'Ana', ' a@b.com ', ' Hello ', $request, 'formtoken0000000000000000000001');
 
         self::assertSame($key, $comment->getSubmitKey());
     }
@@ -105,7 +105,7 @@ final class BlogCommentManagerTest extends TestCase
         $this->repository->method('findOneBy')->willReturn($stored);
         $this->entityManager->expects(self::never())->method('persist');
 
-        $comment = $this->manager->createPublicComment(new BlogArticle(), 'Ana', 'a@b.com', 'Hello', Request::create('/', 'POST'), 'a1b2c3d4e5f60718293a4b5c6d7e8f90');
+        $comment = $this->manager->createPublicComment(new BlogArticle(), 'Ana', 'a@b.com', 'Hello', Request::create('/', 'POST'), 'formtoken0000000000000000000001');
 
         self::assertSame($stored, $comment);
     }
