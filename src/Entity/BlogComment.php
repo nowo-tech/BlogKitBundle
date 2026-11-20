@@ -20,6 +20,7 @@ use SortDirection;
     'status',
     'created_at'])]
 #[ORM\Index(name: 'IDX_BLOG_COMMENT_PARENT', columns: ['parent_id'])]
+#[ORM\UniqueConstraint(name: 'uniq_blog_comment_submit_key', columns: ['submit_key'])]
 /**
  * Visitor or staff comment on a blog article, with optional threaded replies.
  */
@@ -72,10 +73,31 @@ class BlogComment
     #[ORM\Column(length: 64, nullable: true)]
     private ?string $ipHash = null;
 
+    /**
+     * Idempotency key of a public submission (1.11, REQ-RUNTIME-003 rule 4): a hash of the form's one-time token, the
+     * article, the author's email and the text. Unique, so a form posted twice stores one comment; null for comments
+     * created without a token (staff replies, host code, forms rendered before 1.11).
+     */
+    #[ORM\Column(name: 'submit_key', length: 64, nullable: true)]
+    private ?string $submitKey = null;
+
     public function __construct()
     {
         $this->replies   = new ArrayCollection();
         $this->createdAt = new DateTimeImmutable();
+    }
+
+    public function getSubmitKey(): ?string
+    {
+        return $this->submitKey;
+    }
+
+    public function setSubmitKey(?string $submitKey): self
+    {
+        // @igor-ignore - Doctrine entity field; instance-scoped, not a shared service.
+        $this->submitKey = $submitKey;
+
+        return $this;
     }
 
     public function isStaffReply(): bool

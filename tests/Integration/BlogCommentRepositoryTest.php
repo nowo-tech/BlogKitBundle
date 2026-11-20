@@ -43,6 +43,22 @@ final class BlogCommentRepositoryTest extends DoctrineTestCase
     }
 
     #[Test]
+    public function findOneBySubmitKeyFindsTheStoredCommentWithAndWithoutATransaction(): void
+    {
+        $article = $this->createArticle(slug: 'keyed', published: true, position: 1, publishedAt: new DateTimeImmutable('2026-01-01T00:00:00+00:00'));
+        $comment = new BlogComment()->setArticle($article)->setAuthorName('Ana')->setBody('Hello')->setStatus(BlogCommentStatus::Pending)->setSubmitKey('key-1');
+        $this->entityManager->persist($comment);
+        $this->entityManager->flush();
+
+        self::assertSame($comment->getId(), $this->repository->findOneBySubmitKey('key-1')?->getId());
+        self::assertNull($this->repository->findOneBySubmitKey('other'));
+
+        $this->connection->beginTransaction();
+        self::assertSame($comment->getId(), $this->repository->findOneBySubmitKey('key-1', true)?->getId(), 'a locking read inside a transaction');
+        $this->connection->commit();
+    }
+
+    #[Test]
     public function findApprovedRootCommentsByArticleReturnsApprovedRootsWithApprovedRepliesOnly(): void
     {
         $staff   = $this->createUser('staff@example.test');

@@ -10,6 +10,7 @@ use Nowo\BlogKitBundle\Entity\BlogSettings;
 use Nowo\BlogKitBundle\Repository\BlogSettingsRepository;
 use Nowo\BlogKitBundle\Tests\Support\MappedTestUser;
 use PHPUnit\Framework\Attributes\Test;
+use ReflectionMethod;
 
 final class BlogSettingsRepositoryTest extends DoctrineTestCase
 {
@@ -116,6 +117,45 @@ final class BlogSettingsRepositoryTest extends DoctrineTestCase
         $defaults = new BlogSettings();
 
         self::assertSame($defaults->toPublicArray(), $settings->toPublicArray());
+    }
+
+    #[Test]
+    public function aFirstRequestLosingTheInsertReadsTheWinnersRowWithoutAnError(): void
+    {
+        $existing = $this->createSettings();
+
+        // The other first request committed its row between this one's read and its insert: the unique key refuses
+        // the second row, quietly (1.11, REQ-RUNTIME-003 rule 4).
+        new ReflectionMethod($this->repository, 'insertDefaultRow')->invoke($this->repository);
+
+        self::assertSame(1, $this->repository->count([]));
+        self::assertSame($existing->getId(), $this->repository->getSingleton()->getId());
+    }
+
+    #[Test]
+    public function theLoserInsideAHostTransactionRollsBackToItsSavepointOnly(): void
+    {
+        $this->createSettings();
+        $this->connection->beginTransaction();
+
+        new ReflectionMethod($this->repository, 'insertDefaultRow')->invoke($this->repository);
+
+        self::assertSame(1, $this->connection->getTransactionNestingLevel(), 'the host transaction is still open and usable');
+        self::assertSame(1, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM content_blog_settings'));
+        $this->connection->commit();
+    }
+
+    #[Test]
+    public function aWinnerInsideAHostTransactionKeepsItsRow(): void
+    {
+        $this->connection->beginTransaction();
+
+        $settings = $this->repository->getSingleton();
+
+        self::assertNotNull($settings->getId());
+        self::assertSame(BlogSettings::SINGLETON_KEY, $settings->getSingletonKey());
+        $this->connection->commit();
+        self::assertSame(1, $this->repository->count([]));
     }
 
     #[Test]

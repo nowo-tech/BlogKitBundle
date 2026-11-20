@@ -24,7 +24,8 @@ final class BlogCommentEntityTest extends TestCase
             ->setAuthorEmail('alice@example.com')
             ->setBody('Hello')
             ->setStatus(BlogCommentStatus::Approved)
-            ->setIpHash('hash');
+            ->setIpHash('hash')
+            ->setSubmitKey('key');
 
         $approvedReply = new BlogComment()
             ->setArticle($article)
@@ -57,6 +58,7 @@ final class BlogCommentEntityTest extends TestCase
         self::assertSame($at, $parent->getModeratedAt());
         self::assertSame($moderator, $parent->getModeratedBy());
         self::assertSame('hash', $parent->getIpHash());
+        self::assertSame('key', $parent->getSubmitKey());
         self::assertFalse($parent->isStaffReply());
         self::assertSame('Alice', $parent->displayAuthorName());
     }

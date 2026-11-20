@@ -69,6 +69,7 @@ final class PublicCommentController extends AbstractController
             (string) $form->get('authorEmail')->getData(),
             (string) $form->get('body')->getData(),
             $request,
+            $form->has('submitToken') ? (string) $form->get('submitToken')->getData() : null,
         );
 
         $this->addFlash('success', 'blog.comments.success_pending');

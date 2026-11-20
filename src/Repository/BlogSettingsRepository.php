@@ -6,6 +6,8 @@ namespace Nowo\BlogKitBundle\Repository;
 
 use BackedEnum;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
+use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\Query;
 use Doctrine\Persistence\ManagerRegistry;
 use LogicException;
@@ -18,6 +20,8 @@ use Symfony\Contracts\Service\ResetInterface;
  */
 final class BlogSettingsRepository extends ServiceEntityRepository implements ResetInterface
 {
+    private const string SAVEPOINT = 'blog_kit_settings_singleton';
+
     private ?BlogSettings $blogSettings = null;
 
     public function __construct(ManagerRegistry $registry)
@@ -33,6 +37,9 @@ final class BlogSettingsRepository extends ServiceEntityRepository implements Re
     /**
      * Returns the settings row, creating it with the default values when the table is empty.
      *
+     * Two first requests on an empty table: the unique `singleton_key` lets one INSERT win. The loser's violation is
+     * the expected race, answered by reading the winner's row (never an error, never a second row; 1.11).
+     *
      * The row is created with a single DBAL INSERT on the connection of the entity manager that
      * manages BlogSettings, never with a flush: rendering a page must not commit unrelated pending
      * changes of the host's unit of work. Inside an open host transaction the INSERT joins it.
@@ -47,7 +54,11 @@ final class BlogSettingsRepository extends ServiceEntityRepository implements Re
 
         $this->insertDefaultRow();
 
-        return $this->findSingleton() ?? throw new LogicException('The blog settings row could not be created.');
+        // Inside a transaction the re-read is a locking read: under MySQL / MariaDB REPEATABLE READ the first (empty)
+        // read fixed the snapshot, and a plain read would still see no row after the winner committed.
+        $locking = $this->getEntityManager()->getConnection()->isTransactionActive();
+
+        return $this->readSingleton($locking) ?? throw new LogicException('The blog settings row could not be created.');
     }
 
     /**
@@ -84,7 +95,23 @@ final class BlogSettingsRepository extends ServiceEntityRepository implements Re
             $types[$idColumn] = (string) $metadata->getTypeOfField($idField);
         }
 
-        $connection->insert($quoteStrategy->getTableName($metadata, $platform), $data, $types);
+        // Inside a host transaction a failed INSERT would abort it on PostgreSQL: the INSERT runs in a savepoint, and the
+        // unique violation of a concurrent first request rolls back to it (the winner's row is read afterwards).
+        $inTransaction = $connection->isTransactionActive();
+        if ($inTransaction) {
+            $connection->createSavepoint(self::SAVEPOINT);
+        }
+
+        try {
+            $connection->insert($quoteStrategy->getTableName($metadata, $platform), $data, $types);
+            if ($inTransaction) {
+                $connection->releaseSavepoint(self::SAVEPOINT);
+            }
+        } catch (UniqueConstraintViolationException) {
+            if ($inTransaction) {
+                $connection->rollbackSavepoint(self::SAVEPOINT);
+            }
+        }
     }
 
     /**
@@ -93,16 +120,24 @@ final class BlogSettingsRepository extends ServiceEntityRepository implements Re
      */
     public function findSingleton(): ?BlogSettings
     {
+        return $this->readSingleton(false);
+    }
+
+    private function readSingleton(bool $locking): ?BlogSettings
+    {
         if ($this->blogSettings instanceof BlogSettings) {
             return $this->blogSettings;
         }
 
-        $settings = $this->createQueryBuilder('s')
+        $query = $this->createQueryBuilder('s')
             ->orderBy('s.id', SortDirection::Ascending)
             ->setMaxResults(1)
             ->getQuery()
-            ->setHint(Query::HINT_REFRESH, true)
-            ->getOneOrNullResult();
+            ->setHint(Query::HINT_REFRESH, true);
+        if ($locking) {
+            $query->setLockMode(LockMode::PESSIMISTIC_READ);
+        }
+        $settings = $query->getOneOrNullResult();
 
         if ($settings instanceof BlogSettings) {
             $this->blogSettings = $settings;
