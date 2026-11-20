@@ -75,7 +75,8 @@ nowo_blog_kit:
     doctrine:
         table_prefix: ''
         connection: default
-        entity_manager: null           # 1.9.0: a manager dedicated to the blog (opt-in)
+        entity_manager: null           # 1.9.0: a manager dedicated to the blog (opt-in, DDD)
+        private_entity_manager: null   # 1.12.0: true = private manager on your default one (2.0 behaviour)
         mapping_type: attribute        # 1.9.0: attribute | xml
         user_reference: entity         # 1.9.0: entity | id
     conflict_response:                 # 1.10.0: lock conflicts of the bundle routes (REQ-RUNTIME-003)
@@ -190,7 +191,8 @@ Sanitizing runs on article translation persist and again on public render (befor
 | --- | --- | --- |
 | `table_prefix` | `''` | Prefix applied to all bundle entity tables through `TablePrefixListener`. |
 | `connection` | `default` | Connection name recorded in configuration for host alignment. |
-| `entity_manager` | `null` | Since 1.9.0 (REQ-ARCH-001 rule 6, opt-in): a Doctrine entity manager dedicated to the blog, declared under `doctrine.orm.entity_managers` (not your default one, no other mappings). The bundle maps its entities there, flushes only that manager and clears it at every request / message / command boundary. Needs `user_reference: id`. `null`: the manager that maps the entities (your default one), as in 1.8; the default changes in 2.0. |
+| `entity_manager` | `null` | Since 1.9.0 (REQ-ARCH-001 rule 6, opt-in): a Doctrine entity manager dedicated to the blog, declared under `doctrine.orm.entity_managers` (not your default one, no other mappings). The bundle maps its entities there, flushes only that manager and clears it at every request / message / command boundary. Needs `user_reference: id`. `null`: the manager that maps the entities (your default one), as in 1.8; see `private_entity_manager`. Kept in 2.0 as the DDD option. |
+| `private_entity_manager` | `null` | Since 1.12.0 (REQ-ARCH-001 rule 6, opt-in): `true` = the bundle reads and writes through a private entity manager created on your default manager's connection, mapping and listeners (same tables, nothing else to configure); a blog write never flushes your pending changes. `false` = the bundle flushes your default manager (1.x; deprecated, removed in 2.0). `null` = `false` plus a deprecation notice; 2.0 always uses the private manager. Cannot be combined with `entity_manager`. See [UPGRADING](UPGRADING.md#to-1120). |
 | `mapping_type` | `attribute` | Since 1.9.0: `attribute` or `xml` (`src/Resources/config/doctrine-xml`, the same metadata). |
 | `user_reference` | `entity` | Since 1.9.0: `entity` = a relation to `user_class` (which implements `BlogUserInterface`), as in 1.8; `id` = the user's id in a string column, compared byte for byte (your user class implements nothing of the bundle). See [ARCHITECTURE](ARCHITECTURE.md). |
 

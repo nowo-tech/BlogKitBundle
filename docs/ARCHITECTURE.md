@@ -70,8 +70,29 @@ around a bundle write, `postFlush` still runs before your commit: the transactio
 ## Persistence
 
 **Standard host (default).** Blog Kit reads and writes through the manager that maps its entities (your default one),
-as in 1.8: an admin save flushes that manager, including what your application left pending in it. This default changes
-in 2.0 (REQ-ARCH-001 rule 6 stays ⚠️ until then: the opt-in below exists and works).
+as in 1.8: an admin save flushes that manager, including what your application left pending in it. Since 1.12.0 this
+mode triggers a deprecation notice, and the host-flush probe (transaction-doctrine `HostFlushProbe`, through
+`Doctrine\BlogKitHostFlushReporter`) reports each of your entity classes with pending changes right before a bundle
+flush of your manager. 2.0 drops this mode (REQ-ARCH-001 rule 6 stays ⚠️ until then).
+
+**Private entity manager (opt-in since 1.12.0, `doctrine.private_entity_manager: true`; the 2.0 behaviour).** The
+bundle's services work through transaction-doctrine's `PrivateManager\PrivateEntityManager`, created on the connection,
+configuration and event manager of your default manager:
+
+- same connection and tables, nothing to declare; inside a transaction you opened, the bundle's flushes use savepoints;
+- every bundle service gets it (`nowo_blog_kit.entity_manager`); the service repositories, the transaction runner and
+  the worker-state subscriber get `PrivateManager\PrivateManagerRegistry` (blog entities → the private manager, anything
+  else → your registry), and your manager's `getRepository()` returns the same service repositories, so the entity
+  value resolvers of the admin routes and the tag choice load into the private manager;
+- `PrivateManager\PrivateEntityManagerMiddleware` on your manager's connection tells it when a rollback undid rows it
+  wrote or loaded (it is replaced then, no ghost row); the bundle's own savepoints (`blog_kit_`) are ignored;
+- dropped at every OUTERMOST unit-of-work boundary (`Worker\BlogKitOwnEntityManagerSubscriber`, plus the
+  `nowo_transaction_doctrine.private_entity_manager` tag when NowoTransactionDoctrineBundle is registered, and
+  `kernel.reset`), replaced when closed; a failed unit closes and drops only it;
+- `Doctrine\BlogKitPrivateUserReferenceListener` (`user_reference: entity`): your user instance set on a blog row
+  becomes a reference of the private manager before its flush, so your user is never inserted or written by the bundle.
+
+Your managers are never flushed, cleared, closed or reset by the bundle in this mode.
 
 **Own entity manager (opt-in, `doctrine.entity_manager: <name>`).** Declare a manager for the blog under
 `doctrine.orm.entity_managers` (no mappings, `auto_mapping: false`, any connection). The bundle then:

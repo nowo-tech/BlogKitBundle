@@ -3,6 +3,11 @@
 ## Table of contents
 
 - [Unreleased](#unreleased)
+- [To 1.12.0](#to-1120)
+  - [Opt in to the private entity manager now](#opt-in-to-the-private-entity-manager-now)
+  - [Reading the probe output as a migration list](#reading-the-probe-output-as-a-migration-list)
+  - [Other deprecation notices](#other-deprecation-notices)
+  - [Preparing for 2.0](#preparing-for-20)
 - [To 1.11.0](#to-1110)
 - [To 1.10.0](#to-1100)
   - [Lock conflicts answer 409 with CONFLICT codes](#lock-conflicts-answer-409-with-conflict-codes)
@@ -53,6 +58,83 @@
 - [Future releases](#future-releases)
 
 ## Unreleased
+
+## To 1.12.0
+
+From **1.11.0**:
+
+```bash
+composer update nowo-tech/blog-kit-bundle
+```
+
+No schema change, nothing to do to keep the current behaviour. This is the last 1.x minor before 2.0: it tells you at
+runtime about every default that 2.0 changes, and lets you switch to the 2.0 behaviour now.
+
+### Opt in to the private entity manager now
+
+Without `doctrine.entity_manager`, Blog Kit writes through your default entity manager: an admin save, a comment or the
+hashtag command flushes it, **including the changes your application left pending in it**. 2.0 always writes through a
+private entity manager instead. While the option is unset, the container build triggers:
+
+> Since nowo-tech/blog-kit-bundle 1.12.0: Not setting "nowo_blog_kit.doctrine.private_entity_manager" is deprecated: blog writes flush your default entity manager, including your own pending changes. 2.0 always writes through a private entity manager on the same connection and tables, which never flushes them. Opt in now with "nowo_blog_kit: { doctrine: { private_entity_manager: true } }" (see UPGRADING.md "To 1.12.0").
+
+Opt in:
+
+```yaml
+nowo_blog_kit:
+    doctrine:
+        private_entity_manager: true
+```
+
+That is all: the private manager is created on your default manager's connection, mapping and event listeners, so the
+tables, the migrations and your Doctrine listeners stay as they are. Blog writes then never flush, clear, close or reset
+your manager, and a failed blog write closes only the private one (it is replaced on the next use). In a FrankenPHP worker
+with the kernel reset off it is dropped at every request, Messenger message and console command. Your user entity stays
+the author of articles and comments (`user_reference: entity`): the bundle stores a reference to the same row.
+
+What changes for you once you opt in:
+
+- a change you make to one of your entities and expected a blog write to save is no longer saved by it: flush your
+  manager yourself (the probe below lists these cases);
+- a blog entity you load through your own manager (`$yourManager->find(BlogArticle::class, $id)`) is not the instance
+  the bundle writes; use the bundle's repositories (also returned by `$yourManager->getRepository(BlogArticle::class)`).
+
+`private_entity_manager: false` keeps the 1.x behaviour, with its own notice: the value `false` is **removed in 2.0**.
+`doctrine.entity_manager: <name>` (a manager dedicated to the blog, see "To 1.9.0") stays the DDD option in 2.0, triggers
+no notice and cannot be combined with `private_entity_manager: true`.
+
+### Reading the probe output as a migration list
+
+While the bundle still flushes your manager (option unset or `false`), it inspects it right before each of its flushes.
+For each of your entity classes with pending changes it triggers, once per class and per request (or message, or
+command):
+
+> Your pending changes to App\Entity\Invoice were flushed by NowoBlogKitBundle; 2.0 no longer does.
+
+Run your test suite and a deploy cycle with deprecations logged, then collect these lines: each class named is a place
+where your code relies on a blog write to save its own changes. Add your own `flush()` there (or stop leaving the change
+pending), then opt in. No line at all means you can opt in without other changes. The probe only reads: it never
+flushes, clears or resets anything, and a failure inside it is logged and never breaks the write.
+
+### Other deprecation notices
+
+What 1.9.0 announced for 2.0 now also triggers a runtime notice:
+
+- a host port service implementing only `Security\BlogKitResourceAccessCheckerInterface`,
+  `Security\RateLimit\BlogCommentRateLimiterInterface` or `Security\Captcha\BlogCommentCaptchaStrategyInterface`
+  (once, when the service is built): implement its twin (table in "To 1.9.0"), the same key takes it;
+- `BlogArticlePublishedEvent::getArticle()` (per call): use `getArticleId()` or `getArticleSnapshot()`.
+
+### Preparing for 2.0
+
+2.0 contains only the deprecations announced in 1.x: the private entity manager becomes the only mode without
+`doctrine.entity_manager` (`private_entity_manager: false` is removed), and the four deprecated port interfaces and
+`BlogArticlePublishedEvent::getArticle()` are removed. Nothing else breaks. A host with no 1.12 deprecation left upgrades
+without changes. After 2.0 is tagged, the 1.x line gets 6 months of security support: Moderate and higher fixes are
+backported to the last 1.x minor.
+
+This amends "To 1.9.0": the 2.0 default is the zero-config private manager on your default connection, not
+`doctrine.entity_manager` (which needs a second manager in your Doctrine configuration).
 
 ## To 1.11.0
 
