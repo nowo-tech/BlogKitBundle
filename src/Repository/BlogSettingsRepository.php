@@ -7,6 +7,7 @@ namespace Nowo\BlogKitBundle\Repository;
 use BackedEnum;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
+use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\Query;
 use Doctrine\Persistence\ManagerRegistry;
 use LogicException;
@@ -53,7 +54,11 @@ final class BlogSettingsRepository extends ServiceEntityRepository implements Re
 
         $this->insertDefaultRow();
 
-        return $this->findSingleton() ?? throw new LogicException('The blog settings row could not be created.');
+        // Inside a transaction the re-read is a locking read: under MySQL / MariaDB REPEATABLE READ the first (empty)
+        // read fixed the snapshot, and a plain read would still see no row after the winner committed.
+        $locking = $this->getEntityManager()->getConnection()->isTransactionActive();
+
+        return $this->readSingleton($locking) ?? throw new LogicException('The blog settings row could not be created.');
     }
 
     /**
@@ -115,16 +120,24 @@ final class BlogSettingsRepository extends ServiceEntityRepository implements Re
      */
     public function findSingleton(): ?BlogSettings
     {
+        return $this->readSingleton(false);
+    }
+
+    private function readSingleton(bool $locking): ?BlogSettings
+    {
         if ($this->blogSettings instanceof BlogSettings) {
             return $this->blogSettings;
         }
 
-        $settings = $this->createQueryBuilder('s')
+        $query = $this->createQueryBuilder('s')
             ->orderBy('s.id', SortDirection::Ascending)
             ->setMaxResults(1)
             ->getQuery()
-            ->setHint(Query::HINT_REFRESH, true)
-            ->getOneOrNullResult();
+            ->setHint(Query::HINT_REFRESH, true);
+        if ($locking) {
+            $query->setLockMode(LockMode::PESSIMISTIC_READ);
+        }
+        $settings = $query->getOneOrNullResult();
 
         if ($settings instanceof BlogSettings) {
             $this->blogSettings = $settings;

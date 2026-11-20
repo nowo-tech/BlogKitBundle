@@ -53,7 +53,10 @@
 
 ## Unreleased
 
-Two schema changes (REQ-RUNTIME-003 rule 4). Generate and run a migration (`doctrine:migrations:diff`, then `migrate`), or
+Two schema changes (REQ-RUNTIME-003 rule 4). **Deploy order: run the migration first, then deploy the code.** Both
+columns are backward compatible (a column with a default, a nullable column, unique indexes that allow NULLs), so the old
+code keeps working on the migrated schema; the new code selects the new columns, so on an unmigrated database every
+blog page that reads the settings or the comments fails. Generate and run a migration (`doctrine:migrations:diff`, then `migrate`), or
 `doctrine:schema:update --force` in development:
 
 - `content_blog_settings.singleton_key VARCHAR(16) NOT NULL DEFAULT 'main'` with the unique index

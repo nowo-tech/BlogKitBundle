@@ -65,18 +65,30 @@ final readonly class BlogCommentManager
     ): BlogComment {
         $ipHash    = $this->hashIp($request);
         $submitKey = $this->submitKey($submitToken, $blogArticle, trim($authorEmail), trim($body));
+        $articleId = $blogArticle->getId();
+
+        // True once the unit has run: the second run is the replay after a unique violation.
+        $replay = false;
 
         // @igor-ignore - The closure runs at once inside the unit; the runner keeps no reference to it.
-        return $this->transactionRunner->runRereadingOnDuplicate(function () use ($blogArticle, $authorName, $authorEmail, $body, $ipHash, $submitKey): BlogComment {
+        return $this->transactionRunner->runRereadingOnDuplicate(function () use ($blogArticle, $articleId, $authorName, $authorEmail, $body, $ipHash, $submitKey, &$replay): BlogComment {
             if ($submitKey !== null) {
-                $stored = $this->blogCommentRepository->findOneBy(['submitKey' => $submitKey]);
+                // The first look is a plain read: a locking read of a missing key takes a gap lock, and two concurrent
+                // submissions would then deadlock on their inserts. The replay (the key exists now) is a locking read: a
+                // winner that committed after this transaction's snapshot (REPEATABLE READ) is still found.
+                $stored = $this->blogCommentRepository->findOneBySubmitKey($submitKey, $replay);
                 if ($stored instanceof BlogComment) {
                     return $stored;
                 }
             }
+            $replay = true;
+
+            // The replay runs on a replaced manager: the article captured before the failure is detached, so the
+            // comment points at a reference of the same row in the current unit of work.
+            $article = $articleId === null ? $blogArticle : $this->entityManager->getReference(BlogArticle::class, $articleId);
 
             $blogComment = new BlogComment()
-                ->setArticle($blogArticle)
+                ->setArticle($article instanceof BlogArticle ? $article : $blogArticle)
                 ->setAuthorName(trim($authorName))
                 ->setAuthorEmail(trim($authorEmail))
                 ->setBody(trim($body))

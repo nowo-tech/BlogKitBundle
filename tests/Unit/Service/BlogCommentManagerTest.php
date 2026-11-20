@@ -90,7 +90,7 @@ final class BlogCommentManagerTest extends TestCase
         $article = new BlogArticle();
         $request = Request::create('/', 'POST', server: ['REMOTE_ADDR' => '203.0.113.10']);
         $key     = hash('sha256', 'formtoken0000000000000000000001' . "\0" . 0 . "\0" . 'a@b.com' . "\0" . 'Hello');
-        $this->repository->expects(self::once())->method('findOneBy')->with(['submitKey' => $key])->willReturn(null);
+        $this->repository->expects(self::once())->method('findOneBySubmitKey')->with($key, false)->willReturn(null);
         $this->entityManager->expects(self::once())->method('persist')->with(self::isInstanceOf(BlogComment::class));
 
         $comment = $this->manager->createPublicComment($article, 'Ana', ' a@b.com ', ' Hello ', $request, 'formtoken0000000000000000000001');
@@ -102,7 +102,7 @@ final class BlogCommentManagerTest extends TestCase
     public function aSubmissionAlreadyStoredReturnsTheStoredCommentAndPersistsNothing(): void
     {
         $stored = new BlogComment()->setArticle(new BlogArticle());
-        $this->repository->method('findOneBy')->willReturn($stored);
+        $this->repository->method('findOneBySubmitKey')->willReturn($stored);
         $this->entityManager->expects(self::never())->method('persist');
 
         $comment = $this->manager->createPublicComment(new BlogArticle(), 'Ana', 'a@b.com', 'Hello', Request::create('/', 'POST'), 'formtoken0000000000000000000001');
@@ -111,9 +111,23 @@ final class BlogCommentManagerTest extends TestCase
     }
 
     #[Test]
+    public function theCommentPointsAtAReferenceOfTheArticleInTheCurrentUnitOfWork(): void
+    {
+        $article = new BlogArticle()->setId(12);
+        $managed = new BlogArticle();
+        $this->repository->method('findOneBySubmitKey')->willReturn(null);
+        $this->entityManager->expects(self::once())->method('getReference')->with(BlogArticle::class, 12)->willReturn($managed);
+        $this->entityManager->expects(self::once())->method('persist');
+
+        $comment = $this->manager->createPublicComment($article, 'Ana', 'a@b.com', 'Hello', Request::create('/', 'POST'), 'formtoken0000000000000000000001');
+
+        self::assertSame($managed, $comment->getArticle());
+    }
+
+    #[Test]
     public function aMalformedTokenIsNoToken(): void
     {
-        $this->repository->expects(self::never())->method('findOneBy');
+        $this->repository->expects(self::never())->method('findOneBySubmitKey');
         $this->entityManager->expects(self::once())->method('persist');
 
         $comment = $this->manager->createPublicComment(new BlogArticle(), 'Ana', 'a@b.com', 'Hello', Request::create('/', 'POST'), 'short');

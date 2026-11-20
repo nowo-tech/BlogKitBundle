@@ -148,7 +148,7 @@ empty table both read nothing and both insert: the second waits for the first's 
 the bundle answers it as the domain result "the row exists": it reads the winner's row (never an error, never a second
 row). Inside a host transaction the `INSERT` runs in a savepoint and the loser rolls back to it, so on PostgreSQL the
 violation does not abort your transaction; the host's entity manager is not involved (the row is a plain DBAL insert).
-Reads still use the lowest id.
+Reads still use the lowest id. Inside a host transaction the re-read after the refused insert is a locking read (`FOR SHARE`): under MySQL / MariaDB REPEATABLE READ the transaction's first (empty) read fixed its snapshot, and a plain read would never see the winner.
 
 ## Double-submitted comments
 
@@ -159,7 +159,7 @@ comment, with the same "pending moderation" message. A concurrent second submiss
 first has not committed within the lock wait it answers 409 `CONFLICT_001` (retry is safe), and if it lost the unique
 key the unit runs once more and finds the winner (`runRereadingOnDuplicate()`). The key mixes in the email and the
 text so that a page served from a shared cache (every visitor gets the same token) never merges two visitors'
-comments. A submission without a valid token (a form rendered before 1.11, host code) is stored without the guard.
+comments. The first lookup of a stored submission is a plain read (a locking read of a missing key takes a gap lock, and two concurrent submissions would deadlock on their inserts); the replay after the unique violation is a locking read inside a transaction, for the same snapshot reason as above, and it re-attaches the article by id in the current unit of work. A submission without a valid token (a form rendered before 1.11, host code) is stored without the guard.
 Staff replies and admin moderation are not part of this guard (they are not browser forms posted twice by a visitor).
 
 ## Residual risks

@@ -119,6 +119,50 @@ final class SingletonAndSubmitRaceTest extends DatabaseTestCase
         $this->assertConnectionUsable();
     }
 
+    /**
+     * WB-BlogKit-1: on MySQL / MariaDB (REPEATABLE READ) the host transaction's first read fixed an empty snapshot; the
+     * winner committed after it. The refused insert is followed by a locking re-read, which sees the committed row.
+     */
+    #[Test]
+    public function aWinnerCommittedAfterTheHostTransactionStartedIsFound(): void
+    {
+        $repository = new BlogSettingsRepository($this->registry);
+        $this->blog->beginTransaction();
+        self::assertSame(0, (int) $this->blog->fetchOne('SELECT COUNT(*) FROM content_blog_settings'), 'the snapshot is fixed, empty');
+        $this->writer->insert('content_blog_settings', $this->writerId('content_blog_settings') + ['singleton_key' => BlogSettings::SINGLETON_KEY]);
+
+        $settings = $repository->getSingleton();
+
+        self::assertNotNull($settings->getId());
+        $this->blog->commit();
+        self::assertSame(1, (int) $this->blog->fetchOne('SELECT COUNT(*) FROM content_blog_settings'));
+        $this->assertConnectionUsable();
+    }
+
+    /**
+     * WB-BlogKit-2: the same snapshot problem for the comment replay: the winner of the submission committed after the
+     * host transaction's first read. The lookup is a locking read, so the stored comment is returned, nothing is
+     * persisted with a detached article.
+     */
+    #[Test]
+    public function aSubmissionStoredAfterTheHostTransactionStartedIsFoundByTheLockingLookup(): void
+    {
+        $article = $this->createArticle('post');
+        $request = Request::create('/blog/post/comments', 'POST', server: ['REMOTE_ADDR' => '203.0.113.7']);
+        $key     = $this->keyFor($article->getId() ?? 0, 'ana@example.com', 'Hello there');
+
+        $this->blog->beginTransaction();
+        self::assertSame(0, (int) $this->blog->fetchOne('SELECT COUNT(*) FROM content_blog_comment'), 'the snapshot is fixed, empty');
+        $winner = $this->insertCommentFromWriter($article->getId() ?? 0, $key);
+
+        $stored = $this->comments()->createPublicComment($article, 'Ana', 'ana@example.com', 'Hello there', $request, self::TOKEN);
+
+        self::assertSame($winner, $stored->getId());
+        $this->blog->commit();
+        self::assertSame(1, (int) $this->blog->fetchOne('SELECT COUNT(*) FROM content_blog_comment'));
+        $this->assertConnectionUsable();
+    }
+
     #[Test]
     public function aDoubleSubmitWhileTheFirstIsInFlightAnswers409ThenFindsTheStoredComment(): void
     {
