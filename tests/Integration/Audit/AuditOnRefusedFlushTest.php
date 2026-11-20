@@ -81,6 +81,8 @@ final class AuditOnRefusedFlushTest extends DoctrineTestCase
         [$id, $article] = $this->seed();
         $parent         = new HostParent()->addChild()->addChild();
         $this->entityManager->persist($parent);
+        $managedLink = new HostArticleLink($article);
+        $this->entityManager->persist($managedLink);
         $this->entityManager->flush();
 
         // Your own pending work of every kind.
@@ -102,9 +104,13 @@ final class AuditOnRefusedFlushTest extends DoctrineTestCase
         $article->setTags([$spam]);
         $intruder = new BlogArticle()->setSlug('intruder');
         $this->entityManager->persist($intruder);
-        $toIntruder = new HostArticleLink($intruder);
+        $toIntruder       = new HostArticleLink($intruder);
+        $toIntruder->name = 'new-link';
         $toIntruder->tags->add($spam);
         $this->entityManager->persist($toIntruder);
+        // Audit XD3-1: your managed entity changes its own field and points at the new article in the same flush.
+        $managedLink->name    = 'host-name';
+        $managedLink->article = $intruder;
         try {
             $this->entityManager->flush();
             self::fail('The flush must be refused.');
@@ -130,6 +136,9 @@ final class AuditOnRefusedFlushTest extends DoctrineTestCase
         self::assertSame(0, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM host_ref_child'));
         self::assertSame($id, (int) $this->connection->fetchOne('SELECT article_id FROM host_ref_article_link WHERE id = ?', [$toArticle->id]));
         self::assertNull($this->connection->fetchOne('SELECT article_id FROM host_ref_article_link WHERE id = ?', [$toIntruder->id]));
+        self::assertSame('new-link', $this->connection->fetchOne('SELECT name FROM host_ref_article_link WHERE id = ?', [$toIntruder->id]), 'your new entity is inserted with all its values');
+        self::assertSame('host-name', $this->connection->fetchOne('SELECT name FROM host_ref_article_link WHERE id = ?', [$managedLink->id]), 'your own field change on the same entity is written');
+        self::assertSame($id, (int) $this->connection->fetchOne('SELECT article_id FROM host_ref_article_link WHERE id = ?', [$managedLink->id]), 'and its to-one is back to its prior value');
         self::assertSame(0, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM host_ref_article_link_tag'));
         $this->assertUntouched($id);
         self::assertSame(2, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM content_blog_article_translation WHERE translatable_id = ?', [$id]));

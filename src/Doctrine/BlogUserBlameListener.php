@@ -278,9 +278,11 @@ final readonly class BlogUserBlameListener
      */
     private function unlink(EntityManagerInterface $manager, object $entity, array $new): void
     {
-        $metadata = $manager->getClassMetadata($entity::class);
+        $metadata   = $manager->getClassMetadata($entity::class);
+        $unitOfWork = $manager->getUnitOfWork();
         // The computed change set holds [old, new]; the original data already holds the new value (computeChangeSet()).
-        $changes = $manager->getUnitOfWork()->getEntityChangeSet($entity);
+        $changes  = $unitOfWork->getEntityChangeSet($entity);
+        $reverted = false;
         foreach ($metadata->getAssociationNames() as $field) {
             $value = $metadata->getFieldValue($entity, $field);
             if ($value instanceof Collection) {
@@ -293,8 +295,37 @@ final readonly class BlogUserBlameListener
                 }
             } elseif (is_object($value) && isset($new[spl_object_id($value)])) {
                 $metadata->setFieldValue($entity, $field, $changes[$field][0] ?? null);
+                $reverted = true;
             }
         }
+
+        if ($reverted) {
+            $this->rewind($unitOfWork, $entity);
+        }
+    }
+
+    /**
+     * Audit XD3-1: after a to-one of one of your entities was reverted, your next flush recomputes its change set and
+     * replaces the stale one. So that the recomputed set still holds your own changes (a field you changed in the same
+     * flush), the data the refused flush copied over is rewound: a new entity of yours gets no original data (it is
+     * inserted with all its values), a managed one gets the old value of every changed field back.
+     */
+    private function rewind(UnitOfWork $unitOfWork, object $entity): void
+    {
+        Closure::bind(static function (UnitOfWork $unitOfWork, object $entity): void {
+            $id = spl_object_id($entity);
+            if (isset($unitOfWork->entityInsertions[$id])) {
+                unset($unitOfWork->originalEntityData[$id]);
+
+                return;
+            }
+
+            /** @var array<string, mixed> $changes [old, new] per field; the old PersistentCollection of a replaced collection */
+            $changes = $unitOfWork->entityChangeSets[$id] ?? [];
+            foreach ($changes as $field => $change) {
+                $unitOfWork->originalEntityData[$id][$field] = is_array($change) ? $change[0] : $change;
+            }
+        }, null, UnitOfWork::class)($unitOfWork, $entity);
     }
 
     private function isBlogEntity(object $entity): bool

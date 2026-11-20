@@ -135,6 +135,67 @@ final class RefusedFlushHostManagerTest extends DatabaseTestCase
         self::assertSame(0, $this->registry->resets);
     }
 
+    /**
+     * Audit XD3-1 (ported from the auditor's re-check 3): your managed entity changes its own field and, in the refused
+     * flush, points at a new article and a new tag. Its to-one goes back to the prior article, the new tag leaves its
+     * collection, and its own field change is still written by your next flush; a new entity of yours pointing at a new
+     * article is inserted with all its values and a null to-one.
+     */
+    #[Test]
+    public function yourEntityPointsAtNewArticleAndNewTagWhileChangingItsOwnField(): void
+    {
+        $manager = $this->entityManager;
+        $this->login('alice');
+        $victim = $this->article('victim');
+        $tag    = new BlogTag()->setSlug('php');
+        $victim->addTag($tag);
+        $link = new HostArticleLink($victim);
+        $link->tags->add($tag);
+        foreach ([$victim, $tag, $link] as $entity) {
+            $manager->persist($entity);
+        }
+
+        $manager->flush();
+
+        $intruder      = $this->article('intruder');
+        $spam          = new BlogTag()->setSlug('spam');
+        $link->name    = 'host-name';
+        $link->article = $intruder;
+        $link->tags->add($spam);
+        $second      = $this->article('second-intruder');
+        $fresh       = new HostArticleLink($second);
+        $fresh->name = 'new-link';
+        foreach ([$intruder, $spam, $second, $fresh, new HostNote('host pending')] as $entity) {
+            $manager->persist($entity);
+        }
+
+        $this->login(str_repeat('x', 129));
+        try {
+            $manager->flush();
+            self::fail('The flush must be refused.');
+        } catch (AccessDeniedException) {
+        }
+
+        self::assertTrue($manager->isOpen());
+        self::assertSame(0, $this->registry->resets);
+        $this->login('bob');
+        $manager->flush();
+
+        $db = $this->writer;
+        self::assertSame('victim', $db->fetchOne('SELECT slug FROM content_blog_article WHERE id = ?', [$victim->getId()]));
+        self::assertSame(1, (int) $db->fetchOne('SELECT COUNT(*) FROM content_blog_article'));
+        self::assertSame(1, (int) $db->fetchOne('SELECT COUNT(*) FROM content_blog_tag'));
+        self::assertSame(2, (int) $db->fetchOne('SELECT COUNT(*) FROM content_blog_article_translation'));
+        self::assertSame(1, (int) $db->fetchOne('SELECT COUNT(*) FROM content_blog_article_tag'));
+        self::assertSame('alice', $db->fetchOne('SELECT updated_by_id FROM content_blog_article WHERE id = ?', [$victim->getId()]));
+        self::assertSame(['host pending'], $db->fetchFirstColumn('SELECT text FROM worker_host_note'));
+        self::assertSame((int) $victim->getId(), (int) $db->fetchOne('SELECT article_id FROM host_ref_article_link WHERE id = ?', [$link->id]), 'your to-one is back to its prior value');
+        self::assertSame(1, (int) $db->fetchOne('SELECT COUNT(*) FROM host_ref_article_link_tag'));
+        self::assertSame('host-name', $db->fetchOne('SELECT name FROM host_ref_article_link WHERE id = ?', [$link->id]), 'your own field change on the same entity is written');
+        self::assertSame('new-link', $db->fetchOne('SELECT name FROM host_ref_article_link WHERE id = ?', [$fresh->id]), 'your new entity is inserted with all its values');
+        self::assertNull($db->fetchOne('SELECT article_id FROM host_ref_article_link WHERE id = ?', [$fresh->id]));
+    }
+
     protected function tearDown(): void
     {
         // The host tables reference the blog tables: dropped here, so the next test can drop and recreate its schema.
