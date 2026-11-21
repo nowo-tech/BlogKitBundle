@@ -3,6 +3,7 @@
 ## Table of contents
 
 - [Unreleased](#unreleased)
+- [To 1.12.1](#to-1121)
   - [The article form tag field is a choice of tag ids](#the-article-form-tag-field-is-a-choice-of-tag-ids)
 - [To 1.12.0](#to-1120)
   - [Opt in to the private entity manager now](#opt-in-to-the-private-entity-manager-now)
@@ -59,6 +60,14 @@
 - [Future releases](#future-releases)
 
 ## Unreleased
+
+## To 1.12.1
+
+From **1.12.0**:
+
+```bash
+composer update nowo-tech/blog-kit-bundle
+```
 
 ### The article form tag field is a choice of tag ids
 
