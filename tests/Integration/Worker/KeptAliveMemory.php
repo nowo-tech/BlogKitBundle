@@ -28,7 +28,8 @@ use const E_USER_DEPRECATED;
  *   `eraseCredentials()`): about 400 bytes per request.
  *
  * So the loop runs with PHP's native `file://` wrapper, and each distinct deprecation is collected and triggered once
- * after the loop (it is still reported). Everything the kernel and the bundle keep across requests is still measured.
+ * after the loop (silenced, as Symfony triggers its own). Everything the kernel and the bundle keep across requests is
+ * still measured.
  */
 final class KeptAliveMemory
 {
@@ -54,7 +55,7 @@ final class KeptAliveMemory
         }
 
         foreach ($deprecations as $message) {
-            trigger_error($message, E_USER_DEPRECATED);
+            @trigger_error($message, E_USER_DEPRECATED);
         }
     }
 }

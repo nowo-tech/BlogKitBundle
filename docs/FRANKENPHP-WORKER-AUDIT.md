@@ -9,7 +9,7 @@
 | Audit date | 2026-11-13 |
 | Method | Manual review of `src/` (services, repositories, Doctrine listeners, event subscribers, the unit-of-work tracker, controllers, Twig extension, form types and extension, command, DI extension, compiler passes, `Resources/config/services.yaml`) plus the kept-alive kernel test below |
 | Setting | FrankenPHP worker mode with the kernel kept alive and **not reset** (`FRANKENPHP_RESET_KERNEL=false`), and hosts that bypass the services resetter (REQ-RUNTIME-002) |
-| Worker test | `tests/Integration/Worker/WorkerKeptAliveKernelTest.php`: one kernel, `http_kernel->handle()` + `terminate()` (never `Kernel::handle()`), no services resetter, **1,000** admin listings alternating **two users** (`alice`, `bob`) on a standard host and on a DDD host; each response shows only that user's article; memory growth after request 50 stays under **4 MB** |
+| Worker test | `tests/Integration/Worker/WorkerKeptAliveKernelTest.php`: one kernel, `http_kernel->handle()` + `terminate()` (never `Kernel::handle()`), no services resetter, **1,000** admin listings alternating **two users** (`alice`, `bob`) on a standard host and on a DDD host; each response shows only that user's article; memory growth after request 50 stays under **128 KB**, measured without the test harness' own growth (`KeptAliveMemory`) |
 | Static checks | `composer igor` (REQ-CS-008) and the `nowo-tech/phpstan-frankenphp` classic + worker rulesets (`phpstan.neon.dist`) pass in CI |
 | **Verdict** | ✅ **Viable with the kernel not reset** — bundle memos are cleared at every main request, Messenger message and outermost console command by a bundle-owned subscriber; the bundle's own entity manager (`doctrine.entity_manager`) is cleared at every outermost boundary and recreated when closed; per-user flags are Twig functions; the publish buffer cannot outlive a failed flush. Host rule (REQ-RUNTIME-002 rule 7): in the default mode the blog uses **your** entity manager, which the bundle never clears; clear your managers at each boundary when you bypass the services resetter (W-04). |
 
@@ -153,10 +153,10 @@ No other findings. No superglobals, `ini_set`, native headers/sessions, static c
 
 | Case | Host | N | Users | Asserts |
 |---|---|---|---|---|
-| `testDddHostTwoUsersAlternateWithIsolationFreshReadsAndFlatMemory` | DDD (`entity_manager: blog`, XML, ids, twin ports) | 1,000 | alice / bob (string ids) | only the user's own article; the title changed behind Doctrine's back is read fresh; the own manager is empty after each request; the host manager keeps its pending change; memory growth < 4 MB |
+| `testDddHostTwoUsersAlternateWithIsolationFreshReadsAndFlatMemory` | DDD (`entity_manager: blog`, XML, ids, twin ports) | 1,000 | alice / bob (string ids) | only the user's own article; the title changed behind Doctrine's back is read fresh; the own manager is empty after each request; the host manager keeps its pending change; memory growth < 128 KB |
 | `testDddHostClosedOwnManagerIsRecreatedAndMessengerBoundariesClear` | DDD | 1 | alice | a closed own manager is recreated at the next request; a Messenger handled boundary clears it |
 | `testDddHostBundleWritesNeverFlushTheHostManager` | DDD | — | — | comment + staff reply written through the bundle; the host's pending row is neither written nor cleared |
-| `testStandardHostTwoUsersAlternateAndTheHostManagerIsNeverCleared` | standard (attributes, `MappedTestUser`, `owner`) | 1,000 | alice / bob (int ids) | only the user's own article; the host's default manager is never cleared by the bundle; memory growth < 4 MB |
+| `testStandardHostTwoUsersAlternateAndTheHostManagerIsNeverCleared` | standard (attributes, `MappedTestUser`, `owner`) | 1,000 | alice / bob (int ids) | only the user's own article; the host's default manager is never cleared by the bundle; memory growth < 128 KB |
 
 ## Usage recommendations in worker mode
 

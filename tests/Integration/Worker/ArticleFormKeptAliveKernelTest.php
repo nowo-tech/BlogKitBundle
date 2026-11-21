@@ -60,7 +60,8 @@ final class ArticleFormKeptAliveKernelTest extends TestCase
 
     private const int ITERATIONS = 300;
 
-    private const int MEMORY_MARGIN = 4 * 1024 * 1024;
+    /** Without the harness growth (KeptAliveMemory) a clean run moves by a few hundred bytes; a 1 KB-per-request leak by 160 KB or more. */
+    private const int MEMORY_MARGIN = 128 * 1024;
 
     private ?WorkerTestKernel $kernel = null;
 
