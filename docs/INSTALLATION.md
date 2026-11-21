@@ -47,7 +47,7 @@ composer require twig/extra-bundle twig/string-extra
 When the Flex recipe is available, it copies:
 
 - `config/packages/nowo_blog_kit.yaml`
-- `config/packages/nowo_form_kit.yaml` (filter profile + `type_map.entity` for article tags)
+- `config/packages/nowo_form_kit.yaml` (filter profile + `type_map.entity`)
 - `config/routes/nowo_blog_kit.yaml`
 
 Recipe source in this repository:

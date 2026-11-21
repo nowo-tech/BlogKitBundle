@@ -21,8 +21,10 @@ final class BlogArticleTranslationType extends AbstractBlogFormType
         $this->withBuilder($builder, function (): void {
             $this->addHiddenLocaleField();
             $this->addTextField('title');
+            // Since 1.12.1: an empty meta title is stored as '' (the column is not nullable) instead of failing the save.
             $this->addTextField('metaTitle', [
-                'required' => false,
+                'required'   => false,
+                'empty_data' => '',
             ]);
             $this->addTextareaField('metaDescription', [
                 'required' => false,

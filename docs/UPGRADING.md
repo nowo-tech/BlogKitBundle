@@ -3,6 +3,7 @@
 ## Table of contents
 
 - [Unreleased](#unreleased)
+  - [The article form tag field is a choice of tag ids](#the-article-form-tag-field-is-a-choice-of-tag-ids)
 - [To 1.12.0](#to-1120)
   - [Opt in to the private entity manager now](#opt-in-to-the-private-entity-manager-now)
   - [Reading the probe output as a migration list](#reading-the-probe-output-as-a-migration-list)
@@ -58,6 +59,15 @@
 - [Future releases](#future-releases)
 
 ## Unreleased
+
+### The article form tag field is a choice of tag ids
+
+`BlogArticleType::tags` is a `ChoiceType` of tag ids (labels `Name (slug)`) instead of an `EntityType`, so it works in a
+kept-alive kernel with the blog's manager cleared between requests. The submitted values (tag ids), the rendered
+`<select multiple>` and the stored tags are unchanged. Only a host customisation aimed at `EntityType` no longer reaches
+this field: a form type extension for `EntityType`, a FormKit `field_types.entity` override, or code reading the
+field's `class` / `query_builder` options. Target `ChoiceType`, or the `tags` field by name, instead. The FormKit
+`type_map.entity` prepend is kept.
 
 ## To 1.12.0
 
