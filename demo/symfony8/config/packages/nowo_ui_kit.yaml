@@ -1,7 +1,8 @@
-# REQ-DEMO-014: UiKit's default theme, unchanged (no CSS framework, no CDN, no token override); the demo shell
+# REQ-DEMO-014: UiKit's default theme, unchanged (no CSS framework, no CDN, no token override); the demo platform shell
 # (templates/base.html.twig) is the admin and guest layout of every BlogKit page. Icons are inline SVG.
 nowo_ui_kit:
     css_framework: custom
+    base_stylesheet: true
     icon_set: svg_inline
     row_actions_display: icon
     layouts:

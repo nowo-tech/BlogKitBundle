@@ -1,22 +1,20 @@
-{#- REQ-DEMO-014: the demo shell is UiKit's admin layout with UiKit's default theme (nowo-ui.css from the bundle's own
-    asset package, no CSS framework, no CDN, inline SVG icons). The BlogKit public and admin pages render in it too
-    (nowo_ui_kit.layouts.admin / guest). -#}
-{% extends '@NowoUiKit/layout/admin.html.twig' %}
-
+{#- REQ-DEMO-014: the demo runs inside UiKit's shared demo platform shell. This file only declares the demo.
+    The BlogKit public and admin pages render in it too (nowo_ui_kit.layouts.admin / guest). -#}
+{% extends '@NowoUiKit/demo_platform/layout.html.twig' %}
+{% set nowo_ui_demo_platform = {
+    bundle: 'Blog Kit',
+    home_route: 'demo_home',
+    repository: 'https://github.com/nowo-tech/BlogKitBundle',
+    translation_domain: false,
+    nav: [
+        {label: 'Home', route: 'demo_home', section: 'Blog Kit'},
+        {label: 'Blog', route: 'blog_index', active: ['blog_*'], section: 'Public'},
+        {label: 'Articles', route: 'admin_blog_index', active: ['admin_blog_index', 'admin_blog_new', 'admin_blog_edit*'], section: 'Admin (HTTP Basic: admin / admin)'},
+        {label: 'Tags', route: 'admin_blog_tags_index', active: ['admin_blog_tags_*'], section: 'Admin (HTTP Basic: admin / admin)'},
+        {label: 'Comments', route: 'admin_blog_comments_index', active: ['admin_blog_comment*'], section: 'Admin (HTTP Basic: admin / admin)'},
+        {label: 'Settings', route: 'admin_blog_settings', active: ['admin_blog_settings*'], section: 'Admin (HTTP Basic: admin / admin)'},
+    ],
+} %}
 {% block nowo_ui_document_title %}{% block title %}Nowo · Blog kit{% endblock %}{% endblock %}
-
-{% block nowo_ui_navigation %}
-    {% set _route = app.request.attributes.get('_route')|default('') %}
-    <header class="nowo-ui-header" data-testid="demo-masthead">
-        <a class="nowo-ui-brand" href="{{ path('demo_home') }}">Nowo</a>
-        <nav class="nowo-ui-menu" aria-label="Demo">
-            <a class="nowo-ui-link" href="{{ path('blog_index') }}"{% if _route starts with 'blog_' %} aria-current="page"{% endif %}>Blog</a>
-            <a class="nowo-ui-link" href="{{ path('admin_blog_index') }}"{% if _route starts with 'admin_blog' %} aria-current="page"{% endif %}>Admin</a>
-        </nav>
-        <div class="nowo-ui-header__end">
-            {{ include('@NowoUiKitBundle/partials/_theme_toggle.html.twig', { compact: true }, false) }}
-        </div>
-    </header>
-{% endblock %}
 
 {% block nowo_ui_content %}{% block body %}{% endblock %}{% endblock %}
