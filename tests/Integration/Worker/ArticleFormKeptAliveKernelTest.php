@@ -118,15 +118,17 @@ final class ArticleFormKeptAliveKernelTest extends TestCase
         $manager->clear();
 
         $samples = [];
-        for ($i = 0; $i < self::ITERATIONS; ++$i) {
-            $path = $i % 2 === 0 ? '/admin/blog/' . $articleId . '/edit' : '/admin/blog/new';
-            self::assertStringContainsString('Symfony (symfony)', (string) $this->get($kernel, $path)->getContent(), 'request ' . $i);
-            $manager->clear();
-            if ($i >= 50 && $i % 25 === 0) {
-                gc_collect_cycles();
-                $samples[] = memory_get_usage();
+        KeptAliveMemory::run(function () use ($kernel, $manager, $articleId, &$samples): void {
+            for ($i = 0; $i < self::ITERATIONS; ++$i) {
+                $path = $i % 2 === 0 ? '/admin/blog/' . $articleId . '/edit' : '/admin/blog/new';
+                self::assertStringContainsString('Symfony (symfony)', (string) $this->get($kernel, $path)->getContent(), 'request ' . $i);
+                $manager->clear();
+                if ($i >= 50 && $i % 25 === 0) {
+                    gc_collect_cycles();
+                    $samples[] = memory_get_usage();
+                }
             }
-        }
+        });
 
         self::assertLessThan(self::MEMORY_MARGIN, $this->growth($samples), 'memory stays flat over many requests (samples: ' . implode(', ', $samples) . ')');
     }
