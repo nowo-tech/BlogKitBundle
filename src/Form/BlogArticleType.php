@@ -154,7 +154,7 @@ final class BlogArticleType extends AbstractBlogFormType
             return [];
         }
 
-        return array_values($this->blogTagRepository->findBy(['id' => array_map(static fn (int|float|string $id): int => (int) $id, $ids)]));
+        return $this->blogTagRepository->findBy(['id' => array_map(static fn (int|float|string $id): int => (int) $id, $ids)]);
     }
 
     /**

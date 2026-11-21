@@ -86,6 +86,9 @@ controller** (`Nowo\BlogKitBundle\Controller\…`, never one of your routes), at
 - **Connection loss** is a real error, never mapped.
 - **A comment or article deleted meanwhile** answers 404 when it is gone before the request loads it; deleted during the
   save, the update matches no row and nothing is written.
+- **A tag deleted while an article form is open** (1.12.1): the tag choices are read again when the form is submitted,
+  so a deleted tag's id is no longer a choice and the form is shown again with "The selected choice is invalid" (no
+  tag entity from an earlier request is used, so nothing stale is written).
 
 ## Host options
 
