@@ -64,15 +64,16 @@ test.describe('BlogKit demo', () => {
   });
 
   test('admin article edit form renders on the UiKit form page', async ({ browser }) => {
-    // Bundle-owned: /admin/blog/{id}/edit answers 500 ("BlogTag passed to the choice field must be managed") in worker
-    // mode with the kernel not reset; it does so on main too (UiKit 2.53), so it is reported, not patched in the demo.
-    test.fixme(true, 'bundle-owned: article edit answers 500 in worker mode (see the PR)');
+    // Worker mode with the kernel kept alive: the edit page renders on every request (BlogKit 1.12.1 fix), twice in a row.
     const page = await browser.newPage({
       httpCredentials: { username: 'admin', password: 'admin' },
     });
-    await page.goto('/admin/blog/1/edit');
-    await expect(page.locator('[data-nowo-ui-page="form"][data-testid="blog-kit-article-form"]')).toBeVisible();
-    await expect(page.locator('[data-testid="blog-kit-locale-tabs"] [role="tab"]').first()).toBeVisible();
+    for (const path of ['/admin/blog/1/edit', '/admin/blog/1/edit', '/admin/blog/new']) {
+      const response = await page.goto(path);
+      expect(response?.status(), path).toBe(200);
+      await expect(page.locator('[data-nowo-ui-page="form"][data-testid="blog-kit-article-form"]')).toBeVisible();
+      await expect(page.locator('[data-testid="blog-kit-locale-tabs"] [role="tab"]').first()).toBeVisible();
+    }
     await page.close();
   });
 

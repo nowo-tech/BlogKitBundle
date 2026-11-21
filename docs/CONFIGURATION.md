@@ -255,7 +255,7 @@ The extension prepends FormKit profiles when the host has not already defined th
 - `blog_kit` — defaults for blog forms (`translation_domain: NowoBlogKitBundle`)
 - `filter` — GET list filters (`auto_placeholder`, no labels)
 
-The extension also prepends FormKit `type_map.entity` → `Symfony\Bridge\Doctrine\Form\Type\EntityType` so article tag fields resolve. Override `nowo_form_kit.type_map` in the host if needed.
+The extension also prepends FormKit `type_map.entity` → `Symfony\Bridge\Doctrine\Form\Type\EntityType` (kept for compatibility; since 1.12.1 the article tag field is a choice of tag ids and no longer needs it). Override `nowo_form_kit.type_map` in the host if needed.
 
 Override those keys in `nowo_form_kit.profiles` if you need project-specific form chrome. For Bootstrap 5 hosts, set `nowo_form_kit.css_framework: bootstrap` (FormKit has no `bootstrap5` value), add `field_types` for `checkbox` / `choice`, and register `twig.form_themes` with `@NowoFormKitBundle/form/static_blocks.html.twig` then `bootstrap_5_layout.html.twig`. The FrankenPHP demo does this in `demo/symfony8/config/packages/`.
 

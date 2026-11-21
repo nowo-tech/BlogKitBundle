@@ -96,7 +96,15 @@ final class ControllerTestHelper
 
     public static function createFormFactory(?CsrfTokenManagerInterface $csrfTokenManager = null): FormFactoryInterface
     {
-        $csrfTokenManager ??= new CsrfTokenManager();
+        if (!$csrfTokenManager instanceof CsrfTokenManagerInterface) {
+            // Never the default native session storage: it calls session_start() in the PHPUnit process, and a native
+            // session left active makes Symfony ignore the session cookie of later kernel tests (CSRF then fails).
+            $request = new Request();
+            $request->setSession(new Session(new MockArraySessionStorage()));
+            $requestStack = new RequestStack();
+            $requestStack->push($request);
+            $csrfTokenManager = self::createCsrfManager($requestStack, true);
+        }
 
         $types = [
             FormKitTestSupport::createType(BlogSettingsType::class),

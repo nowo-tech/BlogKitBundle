@@ -187,7 +187,7 @@ nowo_blog_kit:
 
 `owner` lets editors change articles they created (`createdBy` / AuditKit). Users with `canConfigure()` still see every row. Unowned legacy articles stay editable by any manager. Implement `BlogKitResourcePolicyInterface` (since 1.9.0: snapshots, ids compared byte for byte) and set `strategy: service` for teams or workflow rules; the deprecated `BlogKitResourceAccessCheckerInterface` (entities) is still accepted until 2.0. Controllers throw via `BlogKitAccessDenied`. This is **not** a Symfony Security voter or ACL.
 
-The extension prepends FormKit `type_map.entity` so `BlogArticleType` tags resolve. Hosts can still override `nowo_form_kit.type_map`.
+The extension prepends FormKit `type_map.entity` (kept for compatibility: since 1.12.1 the `BlogArticleType` tags are a choice of tag ids read per form build, which keeps the form working in worker mode). Hosts can still override `nowo_form_kit.type_map`.
 
 ## Host meta providers
 

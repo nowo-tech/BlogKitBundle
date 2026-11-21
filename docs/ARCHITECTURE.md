@@ -83,7 +83,8 @@ configuration and event manager of your default manager:
 - every bundle service gets it (`nowo_blog_kit.entity_manager`); the service repositories, the transaction runner and
   the worker-state subscriber get `PrivateManager\PrivateManagerRegistry` (blog entities → the private manager, anything
   else → your registry), and your manager's `getRepository()` returns the same service repositories, so the entity
-  value resolvers of the admin routes and the tag choice load into the private manager;
+  value resolvers of the admin routes load into the private manager (the article form's tag choices are tag ids read
+  through the tag repository, so the selected tags come from it too);
 - `PrivateManager\PrivateEntityManagerMiddleware` on your manager's connection tells it when a rollback undid rows it
   wrote or loaded (it is replaced then, no ghost row); the bundle's own savepoints (`blog_kit_`) are ignored;
 - dropped at every OUTERMOST unit-of-work boundary (`Worker\BlogKitOwnEntityManagerSubscriber`, plus the
