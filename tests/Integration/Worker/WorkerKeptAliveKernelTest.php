@@ -53,7 +53,8 @@ final class WorkerKeptAliveKernelTest extends TestCase
 {
     private const int ITERATIONS = 1000;
 
-    private const int MEMORY_MARGIN = 4 * 1024 * 1024;
+    /** Without the harness growth (KeptAliveMemory) a clean run moves by a few hundred bytes; a 1 KB-per-request leak by 160 KB or more. */
+    private const int MEMORY_MARGIN = 128 * 1024;
 
     private ?WorkerTestKernel $kernel = null;
 
@@ -78,18 +79,20 @@ final class WorkerKeptAliveKernelTest extends TestCase
         $kernel     = $this->httpKernel($container);
         $connection = $blog->getConnection();
         $samples    = [];
-        for ($i = 0; $i < self::ITERATIONS; ++$i) {
-            $user  = $i % 2 === 0 ? 'alice' : 'bob';
-            $other = $user === 'alice' ? 'bob' : 'alice';
-            // Changed behind Doctrine's back: a manager kept across requests would serve the old title.
-            $connection->executeStatement('UPDATE content_blog_article_translation SET title = ? WHERE title LIKE ?', ['Post of ' . $user . ' #' . $i, 'Post of ' . $user . '%']);
+        KeptAliveMemory::run(function () use ($kernel, $connection, $blog, &$samples): void {
+            for ($i = 0; $i < self::ITERATIONS; ++$i) {
+                $user  = $i % 2 === 0 ? 'alice' : 'bob';
+                $other = $user === 'alice' ? 'bob' : 'alice';
+                // Changed behind Doctrine's back: a manager kept across requests would serve the old title.
+                $connection->executeStatement('UPDATE content_blog_article_translation SET title = ? WHERE title LIKE ?', ['Post of ' . $user . ' #' . $i, 'Post of ' . $user . '%']);
 
-            $html = $this->listing($kernel, $user);
-            self::assertStringContainsString('Post of ' . $user . ' #' . $i, $html, 'request ' . $i . ' reads the fresh title');
-            self::assertStringNotContainsString('Post of ' . $other, $html, 'request ' . $i . ' shows only ' . $user . '\'s article');
-            self::assertSame(0, $blog->getUnitOfWork()->size(), 'no blog entity survives request ' . $i);
-            $this->sample($i, $samples);
-        }
+                $html = $this->listing($kernel, $user);
+                self::assertStringContainsString('Post of ' . $user . ' #' . $i, $html, 'request ' . $i . ' reads the fresh title');
+                self::assertStringNotContainsString('Post of ' . $other, $html, 'request ' . $i . ' shows only ' . $user . '\'s article');
+                self::assertSame(0, $blog->getUnitOfWork()->size(), 'no blog entity survives request ' . $i);
+                $this->sample($i, $samples);
+            }
+        });
 
         self::assertLessThan(self::MEMORY_MARGIN, $this->growth($samples), 'memory stays flat over many requests (samples: ' . implode(', ', $samples) . ')');
         self::assertTrue($host->getUnitOfWork()->isScheduledForInsert($note), 'the host manager is never flushed nor cleared');
@@ -161,14 +164,16 @@ final class WorkerKeptAliveKernelTest extends TestCase
         $kernel = $this->httpKernel($container);
 
         $samples = [];
-        for ($i = 0; $i < self::ITERATIONS; ++$i) {
-            $user  = $i % 2 === 0 ? 'alice' : 'bob';
-            $other = $user === 'alice' ? 'bob' : 'alice';
-            $html  = $this->listing($kernel, $user);
-            self::assertStringContainsString('Post of ' . $user, $html, 'request ' . $i);
-            self::assertStringNotContainsString('Post of ' . $other, $html, 'request ' . $i . ' shows only ' . $user . '\'s article');
-            $this->sample($i, $samples);
-        }
+        KeptAliveMemory::run(function () use ($kernel, &$samples): void {
+            for ($i = 0; $i < self::ITERATIONS; ++$i) {
+                $user  = $i % 2 === 0 ? 'alice' : 'bob';
+                $other = $user === 'alice' ? 'bob' : 'alice';
+                $html  = $this->listing($kernel, $user);
+                self::assertStringContainsString('Post of ' . $user, $html, 'request ' . $i);
+                self::assertStringNotContainsString('Post of ' . $other, $html, 'request ' . $i . ' shows only ' . $user . '\'s article');
+                $this->sample($i, $samples);
+            }
+        });
 
         self::assertLessThan(self::MEMORY_MARGIN, $this->growth($samples), 'memory stays flat over many requests (samples: ' . implode(', ', $samples) . ')');
         self::assertTrue($default->getUnitOfWork()->isScheduledForInsert($note), 'the bundle never clears the host default manager (rule 7)');
@@ -253,9 +258,9 @@ final class WorkerKeptAliveKernelTest extends TestCase
     }
 
     /**
-     * The growth between the medians of the first and the second half of the samples. A leak raises every later
-     * sample, so it moves the median; a single reallocation of a long-lived table does not (CI, Symfony 7.4: samples
-     * flat within 0.8 MB over 900 requests, then one +5.3 MB step when a table sized by the whole suite doubled).
+     * The growth between the medians of the first and the second half of the samples: a leak raises every later
+     * sample, so it moves the median. The loop runs in {@see KeptAliveMemory::run()}, so the test harness' own
+     * per-request growth (BypassFinals' stream wrapper, PHPUnit's deprecation events) is not counted.
      *
      * @param list<int> $samples
      */

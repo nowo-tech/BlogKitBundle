@@ -60,7 +60,8 @@ final class PrivateEntityManagerKernelTest extends TestCase
 
     private const int ITERATIONS = 600;
 
-    private const int MEMORY_MARGIN = 4 * 1024 * 1024;
+    /** Without the harness growth (KeptAliveMemory) a clean run moves by a few hundred bytes; a 1 KB-per-request leak by 160 KB or more. */
+    private const int MEMORY_MARGIN = 128 * 1024;
 
     private ?WorkerTestKernel $kernel = null;
 
@@ -86,15 +87,17 @@ final class PrivateEntityManagerKernelTest extends TestCase
         $kernel  = $this->httpKernel($container);
 
         $samples = [];
-        for ($i = 0; $i < self::ITERATIONS; ++$i) {
-            $user  = $i % 2 === 0 ? 'alice' : 'bob';
-            $other = $user === 'alice' ? 'bob' : 'alice';
-            $html  = $this->listing($kernel, $user);
-            self::assertStringContainsString('Post of ' . $user, $html, 'request ' . $i);
-            self::assertStringNotContainsString('Post of ' . $other, $html, 'request ' . $i . ' shows only ' . $user . '\'s article');
-            self::assertFalse($private->isCreated(), 'the private manager is dropped at the end of request ' . $i);
-            $this->sample($i, $samples);
-        }
+        KeptAliveMemory::run(function () use ($kernel, $private, &$samples): void {
+            for ($i = 0; $i < self::ITERATIONS; ++$i) {
+                $user  = $i % 2 === 0 ? 'alice' : 'bob';
+                $other = $user === 'alice' ? 'bob' : 'alice';
+                $html  = $this->listing($kernel, $user);
+                self::assertStringContainsString('Post of ' . $user, $html, 'request ' . $i);
+                self::assertStringNotContainsString('Post of ' . $other, $html, 'request ' . $i . ' shows only ' . $user . '\'s article');
+                self::assertFalse($private->isCreated(), 'the private manager is dropped at the end of request ' . $i);
+                $this->sample($i, $samples);
+            }
+        });
 
         self::assertLessThan(self::MEMORY_MARGIN, $this->growth($samples), 'memory stays flat over many requests (samples: ' . implode(', ', $samples) . ')');
         self::assertTrue($default->getUnitOfWork()->isScheduledForInsert($note), 'your manager is never flushed nor cleared');

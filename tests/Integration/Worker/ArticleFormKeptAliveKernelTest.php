@@ -60,7 +60,8 @@ final class ArticleFormKeptAliveKernelTest extends TestCase
 
     private const int ITERATIONS = 300;
 
-    private const int MEMORY_MARGIN = 4 * 1024 * 1024;
+    /** Without the harness growth (KeptAliveMemory) a clean run moves by a few hundred bytes; a 1 KB-per-request leak by 160 KB or more. */
+    private const int MEMORY_MARGIN = 128 * 1024;
 
     private ?WorkerTestKernel $kernel = null;
 
@@ -118,15 +119,17 @@ final class ArticleFormKeptAliveKernelTest extends TestCase
         $manager->clear();
 
         $samples = [];
-        for ($i = 0; $i < self::ITERATIONS; ++$i) {
-            $path = $i % 2 === 0 ? '/admin/blog/' . $articleId . '/edit' : '/admin/blog/new';
-            self::assertStringContainsString('Symfony (symfony)', (string) $this->get($kernel, $path)->getContent(), 'request ' . $i);
-            $manager->clear();
-            if ($i >= 50 && $i % 25 === 0) {
-                gc_collect_cycles();
-                $samples[] = memory_get_usage();
+        KeptAliveMemory::run(function () use ($kernel, $manager, $articleId, &$samples): void {
+            for ($i = 0; $i < self::ITERATIONS; ++$i) {
+                $path = $i % 2 === 0 ? '/admin/blog/' . $articleId . '/edit' : '/admin/blog/new';
+                self::assertStringContainsString('Symfony (symfony)', (string) $this->get($kernel, $path)->getContent(), 'request ' . $i);
+                $manager->clear();
+                if ($i >= 50 && $i % 25 === 0) {
+                    gc_collect_cycles();
+                    $samples[] = memory_get_usage();
+                }
             }
-        }
+        });
 
         self::assertLessThan(self::MEMORY_MARGIN, $this->growth($samples), 'memory stays flat over many requests (samples: ' . implode(', ', $samples) . ')');
     }
