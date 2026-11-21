@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Nowo\BlogKitBundle\Tests\Unit\Form;
 
-use Doctrine\ORM\QueryBuilder;
 use Nowo\BlogKitBundle\Entity\BlogArticle;
 use Nowo\BlogKitBundle\Entity\BlogArticleResource;
 use Nowo\BlogKitBundle\Entity\BlogArticleTranslation;
@@ -31,7 +30,7 @@ use Nowo\BlogKitBundle\Tests\Support\LocaleTestSupport;
 use Nowo\FormKitBundle\Form\Extension\LocaleTabsExtension;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
-use Symfony\Bridge\Doctrine\Form\Type\EntityType;
+use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\CollectionType;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\Form\Extension\Csrf\CsrfExtension;
@@ -176,7 +175,10 @@ final class BlogFormTypesTest extends TestCase
             array_keys($captured),
         );
         self::assertSame(DateType::class, $captured['publishedAt'][0]);
-        self::assertSame(EntityType::class, $captured['tags'][0]);
+        self::assertSame(ChoiceType::class, $captured['tags'][0]);
+        self::assertSame([], $captured['tags'][1]['choices'], 'no tag repository: no tag choices');
+        self::assertFalse($captured['tags'][1]['choice_translation_domain']);
+        self::assertFalse($captured['tags'][1]['by_reference']);
         self::assertSame(CollectionType::class, $captured['resources'][0]);
         self::assertSame(CollectionType::class, $captured['translations'][0]);
         self::assertSame(BlogArticleResourceType::class, $captured['resources'][1]['entry_type']);
@@ -193,30 +195,58 @@ final class BlogFormTypesTest extends TestCase
         self::assertGreaterThan(0, $validator->validate('../Bad Slug', $captured['slug'][1]['constraints'])->count());
         self::assertSame(0, $validator->validate('hello-world-2', $captured['slug'][1]['constraints'])->count());
 
-        $tag = new BlogTag()->setSlug('php');
-        $tag->ensureTranslations();
-        $tag->getTranslationOrFallback('es')->setName('PHP');
+    }
 
-        $choiceLabel = $captured['tags'][1]['choice_label'];
-        self::assertIsCallable($choiceLabel);
-        self::assertSame('PHP (php)', $choiceLabel($tag));
+    /**
+     * Since 1.12.1 (kept-alive kernel): the tag choices are ids read per form build; the article's tags are shown by
+     * id and a submit stores the tags the repository returns for the selected ids.
+     */
+    #[Test]
+    public function itOffersBlogArticleTagIdsAndStoresTheRepositoryTagsOnSubmit(): void
+    {
+        $php     = $this->tag(1, 'php', 'PHP');
+        $symfony = $this->tag(2, 'symfony', 'Symfony');
+        $tags    = $this->createMock(BlogTagRepository::class);
+        $tags->method('findAllOrdered')->willReturn([$php, $symfony]);
+        $tags->expects(self::once())->method('findBy')->with(['id' => [2]])->willReturn([$symfony]);
 
-        $queryBuilder = $this->createMock(QueryBuilder::class);
-        $queryBuilder->method('leftJoin')->willReturnSelf();
-        $queryBuilder->method('addSelect')->willReturnSelf();
-        $queryBuilder->method('orderBy')->willReturnSelf();
+        $type    = FormKitTestSupport::withMerger(new BlogArticleType(FormKitTestSupport::merger(), FormKitTestSupport::typeMap(), LocaleTestSupport::create(), null, $tags));
+        $article = new BlogArticle()->setSlug('post')->addTag($php)->addTag(new BlogTag()->setSlug('unsaved'));
+        $form    = $this->createForm($type, $article, [FormKitTestSupport::createType(BlogArticleResourceType::class), FormKitTestSupport::createType(BlogArticleTranslationType::class, blogLocales: LocaleTestSupport::create())]);
 
-        $tagRepository = $this->getMockBuilder(BlogTagRepository::class)
-            ->disableOriginalConstructor()
-            ->onlyMethods(['createQueryBuilder'])
-            ->getMock();
-        $tagRepository->expects(self::once())
-            ->method('createQueryBuilder')
-            ->with('t')
-            ->willReturn($queryBuilder);
+        self::assertSame(['PHP (php)' => 1, 'Symfony (symfony)' => 2], $form->get('tags')->getConfig()->getOption('choices'));
+        self::assertSame(['1'], $form->get('tags')->getViewData(), 'the saved tag is selected by id; a tag without id is not');
 
-        $queryBuilderFactory = $captured['tags'][1]['query_builder'];
-        self::assertSame($queryBuilder, $queryBuilderFactory($tagRepository));
+        $form->submit(['slug' => 'post', 'position' => '0', 'tags' => ['2']], false);
+
+        self::assertTrue($form->get('tags')->isValid());
+        self::assertSame([$symfony], $article->getTags()->getValues());
+
+        $empty = $this->createForm($type, new BlogArticle()->setSlug('empty')->addTag($php), [FormKitTestSupport::createType(BlogArticleResourceType::class), FormKitTestSupport::createType(BlogArticleTranslationType::class, blogLocales: LocaleTestSupport::create())]);
+        $empty->submit(['slug' => 'empty', 'position' => '0', 'tags' => []], false);
+        self::assertSame([], $empty->getData()?->getTags()->getValues(), 'no selected id: no tag and no query');
+    }
+
+    #[Test]
+    public function itStoresNoBlogArticleTagWithoutATagRepository(): void
+    {
+        $type    = FormKitTestSupport::createType(BlogArticleType::class);
+        $article = new BlogArticle()->setSlug('post')->addTag($this->tag(1, 'php', 'PHP'));
+        $form    = $this->createForm($type, $article, [FormKitTestSupport::createType(BlogArticleResourceType::class), FormKitTestSupport::createType(BlogArticleTranslationType::class)]);
+        $tags    = $form->get('tags')->getConfig()->getModelTransformers()[0];
+
+        self::assertSame([], $tags->transform(null));
+        self::assertSame([], $tags->reverseTransform(['1']), 'without a repository no id becomes a tag');
+        self::assertSame([], $tags->reverseTransform('1'), 'a non-list submit is no selection');
+    }
+
+    private function tag(int $id, string $slug, string $name): BlogTag
+    {
+        $tag = new BlogTag()->setId($id)->setSlug($slug)->ensureTranslations(['es', 'en']);
+        $tag->getTranslationOrFallback('es')->setName($name);
+        $tag->getTranslationOrFallback('en')->setName($name);
+
+        return $tag;
     }
 
     #[Test]
@@ -231,7 +261,10 @@ final class BlogFormTypesTest extends TestCase
         $onlySpanish->ensureTranslations(['es']);
         $onlySpanish->getTranslationOrFallback('es')->setName('Solo español');
 
-        $labelFor = function (?string $requestLocale): callable {
+        $repository = $this->createStub(BlogTagRepository::class);
+        $repository->method('findAllOrdered')->willReturn([$tag->setId(1), $onlySpanish->setId(2)]);
+
+        $labelsFor = function (?string $requestLocale) use ($repository): array {
             $requestStack = new RequestStack();
             if ($requestLocale !== null) {
                 $request = new Request();
@@ -241,7 +274,7 @@ final class BlogFormTypesTest extends TestCase
 
             $merger = FormKitTestSupport::merger();
             $type   = FormKitTestSupport::withMerger(
-                new BlogArticleType($merger, FormKitTestSupport::typeMap(), LocaleTestSupport::create(), $requestStack),
+                new BlogArticleType($merger, FormKitTestSupport::typeMap(), LocaleTestSupport::create(), $requestStack, $repository),
             );
             $captured = [];
             $builder  = $this->createStub(FormBuilderInterface::class);
@@ -252,18 +285,17 @@ final class BlogFormTypesTest extends TestCase
             });
             $type->buildForm($builder, []);
 
-            self::assertIsCallable($captured['tags']['choice_label']);
+            self::assertIsArray($captured['tags']['choices']);
 
-            return $captured['tags']['choice_label'];
+            return array_keys($captured['tags']['choices']);
         };
 
-        // English UI: English names, not hardcoded Spanish.
-        self::assertSame('Programming (php)', $labelFor('en')($tag));
-        // Missing translation in the request locale falls back to the configured default locale (es).
-        self::assertSame('Solo español (solo)', $labelFor('en')($onlySpanish));
+        // English UI: English names, not hardcoded Spanish; a missing translation in the request locale falls back to
+        // the configured default locale (es).
+        self::assertSame(['Programming (php)', 'Solo español (solo)'], $labelsFor('en'));
         // Request locale outside nowo_blog_kit.locales and no request at all use the default locale.
-        self::assertSame('Programación (php)', $labelFor('fr')($tag));
-        self::assertSame('Programación (php)', $labelFor(null)($tag));
+        self::assertSame(['Programación (php)', 'Solo español (solo)'], $labelsFor('fr'));
+        self::assertSame(['Programación (php)', 'Solo español (solo)'], $labelsFor(null));
     }
 
     #[Test]

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Nowo\BlogKitBundle\Form;
 
-use Doctrine\ORM\QueryBuilder;
 use Nowo\BlogKitBundle\Entity\BlogArticle;
 use Nowo\BlogKitBundle\Entity\BlogTag;
 use Nowo\BlogKitBundle\Locale\BlogLocales;
@@ -12,8 +11,7 @@ use Nowo\BlogKitBundle\Repository\BlogTagRepository;
 use Nowo\FormKitBundle\Form\FormOptionsMerger;
 use Nowo\FormKitBundle\Form\FormTypeMap;
 use Override;
-use SortDirection;
-use Symfony\Bridge\Doctrine\Form\Type\EntityType;
+use Symfony\Component\Form\CallbackTransformer;
 use Symfony\Component\Form\Extension\Core\Type\CollectionType;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\Form\FormBuilderInterface;
@@ -22,6 +20,13 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints\NotBlank;
 use Symfony\Component\Validator\Constraints\Regex;
 use Symfony\Component\Validator\Constraints\Url;
+
+use function array_filter;
+use function array_map;
+use function array_values;
+use function is_array;
+use function is_iterable;
+use function is_numeric;
 
 /**
  * Symfony form type for blog article admin editing.
@@ -35,6 +40,7 @@ final class BlogArticleType extends AbstractBlogFormType
         FormTypeMap $formTypeMap,
         private readonly ?BlogLocales $blogLocales = null,
         private readonly ?RequestStack $requestStack = null,
+        private readonly ?BlogTagRepository $blogTagRepository = null,
     ) {
         parent::__construct($formOptionsMerger, $formTypeMap, $blogLocales);
     }
@@ -67,17 +73,17 @@ final class BlogArticleType extends AbstractBlogFormType
             $this->addCheckboxField('published', [
                 'required' => false,
             ]);
-            $this->addTypedField('tags', EntityType::class, [
-                'class'         => BlogTag::class,
-                'choice_label'  => $tagLabel,
-                'query_builder' => static fn (BlogTagRepository $blogTagRepository): QueryBuilder => $blogTagRepository->createQueryBuilder('t')
-                    ->leftJoin('t.translations', 'tt')
-                    ->addSelect('tt')
-                    ->orderBy('t.slug', SortDirection::Ascending),
-                'multiple' => true,
-                'expanded' => false,
-                'required' => false,
-                'attr'     => [
+            // Since 1.12.1: the tag choices are tag ids read when the form is built, and the selected ids become
+            // tags of the current request's manager on submit (worker mode with the kernel kept alive: no tag entity
+            // is held by the shared choice-list cache, so none is detached when the manager is cleared or dropped).
+            $this->addChoiceField('tags', [
+                'choices'                   => $this->tagChoices($tagLabel),
+                'choice_translation_domain' => false,
+                'multiple'                  => true,
+                'expanded'                  => false,
+                'required'                  => false,
+                'by_reference'              => false,
+                'attr'                      => [
                     'class' => 'admin-form-multiselect',
                     'size'  => 8,
                 ],
@@ -95,6 +101,60 @@ final class BlogArticleType extends AbstractBlogFormType
             ]);
             $this->addTranslationsCollectionField(BlogArticleTranslationType::class);
         });
+
+        $builder->get('tags')->addModelTransformer(new CallbackTransformer(
+            $this->tagIds(...),
+            $this->tagsOf(...),
+        ));
+    }
+
+    /**
+     * Tag choices as label => id, read through the blog's tag repository each time the form is built.
+     *
+     * @param callable(BlogTag): string $tagLabel
+     *
+     * @return array<string, int>
+     */
+    private function tagChoices(callable $tagLabel): array
+    {
+        $choices = [];
+        foreach ($this->blogTagRepository?->findAllOrdered() ?? [] as $blogTag) {
+            $choices[$tagLabel($blogTag)] = (int) $blogTag->getId();
+        }
+
+        return $choices;
+    }
+
+    /**
+     * Model to choice data: the article's tags as ids.
+     *
+     * @return list<int>
+     */
+    private function tagIds(mixed $tags): array
+    {
+        $ids = [];
+        foreach (is_iterable($tags) ? $tags : [] as $blogTag) {
+            if ($blogTag instanceof BlogTag && $blogTag->getId() !== null) {
+                $ids[] = $blogTag->getId();
+            }
+        }
+
+        return $ids;
+    }
+
+    /**
+     * Choice data to model: the selected ids as tags of the current request's manager.
+     *
+     * @return list<BlogTag>
+     */
+    private function tagsOf(mixed $ids): array
+    {
+        $ids = array_values(array_filter(is_array($ids) ? $ids : [], is_numeric(...)));
+        if ($ids === [] || !$this->blogTagRepository instanceof BlogTagRepository) {
+            return [];
+        }
+
+        return array_values($this->blogTagRepository->findBy(['id' => array_map(static fn (int|float|string $id): int => (int) $id, $ids)]));
     }
 
     /**

@@ -45,6 +45,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Article form in worker mode:** `/admin/blog/new` and `/admin/blog/{id}/edit` answered 500 ("Entity of type BlogTag passed to the choice field must be managed") in a kept-alive kernel (FrankenPHP worker mode, kernel reset false) once the blog's manager had been cleared or dropped after an earlier request (your manager cleared by your code, the bundle's own `doctrine.entity_manager`, or the private manager of `doctrine.private_entity_manager: true`). The tag field was an entity choice: Symfony's shared form choice-list cache kept the tags loaded by the first request and rendered those detached tags afterwards. With the private manager the entity choice also checked the tags against your default manager instead of the private one. The field (`BlogArticleType::tags`) now offers tag ids read through the tag repository each time the form is built, and a submit stores the tags that repository returns for the selected ids, so no tag entity outlives its request. A worker-mode test drives both pages twice in a row in each persistence mode with the manager cleared in between, then submits a tag change and checks memory stays flat.
+- **Article form:** saving an article with an empty meta title in any locale answered 500 (the empty field was set as `null` on a non-nullable string). It is stored as an empty string again.
+
 ### Changed
 
 - Demo: runs in UiKit's demo platform shell (`nowo-tech/ui-kit-bundle` ^2.60); the demo's own header is gone and the pages use the shell page headers and section cards. Demo only, no bundle change.
