@@ -2,10 +2,10 @@
 
 **Baseline spec**: [`spec.md`](spec.md)  
 **Package**: `nowo-tech/blog-kit-bundle`  
-**Last audited**: 2026-11-16  
-**Coverage summary**: **188/188** files tracked under `src/` mapped (see [Coverage summary](#coverage-summary)); audit command: `git ls-files src | wc -l`.
+**Last audited**: 2026-11-22  
+**Coverage summary**: **191/191** files tracked under `src/` mapped (see [Coverage summary](#coverage-summary)); audit command: `git ls-files src | wc -l`.
 
-Maps **100%** of the files under `src/` (136 PHP classes + Twig views, translations, config, public assets, TypeScript sources and co-located Vitest specs). Paths are relative to `src/`. Test and demo trees outside `src/` are out of Packagist scope unless promoted in the spec.
+Maps **100%** of the files under `src/` (139 PHP classes + Twig views, translations, config, public assets, TypeScript sources and co-located Vitest specs). Paths are relative to `src/`. Test and demo trees outside `src/` are out of Packagist scope unless promoted in the spec.
 
 ## Bundle entry
 
@@ -25,6 +25,7 @@ Maps **100%** of the files under `src/` (136 PHP classes + Twig views, translati
 | `DependencyInjection/Compiler/BlogKitEntityManagerPass.php` | Keeps the blog entities on the opt-in `doctrine.entity_manager` only (1.9) | FR-ORM-002 |
 | `DependencyInjection/Compiler/BlogKitPortsPass.php` | Fails the build when a configured port service implements neither the 1.x interface nor its twin (1.9) | FR-ARC-001 |
 | `DependencyInjection/Compiler/ConflictResponsePass.php` | Wires the conflict policy and responder of `BlogKitConflictSubscriber` (`conflict_response`, transaction-doctrine's when registered) (1.10) | FR-CONC-002 |
+| `DependencyInjection/Compiler/BlogKitPrivateEntityManagerPass.php` | Since 1.12.0 (`doctrine.private_entity_manager: true`): resolves your manager the private one is created on — your default entity manager (`doctrine.default_ent | FR-ORM-005 |
 
 ## Controllers
 
@@ -169,6 +170,8 @@ Maps **100%** of the files under `src/` (136 PHP classes + Twig views, translati
 | `Doctrine/BlogUserReferenceMetadataListener.php` | Maps the user fields as id string columns (`user_reference: id`) | FR-ORM-004 |
 | `Doctrine/BlogUserBlameListener.php` | Stamps `createdBy` / `updatedBy` with the current user reference (`user_reference: id`) | FR-ORM-004 |
 | `Doctrine/Type/BlogUserRefType.php` | Column type of the user id fields (`BlogUserRef`) | FR-ORM-004 |
+| `Doctrine/BlogKitHostFlushReporter.php` | Since 1.12.0 (REQ-ARCH-001 rule 6 deprecation layer): reports your pending changes that a blog write flushes while the bundle writes through your entity manager | FR-ORM-005 |
+| `Doctrine/BlogKitPrivateUserReferenceListener.php` | Since 1.12.0 (`doctrine.private_entity_manager: true` with `doctrine.user_reference: entity`): before a flush, a blog row whose to-one association to one of you | FR-ORM-005 |
 | `User/BlogUsers.php` | How blog rows reference host users (entity relation or id) | FR-ORM-004 |
 | `User/BlogUserDirectoryInterface.php` | Optional host port: label of a stored user id | FR-ORM-004, FR-ARC-001 |
 | `ValueObject/BlogUserRef.php` | Host user referenced by id | FR-ORM-004 |
@@ -283,7 +286,7 @@ Vitest specs live next to the TypeScript sources under `src/`; they are not load
 | Category | Files | Mapped |
 | --- | ---: | ---: |
 | Bundle entry | 1 | 1 |
-| DependencyInjection | 8 | 8 |
+| DependencyInjection | 9 | 9 |
 | Controllers | 9 | 9 |
 | Entity & persistence | 17 | 17 |
 | Domain model & enums | 17 | 17 |
@@ -291,11 +294,11 @@ Vitest specs live next to the TypeScript sources under `src/`; they are not load
 | HTTP, events, command | 7 | 7 |
 | Forms | 15 | 15 |
 | Security | 24 | 24 |
-| Doctrine — entity manager and user references | 9 | 9 |
+| Doctrine — entity manager and user references | 11 | 11 |
 | Host ports — 1.9 framework-free twins | 14 | 14 |
 | Worker boundaries | 2 | 2 |
 | UiKit pages | 3 | 3 |
 | Twig | 1 | 1 |
 | Non-PHP production assets (documented) | 47 | 47 |
 | Co-located Vitest sources (`FR-TEST-*`) | 5 | 5 |
-| **Total production files (`git ls-files src`)** | **188** | **188** |
+| **Total production files (`git ls-files src`)** | **191** | **191** |
