@@ -1,0 +1,7 @@
+# NowoBlogKitBundle (nl): constraint messages of the blog admin forms (validators domain).
+admin:
+  validation:
+    slug: "Gebruik alleen kleine letters, cijfers en enkele koppeltekens (bijvoorbeeld mijn-artikel)."
+blog:
+  comments:
+    privacy_required: "U moet akkoord gaan met het privacybeleid."
