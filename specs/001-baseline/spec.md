@@ -135,6 +135,7 @@ As a maintainer, I run the Symfony 8 FrankenPHP demo and smoke checks.
 | FR-ORM-002 | Opt-in dedicated entity manager (`doctrine.entity_manager`, 1.9): blog entities mapped only on that manager; the default stays the manager that maps them |
 | FR-ORM-003 | `doctrine.mapping_type: attribute` (default) or `xml` (shipped `Resources/config/doctrine-xml/*.orm.xml`, 1.9) |
 | FR-ORM-004 | `doctrine.user_reference: entity` (default, relation to `user_class`) or `id` (string id columns, `BlogUserRef`, optional `user_directory` labels); a user whose id cannot be kept exactly may not write (1.9) |
+| FR-ORM-005 | Opt-in private entity manager (`doctrine.private_entity_manager`, 1.12): the pass resolves the manager it is created on, the user-reference listener keeps entity-mode user associations valid on it, and `BlogKitHostFlushReporter` reports host changes a blog write would flush on the host manager (REQ-ARCH-001 rule 6 deprecation layer) |
 
 ### Internationalization (`FR-I18N-*`)
 
