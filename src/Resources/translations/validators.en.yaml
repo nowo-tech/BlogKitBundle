@@ -1,0 +1,7 @@
+# NowoBlogKitBundle (en): constraint messages of the blog admin forms (validators domain).
+admin:
+  validation:
+    slug: "Use only lowercase letters, numbers and single hyphens (for example, my-article)."
+blog:
+  comments:
+    privacy_required: "You must accept the privacy policy."

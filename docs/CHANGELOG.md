@@ -46,6 +46,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Slug validation message:** the article and tag forms rejected an invalid slug with the raw text `admin.validation.slug`, and the public comment form showed `blog.comments.privacy_required` when the privacy box was left unticked, because constraint messages are translated in the `validators` domain and the bundle shipped no such catalogue. `validators.<locale>.yaml` now carries both messages in all seven locales (en, es, de, fr, it, nl, pt).
+
+### Tests
+
+- A regression test checks that every dotted constraint message used by a form type exists in the validators catalogue of every shipped locale.
+
 ## [1.12.1] - 2026-11-21
 
 ### Fixed

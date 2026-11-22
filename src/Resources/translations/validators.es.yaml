@@ -1,0 +1,7 @@
+# NowoBlogKitBundle (es): constraint messages of the blog admin forms (validators domain).
+admin:
+  validation:
+    slug: "Usa solo letras minúsculas, números y guiones simples (por ejemplo, mi-articulo)."
+blog:
+  comments:
+    privacy_required: "Debes aceptar la política de privacidad."
