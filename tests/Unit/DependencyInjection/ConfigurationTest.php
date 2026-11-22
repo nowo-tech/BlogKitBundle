@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Nowo\BlogKitBundle\Tests\Unit\DependencyInjection;
 
 use Nowo\BlogKitBundle\DependencyInjection\Configuration;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Config\Definition\Exception\InvalidConfigurationException;
@@ -23,9 +24,9 @@ final class ConfigurationTest extends TestCase
         self::assertSame('Team', $config['comments']['staff_name']);
         self::assertSame(['ROLE_ADMIN'], $config['security']['access_roles']);
         self::assertSame(['manage' => ['ROLE_EDITOR'], 'moderate' => ['ROLE_MODERATOR'], 'configure' => ['ROLE_ADMIN']], $config['security']['roles']);
-        self::assertNull($config['security']['manage_roles']);
-        self::assertNull($config['security']['moderate_roles']);
-        self::assertNull($config['security']['configure_roles']);
+        foreach (['manage_roles', 'moderate_roles', 'configure_roles'] as $removed) {
+            self::assertArrayNotHasKey($removed, $config['security'], 'removed in 2.0');
+        }
         self::assertNull($config['security']['access_checker']);
         self::assertFalse($config['security']['allow_unauthenticated']);
         self::assertSame('none', $config['security']['object_access']['strategy']);
@@ -33,9 +34,11 @@ final class ConfigurationTest extends TestCase
         self::assertNull($config['web_ui']['layout_template']);
         self::assertNull($config['web_ui']['public_layout_template']);
         self::assertSame([], $config['web_ui']['templates']);
-        self::assertNull($config['web_ui']['css_framework']);
-        self::assertNull($config['web_ui']['icon_set']);
-        self::assertNull($config['web_ui']['row_actions_display']);
+        foreach (['css_framework', 'icon_set', 'row_actions_display'] as $removed) {
+            self::assertArrayNotHasKey($removed, $config['web_ui'], 'removed in 2.0');
+        }
+        self::assertNull($config['doctrine']['private_entity_manager']);
+        self::assertNull($config['doctrine']['entity_manager']);
         self::assertSame(20, $config['web_ui']['page_size']);
         self::assertSame('#', $config['web_ui']['privacy_url']);
         self::assertSame('paginated', $config['listing']['mode']);
@@ -77,34 +80,33 @@ final class ConfigurationTest extends TestCase
         ]]);
     }
 
-    #[Test]
-    public function cssFrameworkRejectsUnknownValues(): void
+    /**
+     * @return iterable<string, array{array<string, mixed>, string}>
+     */
+    public static function removedKeys(): iterable
     {
-        $this->expectException(InvalidConfigurationException::class);
-
-        new Processor()->processConfiguration(new Configuration(), [[
-            'web_ui' => ['css_framework' => 'bulma'],
-        ]]);
+        yield 'security.manage_roles' => [['security' => ['manage_roles' => ['ROLE_WRITER']]], 'The option "nowo_blog_kit.security.manage_roles" was removed in 2.0 (deprecated since 1.7): use "security.roles.manage". See UPGRADING.md "To 2.0.0".'];
+        yield 'security.moderate_roles' => [['security' => ['moderate_roles' => []]], 'The option "nowo_blog_kit.security.moderate_roles" was removed in 2.0 (deprecated since 1.7): use "security.roles.moderate".'];
+        yield 'security.configure_roles' => [['security' => ['configure_roles' => null]], 'The option "nowo_blog_kit.security.configure_roles" was removed in 2.0 (deprecated since 1.7): use "security.roles.configure".'];
+        yield 'web_ui.css_framework' => [['web_ui' => ['css_framework' => 'tailwind']], 'The option "nowo_blog_kit.web_ui.css_framework" was removed in 2.0 (deprecated since 1.7): set "nowo_ui_kit.css_framework". See UPGRADING.md "To 2.0.0".'];
+        yield 'web_ui.icon_set' => [['web_ui' => ['icon_set' => null]], 'The option "nowo_blog_kit.web_ui.icon_set" was removed in 2.0 (deprecated since 1.7): set "nowo_ui_kit.icon_set".'];
+        yield 'web_ui.row_actions_display' => [['web_ui' => ['row_actions_display' => 'inline']], 'The option "nowo_blog_kit.web_ui.row_actions_display" was removed in 2.0 (deprecated since 1.7): set "nowo_ui_kit.row_actions_display".'];
     }
 
+    /**
+     * Since 2.0 (owner answer Q-W4-1): the 1.7 keys are removed; a leftover key (any value, null included) fails the
+     * build with what to set instead, never silently.
+     *
+     * @param array<string, mixed> $config
+     */
+    #[DataProvider('removedKeys')]
     #[Test]
-    public function iconSetRejectsUnknownValues(): void
+    public function aRemovedKeyFailsWithItsReplacement(array $config, string $message): void
     {
         $this->expectException(InvalidConfigurationException::class);
+        $this->expectExceptionMessage($message);
 
-        new Processor()->processConfiguration(new Configuration(), [[
-            'web_ui' => ['icon_set' => 'fontawesome'],
-        ]]);
-    }
-
-    #[Test]
-    public function rowActionsDisplayRejectsUnknownValues(): void
-    {
-        $this->expectException(InvalidConfigurationException::class);
-
-        new Processor()->processConfiguration(new Configuration(), [[
-            'web_ui' => ['row_actions_display' => 'hidden'],
-        ]]);
+        new Processor()->processConfiguration(new Configuration(), [$config]);
     }
 
     #[Test]
@@ -175,24 +177,6 @@ final class ConfigurationTest extends TestCase
         new Processor()->processConfiguration(new Configuration(), [[
             'security' => ['object_access' => ['strategy' => 'acl']],
         ]]);
-    }
-
-    #[Test]
-    public function deprecatedRoleKeysMapToSecurityRoles(): void
-    {
-        $this->expectUserDeprecationMessageMatches('/security\.roles\.manage/');
-
-        $config = new Processor()->processConfiguration(new Configuration(), [[
-            'security' => [
-                'manage_roles'   => ['ROLE_WRITER'],
-                'moderate_roles' => ['ROLE_MOD'],
-                'roles'          => ['moderate' => ['ROLE_CANONICAL']],
-            ],
-        ]]);
-
-        self::assertSame(['ROLE_WRITER'], $config['security']['roles']['manage']);
-        self::assertSame(['ROLE_CANONICAL'], $config['security']['roles']['moderate'], 'the canonical key wins');
-        self::assertSame(['ROLE_ADMIN'], $config['security']['roles']['configure']);
     }
 
     #[Test]

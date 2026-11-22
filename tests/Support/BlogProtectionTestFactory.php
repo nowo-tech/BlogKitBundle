@@ -10,11 +10,11 @@ use Nowo\BlogKitBundle\Enum\CommentRateLimitStrategy;
 use Nowo\BlogKitBundle\Enum\HtmlSanitizeStrategy;
 use Nowo\BlogKitBundle\Security\BlogProtection;
 use Nowo\BlogKitBundle\Security\BlogProtectionConfig;
-use Nowo\BlogKitBundle\Security\Captcha\BlogCommentCaptchaStrategyInterface;
 use Nowo\BlogKitBundle\Security\Captcha\CaptchaHttpClientInterface;
 use Nowo\BlogKitBundle\Security\Captcha\StreamCaptchaHttpClient;
 use Nowo\BlogKitBundle\Security\Html\BlogHtmlSanitizerInterface;
-use Nowo\BlogKitBundle\Security\RateLimit\BlogCommentRateLimiterInterface;
+use Nowo\BlogKitBundle\Security\Internal\CommentCaptchaInterface;
+use Nowo\BlogKitBundle\Security\Internal\CommentRateLimiterInterface;
 use Nowo\BlogKitBundle\Service\BlogSettingsProvider;
 use Psr\Cache\CacheItemPoolInterface;
 use Psr\Clock\ClockInterface;
@@ -55,8 +55,8 @@ final class BlogProtectionTestFactory
         ?ClockInterface $clock = null,
         ?CaptchaHttpClientInterface $http = null,
         ?RequestStack $requestStack = null,
-        ?BlogCommentRateLimiterInterface $customRateLimiter = null,
-        ?BlogCommentCaptchaStrategyInterface $customCaptcha = null,
+        ?CommentRateLimiterInterface $customRateLimiter = null,
+        ?CommentCaptchaInterface $customCaptcha = null,
         ?BlogHtmlSanitizerInterface $customSanitizer = null,
     ): BlogProtection {
         $settings ??= new BlogSettings();

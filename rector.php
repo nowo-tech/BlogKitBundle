@@ -13,12 +13,15 @@ return RectorConfig::configure()
     ])
     ->withSkip([
         __DIR__ . '/demo',
+        // W1-1 fixtures: host classes still tied to the ports removed in 2.0 (they cannot be loaded on purpose).
+        __DIR__ . '/tests/Fixtures/RemovedPorts',
         RemoveUnusedPublicMethodParameterRector::class => [
             __DIR__ . '/src/Doctrine/AuditableEntityListener.php',
         ],
         // Symfony 7.4 UserInterface still requires eraseCredentials(); removed in Symfony 8.
         RemoveEmptyClassMethodRector::class => [
             __DIR__ . '/tests/Support/TestUser.php',
+            __DIR__ . '/tests/Support/AuditedTestUser.php',
             __DIR__ . '/tests/Support/PlainHostUser.php',
             __DIR__ . '/tests/Integration/Worker/WorkerSecurityUser.php',
         ],

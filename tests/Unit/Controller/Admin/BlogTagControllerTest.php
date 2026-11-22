@@ -12,7 +12,7 @@ use Nowo\BlogKitBundle\Entity\BlogTagTranslation;
 use Nowo\BlogKitBundle\Repository\BlogTagRepository;
 use Nowo\BlogKitBundle\Security\AllowAllBlogKitResourceAccessChecker;
 use Nowo\BlogKitBundle\Security\BlogKitAccessDenied;
-use Nowo\BlogKitBundle\Security\BlogKitResourceAccessCheckerInterface;
+use Nowo\BlogKitBundle\Security\Internal\ObjectAccessCheckerInterface;
 use Nowo\BlogKitBundle\Tests\Support\ControllerTestHelper;
 use Nowo\BlogKitBundle\Tests\Support\LocaleTestSupport;
 use Nowo\BlogKitBundle\Tests\Support\PageFixtures;
@@ -437,7 +437,7 @@ final class BlogTagControllerTest extends TestCase
 
     private function rejectingAccessDenied(): BlogKitAccessDenied
     {
-        $checker = $this->createMock(BlogKitResourceAccessCheckerInterface::class);
+        $checker = $this->createMock(ObjectAccessCheckerInterface::class);
         $checker->method('canManageTag')->willReturn(false);
 
         return new BlogKitAccessDenied($checker);

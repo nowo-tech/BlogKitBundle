@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Nowo\BlogKitBundle\Tests\Unit\Ui;
 
+use LogicException;
 use Nowo\BlogKitBundle\Ui\BlogKitPages;
 use Nowo\UiKitBundle\View\Label;
 use PHPUnit\Framework\Attributes\Test;
@@ -40,13 +41,9 @@ final class BlogKitPagesTest extends TestCase
 
         self::assertNull($pages->layout());
         self::assertNull($pages->publicLayout());
-        self::assertSame(['x' => 1, 'nowo_blog_kit_legacy_layout' => null, 'nowo_blog_kit_legacy_blocks' => []], $pages->context(['x' => 1]));
-        self::assertSame([
-            'x'                                  => 1,
-            'nowo_blog_kit_page_layout'          => null,
-            'nowo_blog_kit_legacy_public_layout' => null,
-            'nowo_blog_kit_legacy_blocks'        => [],
-        ], $pages->publicContext(['x' => 1]));
+        self::assertNull(new BlogKitPages('', '', [], $this->twig())->layout(), 'an empty layout is no layout');
+        self::assertSame(['x' => 1], $pages->context(['x' => 1]));
+        self::assertSame(['x' => 1, 'nowo_blog_kit_page_layout' => null], $pages->publicContext(['x' => 1]));
     }
 
     #[Test]
@@ -56,33 +53,35 @@ final class BlogKitPagesTest extends TestCase
 
         self::assertSame(self::CANONICAL, $pages->layout());
         self::assertSame(self::CANONICAL, $pages->publicLayout());
-        self::assertNull($pages->context([])['nowo_blog_kit_legacy_layout']);
+        self::assertSame([], $pages->context([]));
         self::assertSame(self::CANONICAL, $pages->publicContext([])['nowo_blog_kit_page_layout']);
     }
 
+    /** Since 2.0 the 1.7 bridges are removed: a 1.x layout fails clearly instead of being wrapped. */
     #[Test]
-    public function legacyLayoutsAreWrappedInTheBridges(): void
+    public function legacyLayoutsFailClearly(): void
     {
         $pages = new BlogKitPages(self::LEGACY, self::LEGACY, [], $this->twig());
 
-        $this->expectUserDeprecationMessageMatches('/The layout "layouts\/legacy\.html\.twig" does not render the UiKit canonical blocks/');
-
-        self::assertSame(BlogKitPages::LEGACY_ADMIN_BRIDGE, $pages->layout());
-        self::assertSame(BlogKitPages::LEGACY_PUBLIC_BRIDGE, $pages->publicLayout());
-        self::assertSame(['nowo_blog_kit_legacy_layout' => self::LEGACY, 'nowo_blog_kit_legacy_blocks' => ['nowo_ui_flashes', 'nowo_ui_content']], $pages->context([]));
-        self::assertSame([
-            'nowo_blog_kit_page_layout'          => BlogKitPages::LEGACY_PUBLIC_BRIDGE,
-            'nowo_blog_kit_legacy_public_layout' => self::LEGACY,
-            'nowo_blog_kit_legacy_blocks'        => ['nowo_ui_flashes', 'nowo_ui_content'],
-        ], $pages->publicContext([]));
+        foreach ([
+            ['nowo_blog_kit.web_ui.layout_template', '@NowoUiKit/layout/admin.html.twig', $pages->layout(...)],
+            ['nowo_blog_kit.web_ui.public_layout_template', '@NowoUiKit/layout/guest.html.twig', static fn (): array => $pages->publicContext([])],
+        ] as [$key, $uiKit, $resolve]) {
+            try {
+                $resolve();
+                self::fail('A 1.x layout must fail: ' . $key);
+            } catch (LogicException $exception) {
+                self::assertSame('The layout "layouts/legacy.html.twig" (' . $key . ') does not render the UiKit canonical blocks (nowo_ui_page_header, nowo_ui_content, ...). The 1.x layout bridge (deprecated since 1.7) was removed in 2.0: render the canonical blocks (or extend ' . $uiKit . '), or set the option to null to use nowo_ui_kit.layouts; see UPGRADING.md "To 2.0.0" and TEMPLATES.md.', $exception->getMessage());
+            }
+        }
     }
 
     #[Test]
-    public function unknownLayoutsAndMissingTwigAreNotTreatedAsLegacy(): void
+    public function unknownLayoutsAndMissingTwigAreLeftToTwig(): void
     {
         self::assertSame('missing.html.twig', new BlogKitPages('missing.html.twig', null, [], $this->twig())->layout());
         self::assertSame(self::LEGACY, new BlogKitPages(self::LEGACY)->layout());
-        self::assertSame(['nowo_blog_kit_legacy_layout' => null, 'nowo_blog_kit_legacy_blocks' => []], new BlogKitPages(self::LEGACY)->context([]));
+        self::assertSame([], new BlogKitPages(self::LEGACY)->context([]));
     }
 
     private function twig(): Environment

@@ -53,7 +53,7 @@ final readonly class BlogKitPageFactory
     }
 
     /**
-     * Admin page variables plus the shared ones (legacy layout bridge).
+     * Admin page variables (since 2.0 nothing is added: the 1.x layout bridge variables were removed).
      *
      * @param array<string, mixed> $vars
      *
@@ -65,7 +65,7 @@ final readonly class BlogKitPageFactory
     }
 
     /**
-     * Public page variables plus the shared ones (page layout, legacy layout bridge).
+     * Public page variables plus the shared ones (page layout).
      *
      * @param array<string, mixed> $vars
      *

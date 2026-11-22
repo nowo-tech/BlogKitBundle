@@ -22,9 +22,9 @@ use Symfony\Contracts\Service\ResetInterface;
  * managers are never reset nor cleared (rule 7: the host clears its own managers).
  *
  * Since 1.12.0 it is registered in every mode, and the same boundaries reset the bundle's per-unit services
- * (`$resettables`): the private entity manager of `doctrine.private_entity_manager: true` is dropped (the next use
- * creates a fresh one; changes still pending are logged and discarded) and the host-flush reporter forgets the classes
- * it reported, so nothing of a request, message or command survives into the next one with the kernel reset off.
+ * (`$resettables`): the bundle's private entity manager (since 2.0 the only mode without `doctrine.entity_manager`)
+ * is dropped (the next use creates a fresh one; changes still pending are logged and discarded), so nothing of a
+ * request, message or command survives into the next one with the kernel reset off.
  *
  * Boundaries, judged by {@see UnitOfWorkBoundaries} (same policy as PageBuilderKitBundle 1.15.2 and DashboardMenuBundle
  * 2.21.1):
@@ -48,8 +48,8 @@ final readonly class BlogKitOwnEntityManagerSubscriber implements EventSubscribe
      * @param iterable<EntityManagerInterface> $entityManagers the bundle-owned manager (skipped while uninitialized)
      * @param ManagerRegistry $registry the Doctrine registry, to recreate a closed manager
      * @param string|null $managerName `doctrine.entity_manager` (null: none)
-     * @param iterable<ResetInterface> $resettables since 1.12.0: the private entity manager and the host-flush
-     *                                              reporter (skipped while uninitialized)
+     * @param iterable<ResetInterface> $resettables since 1.12.0: the private entity manager (skipped while
+     *                                              uninitialized)
      */
     public function __construct(
         private UnitOfWorkBoundaries $boundaries,

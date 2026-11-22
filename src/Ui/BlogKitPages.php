@@ -4,20 +4,23 @@ declare(strict_types=1);
 
 namespace Nowo\BlogKitBundle\Ui;
 
+use LogicException;
 use Nowo\UiKitBundle\View\Label;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Throwable;
 use Twig\Environment;
 
 use function is_string;
-use function trigger_deprecation;
+use function sprintf;
 
 /**
  * Page plumbing of the UiKit page contract (REQ-UI-003): resolves the layouts the pages extend
  * (`web_ui.layout_template`, null = `nowo_ui_kit.layouts.admin`; `web_ui.public_layout_template`, null =
- * `nowo_ui_kit.layouts.guest`), wraps a 1.x layout (no UiKit canonical blocks) in a deprecated bridge, and resolves
- * the per-page template overrides (`web_ui.templates.<page>`). Configuration only: no request state, safe in worker
- * mode.
+ * `nowo_ui_kit.layouts.guest`) and the per-page template overrides (`web_ui.templates.<page>`). Configuration only:
+ * no request state, safe in worker mode.
+ *
+ * Since 2.0 the deprecated 1.7 bridges around a 1.x layout (no UiKit canonical blocks) are removed: such a layout
+ * fails clearly when the first page renders ({@see LogicException} naming it).
  */
 final readonly class BlogKitPages
 {
@@ -27,17 +30,8 @@ final readonly class BlogKitPages
     /** Translation domain of the bundle labels. */
     public const string DOMAIN = 'NowoBlogKitBundle';
 
-    /** BC bridge around a 1.x admin layout that renders `{% block admin %}` (removed in 2.0). */
-    public const string LEGACY_ADMIN_BRIDGE = '@NowoBlogKitBundle/admin/_legacy_layout.html.twig';
-
-    /** BC bridge around a 1.x public layout that renders `{% block body %}` (removed in 2.0). */
-    public const string LEGACY_PUBLIC_BRIDGE = '@NowoBlogKitBundle/public/_legacy_layout.html.twig';
-
     /** A layout that defines this block renders the UiKit canonical blocks. */
     private const string CANONICAL_BLOCK = 'nowo_ui_page_header';
-
-    /** Canonical blocks a 1.x layout may already render (the bridges skip them). */
-    private const array LEGACY_HOST_BLOCKS = ['nowo_ui_flashes', 'nowo_ui_content', 'nowo_ui_modals', 'nowo_ui_styles', 'nowo_ui_scripts'];
 
     /**
      * @param array<string, string> $templates `web_ui.templates` (page id => template)
@@ -49,8 +43,7 @@ final readonly class BlogKitPages
         private ?string $publicLayoutTemplate = null,
         #[Autowire('%nowo_blog_kit.web_ui.templates%')]
         private array $templates = [],
-        // Autowired by type: `#[Autowire('@?twig')]` is not an optional reference (the id becomes "?twig") and
-        // compiled to null, so the 1.x layout bridge was never taken.
+        // Autowired by type: `#[Autowire('@?twig')]` is not an optional reference (the id becomes "?twig").
         private ?Environment $twig = null,
     ) {
     }
@@ -76,25 +69,31 @@ final readonly class BlogKitPages
     }
 
     /**
-     * Layout the admin scaffolds extend (`page.layout`): `web_ui.layout_template`, the legacy bridge for a 1.x layout,
-     * else null (UiKit `nowo_ui_layout.admin`).
+     * Layout the admin scaffolds extend (`page.layout`): `web_ui.layout_template`, else null (UiKit
+     * `nowo_ui_layout.admin`).
+     *
+     * @throws LogicException when the configured layout does not render the UiKit canonical blocks
      */
     public function layout(): ?string
     {
-        return $this->resolve($this->layoutTemplate, self::LEGACY_ADMIN_BRIDGE);
+        return $this->resolve($this->layoutTemplate, 'web_ui.layout_template', '@NowoUiKit/layout/admin.html.twig');
     }
 
     /**
-     * Layout the public pages extend: `web_ui.public_layout_template`, the legacy bridge for a 1.x layout, else null
-     * (UiKit `nowo_ui_layout.guest`).
+     * Layout the public pages extend: `web_ui.public_layout_template`, else null (UiKit `nowo_ui_layout.guest`).
+     *
+     * @throws LogicException when the configured layout does not render the UiKit canonical blocks
      */
     public function publicLayout(): ?string
     {
-        return $this->resolve($this->publicLayoutTemplate, self::LEGACY_PUBLIC_BRIDGE);
+        return $this->resolve($this->publicLayoutTemplate, 'web_ui.public_layout_template', '@NowoUiKit/layout/guest.html.twig');
     }
 
     /**
      * Shared variables of the admin pages (added to the controller variables).
+     *
+     * Since 2.0 nothing is added (the 1.x bridge variables were removed); the layout is resolved by
+     * {@see BlogKitPageFactory} through {@see layout()}.
      *
      * @param array<string, mixed> $vars page variables
      *
@@ -102,12 +101,7 @@ final readonly class BlogKitPages
      */
     public function context(array $vars): array
     {
-        $legacy = $this->legacy($this->layoutTemplate);
-
-        return $vars + [
-            'nowo_blog_kit_legacy_layout' => $legacy,
-            'nowo_blog_kit_legacy_blocks' => $this->hostBlocks($legacy),
-        ];
+        return $vars;
     }
 
     /**
@@ -115,71 +109,31 @@ final readonly class BlogKitPages
      *
      * @param array<string, mixed> $vars page variables
      *
+     * @throws LogicException when `web_ui.public_layout_template` does not render the UiKit canonical blocks
+     *
      * @return array<string, mixed>
      */
     public function publicContext(array $vars): array
     {
-        $legacy = $this->legacy($this->publicLayoutTemplate);
-
-        return $vars + [
-            'nowo_blog_kit_page_layout'          => $legacy !== null ? self::LEGACY_PUBLIC_BRIDGE : $this->publicLayoutTemplate,
-            'nowo_blog_kit_legacy_public_layout' => $legacy,
-            'nowo_blog_kit_legacy_blocks'        => $this->hostBlocks($legacy),
-        ];
+        return $vars + ['nowo_blog_kit_page_layout' => $this->publicLayout()];
     }
 
-    /**
-     * Canonical blocks a 1.x layout defines itself (the bridge does not render them a second time).
-     *
-     * @return list<string>
-     */
-    private function hostBlocks(?string $legacy): array
-    {
-        if ($legacy === null || !$this->twig instanceof Environment) {
-            return [];
-        }
-
-        $template = $this->twig->load($legacy);
-        $context  = $this->twig->mergeGlobals([]);
-        $blocks   = [];
-        foreach (self::LEGACY_HOST_BLOCKS as $block) {
-            if ($template->hasBlock($block, $context)) {
-                $blocks[] = $block;
-            }
-        }
-
-        return $blocks;
-    }
-
-    private function resolve(?string $layout, string $bridge): ?string
-    {
-        if ($layout === null || $layout === '') {
-            return null;
-        }
-
-        return $this->legacy($layout) !== null ? $bridge : $layout;
-    }
-
-    /**
-     * The configured layout when it is a 1.x layout (it does not define the UiKit canonical blocks), else null.
-     */
-    private function legacy(?string $layout): ?string
+    private function resolve(?string $layout, string $key, string $uiKitLayout): ?string
     {
         if ($layout === null || $layout === '' || !$this->twig instanceof Environment) {
-            return null;
+            return $layout === '' ? null : $layout;
         }
 
         try {
             $canonical = $this->twig->load($layout)->hasBlock(self::CANONICAL_BLOCK, $this->twig->mergeGlobals([]));
         } catch (Throwable) {
-            return null;
+            // A layout that does not load fails where the page extends it, with Twig's own message.
+            return $layout;
         }
 
-        if ($canonical) {
-            return null;
+        if (!$canonical) {
+            throw new LogicException(sprintf('The layout "%s" (nowo_blog_kit.%s) does not render the UiKit canonical blocks (nowo_ui_page_header, nowo_ui_content, ...). The 1.x layout bridge (deprecated since 1.7) was removed in 2.0: render the canonical blocks (or extend %s), or set the option to null to use nowo_ui_kit.layouts; see UPGRADING.md "To 2.0.0" and TEMPLATES.md.', $layout, $key, $uiKitLayout));
         }
-
-        trigger_deprecation('nowo-tech/blog-kit-bundle', '1.7', 'The layout "%s" does not render the UiKit canonical blocks (nowo_ui_page_header, nowo_ui_content, ...); it is wrapped in a deprecated bridge. Render the canonical blocks (or extend @NowoUiKit/layout/admin.html.twig / guest.html.twig) or set the layout to null to use nowo_ui_kit.layouts; see docs/UPGRADING.md.', $layout);
 
         return $layout;
     }

@@ -7,8 +7,8 @@ namespace Nowo\BlogKitBundle\Tests\Unit\DependencyInjection;
 use Doctrine\ORM\Events;
 use LogicException;
 use Nowo\BlogKitBundle\DependencyInjection\Compiler\BlogKitPrivateEntityManagerPass;
+use Nowo\BlogKitBundle\DependencyInjection\Configuration;
 use Nowo\BlogKitBundle\DependencyInjection\NowoBlogKitExtension;
-use Nowo\BlogKitBundle\Doctrine\BlogKitHostFlushReporter;
 use Nowo\BlogKitBundle\Doctrine\BlogKitPrivateUserReferenceListener;
 use Nowo\BlogKitBundle\EventSubscriber\BlogKitWorkerStateSubscriber;
 use Nowo\BlogKitBundle\Repository\BlogArticleRepository;
@@ -25,83 +25,117 @@ use PHPUnit\Framework\TestCase;
 use Symfony\Component\Config\Definition\Exception\InvalidConfigurationException;
 use Symfony\Component\DependencyInjection\Argument\IteratorArgument;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\Reference;
 
+use function array_map;
+use function class_exists;
+use function defined;
+
 /**
- * Since 1.12.0 (REQ-ARCH-001 rule 6 deprecation layer): `doctrine.private_entity_manager`, its notices and its wiring.
+ * Since 2.0 (REQ-ARCH-001 rule 6): the private entity manager is the only mode without `doctrine.entity_manager`; the
+ * setting table of UPGRADING "To 2.0.0" row by row, at the extension level (the kernel tests cover the writes).
  */
 final class PrivateEntityManagerOptionTest extends TestCase
 {
     use CollectsDeprecations;
 
-    private const string PREFIX = 'Since nowo-tech/blog-kit-bundle 1.12.0: ';
+    /** The notice of `doctrine.private_entity_manager` (any value Symfony accepts) since 2.0. */
+    private const string TRUE_NOTICE = 'Since nowo-tech/blog-kit-bundle 2.0: The "private_entity_manager" option at "nowo_blog_kit.doctrine" has no effect since 2.0 (without doctrine.entity_manager the private entity manager is the only mode): remove it. The key is removed in 3.0.';
 
+    /**
+     * The 2.0 setting table, row "neither option" (the 1.x default, where the bundle flushed your default manager):
+     * the private entity manager, without any notice.
+     */
     #[Test]
-    public function unsetTriggersTheNoticeAndEnablesTheProbe(): void
+    public function unsetWiresThePrivateManagerWithoutANotice(): void
     {
         $container = null;
-        self::assertSame(
-            [self::PREFIX . NowoBlogKitExtension::PRIVATE_ENTITY_MANAGER_UNSET_DEPRECATION],
-            self::deprecationsOf(function () use (&$container): void {
-                $container = $this->load([]);
-            }),
-        );
+        self::assertSame([], self::deprecationsOf(function () use (&$container): void {
+            $container = $this->load([]);
+        }));
         self::assertInstanceOf(ContainerBuilder::class, $container);
-        self::assertTrue($container->getDefinition(BlogKitHostFlushReporter::class)->getArgument(0), 'the probe is on');
+
         self::assertNull($container->getParameter(NowoBlogKitExtension::PRIVATE_ENTITY_MANAGER_PARAMETER));
-        self::assertFalse($container->hasDefinition(NowoBlogKitExtension::PRIVATE_ENTITY_MANAGER_SERVICE));
+        $this->assertPrivateWiring($container);
     }
 
+    /** Row "true": the same wiring; the key is a deprecated no-op (removed in 3.0). */
     #[Test]
-    public function falseTriggersTheRemovedInTwoNotice(): void
+    public function trueIsADeprecatedNoOp(): void
     {
         $container = null;
-        self::assertSame(
-            [self::PREFIX . NowoBlogKitExtension::PRIVATE_ENTITY_MANAGER_FALSE_DEPRECATION],
-            self::deprecationsOf(function () use (&$container): void {
-                $container = $this->load(['doctrine' => ['private_entity_manager' => false]]);
-            }),
-        );
+        self::assertSame([self::TRUE_NOTICE], self::deprecationsOf(function () use (&$container): void {
+            $container = $this->load(['doctrine' => ['private_entity_manager' => true]]);
+        }));
         self::assertInstanceOf(ContainerBuilder::class, $container);
-        self::assertStringContainsString('removed in 2.0', NowoBlogKitExtension::PRIVATE_ENTITY_MANAGER_FALSE_DEPRECATION);
-        self::assertTrue($container->getDefinition(BlogKitHostFlushReporter::class)->getArgument(0), 'the probe is on');
-        self::assertFalse($container->getParameter(NowoBlogKitExtension::PRIVATE_ENTITY_MANAGER_PARAMETER));
+
+        self::assertTrue($container->getParameter(NowoBlogKitExtension::PRIVATE_ENTITY_MANAGER_PARAMETER));
+        $this->assertPrivateWiring($container);
     }
 
+    /** Row "false": the 1.x mode that flushed your manager was removed, so the build fails and says what to do. */
     #[Test]
-    public function aDedicatedManagerTriggersNoNoticeAndNoProbe(): void
+    public function falseFailsTheBuild(): void
+    {
+        foreach ([
+            [[], 'nowo_blog_kit.doctrine.private_entity_manager: false is no longer supported: 2.0 removed the mode in which blog writes flush your entity manager. Remove the key. The bundle then writes through its private entity manager (same connection and tables), which never flushes your pending changes; or set doctrine.entity_manager to a dedicated manager. See UPGRADING.md "To 2.0.0".'],
+            [['user_reference' => 'id', 'entity_manager' => 'blog'], 'nowo_blog_kit.doctrine.private_entity_manager: false is no longer supported: 2.0 removed the mode in which blog writes flush your entity manager. Remove the key. doctrine.entity_manager "blog" stays: your dedicated manager keeps working as in 1.x. See UPGRADING.md "To 2.0.0".'],
+        ] as [$doctrine, $message]) {
+            try {
+                self::deprecationsOf(fn (): ContainerBuilder => $this->load(['doctrine' => ['private_entity_manager' => false] + $doctrine]));
+                self::fail('false must fail the build');
+            } catch (InvalidConfigurationException $exception) {
+                self::assertStringContainsString($message, $exception->getMessage());
+            }
+        }
+
+        self::assertSame(
+            'nowo_blog_kit.doctrine.private_entity_manager: false is no longer supported: 2.0 removed the mode in which blog writes flush your entity manager. Remove the key. The bundle then writes through its private entity manager (same connection and tables), which never flushes your pending changes; or set doctrine.entity_manager to a dedicated manager. See UPGRADING.md "To 2.0.0".',
+            Configuration::privateEntityManagerFalseMessage(''),
+        );
+    }
+
+    /** Row "entity_manager: <dedicated>": unchanged (the DDD option), no notice, no private manager. */
+    #[Test]
+    public function aDedicatedManagerIsUnchanged(): void
     {
         $container = null;
         self::assertSame([], self::deprecationsOf(function () use (&$container): void {
             $container = $this->load(['doctrine' => ['user_reference' => 'id', 'entity_manager' => 'blog']]);
         }));
         self::assertInstanceOf(ContainerBuilder::class, $container);
-        self::assertFalse($container->getDefinition(BlogKitHostFlushReporter::class)->getArgument(0));
+
+        self::assertFalse($container->hasDefinition(NowoBlogKitExtension::PRIVATE_ENTITY_MANAGER_SERVICE));
+        self::assertFalse($container->hasDefinition(NowoBlogKitExtension::PRIVATE_MIDDLEWARE_SERVICE));
+        self::assertSame('doctrine.orm.blog_entity_manager', (string) $container->getAlias(NowoBlogKitExtension::ENTITY_MANAGER_SERVICE));
+        self::assertSame('blog', $container->getParameter(NowoBlogKitExtension::ENTITY_MANAGER_PARAMETER));
     }
 
+    /** The removed host-mode classes are gone with the mode. */
     #[Test]
-    public function trueTriggersNoNoticeAndWiresThePrivateManager(): void
+    public function theHostModeClassesAreGone(): void
     {
-        $container = null;
-        self::assertSame([], self::deprecationsOf(function () use (&$container): void {
-            $container = $this->load(['doctrine' => ['private_entity_manager' => true]]);
-        }));
-        self::assertInstanceOf(ContainerBuilder::class, $container);
+        self::assertFalse(class_exists('Nowo\\BlogKitBundle\\Doctrine\\BlogKitHostFlushReporter'));
+        self::assertFalse(class_exists('Nowo\\BlogKitBundle\\Doctrine\\BlogKitEntityManagerFactory'));
+        self::assertFalse(defined(NowoBlogKitExtension::class . '::PRIVATE_ENTITY_MANAGER_UNSET_DEPRECATION'));
+        self::assertFalse(defined(NowoBlogKitExtension::class . '::PRIVATE_ENTITY_MANAGER_FALSE_DEPRECATION'));
+    }
 
-        self::assertTrue($container->getParameter(NowoBlogKitExtension::PRIVATE_ENTITY_MANAGER_PARAMETER));
-        self::assertFalse($container->getDefinition(BlogKitHostFlushReporter::class)->getArgument(0), 'no probe: the bundle never flushes your manager');
-
+    private function assertPrivateWiring(ContainerBuilder $container): void
+    {
         $manager = $container->getDefinition(NowoBlogKitExtension::PRIVATE_ENTITY_MANAGER_SERVICE);
         self::assertSame(PrivateEntityManager::class, $manager->getClass());
         self::assertTrue($manager->hasTag(PrivateEntityManager::TAG));
         self::assertTrue($manager->hasTag('kernel.reset'));
         self::assertSame('%' . NowoBlogKitExtension::PRIVATE_SOURCE_MANAGER_PARAMETER . '%', $manager->getArgument(1));
+        self::assertSame(NowoBlogKitExtension::BUNDLE_NAME, $manager->getArgument(3));
         self::assertSame(NowoBlogKitExtension::PRIVATE_ENTITY_MANAGER_SERVICE, (string) $container->getAlias(NowoBlogKitExtension::ENTITY_MANAGER_SERVICE));
 
         $registry = new Reference(NowoBlogKitExtension::PRIVATE_REGISTRY_SERVICE);
         self::assertSame(PrivateManagerRegistry::class, $container->getDefinition(NowoBlogKitExtension::PRIVATE_REGISTRY_SERVICE)->getClass());
-        self::assertSame(BlogKitHostFlushReporter::OWN_NAMESPACES, $container->getDefinition(NowoBlogKitExtension::PRIVATE_REGISTRY_SERVICE)->getArgument(2));
+        self::assertSame(['Nowo\\BlogKitBundle\\Entity'], $container->getDefinition(NowoBlogKitExtension::PRIVATE_REGISTRY_SERVICE)->getArgument(2));
         foreach ([BlogArticleRepository::class, BlogCommentRepository::class, BlogSettingsRepository::class] as $repository) {
             self::assertEquals($registry, $container->getDefinition($repository)->getArgument('$registry'), $repository);
         }
@@ -118,16 +152,17 @@ final class PrivateEntityManagerOptionTest extends TestCase
         $resettables = $container->getDefinition(BlogKitOwnEntityManagerSubscriber::class)->getArgument(4);
         self::assertInstanceOf(IteratorArgument::class, $resettables);
         self::assertSame(
-            [BlogKitHostFlushReporter::class, NowoBlogKitExtension::PRIVATE_ENTITY_MANAGER_SERVICE],
+            [NowoBlogKitExtension::PRIVATE_ENTITY_MANAGER_SERVICE],
             array_map(static fn (Reference $reference): string => (string) $reference, $resettables->getValues()),
-            'both are reset at every boundary',
+            'the private manager is dropped at every boundary',
         );
+        self::assertSame(ContainerInterface::IGNORE_ON_UNINITIALIZED_REFERENCE, $resettables->getValues()[0]->getInvalidBehavior(), 'a boundary never builds it');
     }
 
     #[Test]
     public function theIdModeNeedsNoUserReferenceListener(): void
     {
-        $container = $this->load(['doctrine' => ['private_entity_manager' => true, 'user_reference' => 'id']]);
+        $container = $this->load(['doctrine' => ['user_reference' => 'id']]);
 
         self::assertFalse($container->hasDefinition(BlogKitPrivateUserReferenceListener::class));
     }
@@ -137,13 +172,13 @@ final class PrivateEntityManagerOptionTest extends TestCase
     {
         $this->expectException(LogicException::class);
         $this->expectExceptionMessage('cannot be combined with nowo_blog_kit.doctrine.entity_manager "blog"');
-        $this->load(['doctrine' => ['private_entity_manager' => true, 'user_reference' => 'id', 'entity_manager' => 'blog']]);
+        self::deprecationsOf(fn (): ContainerBuilder => $this->load(['doctrine' => ['private_entity_manager' => true, 'user_reference' => 'id', 'entity_manager' => 'blog']]));
     }
 
     #[Test]
     public function thePassUsesYourDefaultManagerAndTagsTheMiddlewareForItsConnection(): void
     {
-        $container = $this->load(['doctrine' => ['private_entity_manager' => true]]);
+        $container = $this->load([]);
         $container->setParameter('doctrine.default_entity_manager', 'main');
         $container->setParameter('doctrine.entity_managers', ['main' => 'doctrine.orm.main_entity_manager']);
         $container->setDefinition('doctrine.orm.main_entity_manager', new Definition(null, [new Reference('doctrine.dbal.app_connection')]));
@@ -155,29 +190,18 @@ final class PrivateEntityManagerOptionTest extends TestCase
     }
 
     #[Test]
-    public function thePassFailsOnAnUnknownDefaultManagerAndDoesNothingOutsideThePrivateMode(): void
+    public function thePassFailsOnAnUnknownDefaultManagerAndDoesNothingWithADedicatedManager(): void
     {
-        $host = $this->deprecatedLoad();
-        new BlogKitPrivateEntityManagerPass()->process($host);
-        self::assertSame('', $host->getParameter(NowoBlogKitExtension::PRIVATE_SOURCE_MANAGER_PARAMETER));
+        $dedicated = $this->load(['doctrine' => ['user_reference' => 'id', 'entity_manager' => 'blog']]);
+        new BlogKitPrivateEntityManagerPass()->process($dedicated);
+        self::assertSame('', $dedicated->getParameter(NowoBlogKitExtension::PRIVATE_SOURCE_MANAGER_PARAMETER));
 
-        $container = $this->load(['doctrine' => ['private_entity_manager' => true]]);
+        $container = $this->load([]);
         $container->setParameter('doctrine.default_entity_manager', 'main');
         $container->setParameter('doctrine.entity_managers', ['other' => 'doctrine.orm.other_entity_manager']);
 
         $this->expectException(InvalidConfigurationException::class);
         new BlogKitPrivateEntityManagerPass()->process($container);
-    }
-
-    private function deprecatedLoad(): ContainerBuilder
-    {
-        $container = null;
-        self::deprecationsOf(function () use (&$container): void {
-            $container = $this->load([]);
-        });
-        self::assertInstanceOf(ContainerBuilder::class, $container);
-
-        return $container;
     }
 
     /**

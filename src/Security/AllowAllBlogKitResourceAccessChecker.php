@@ -7,11 +7,12 @@ namespace Nowo\BlogKitBundle\Security;
 use Nowo\BlogKitBundle\Entity\BlogArticle;
 use Nowo\BlogKitBundle\Entity\BlogComment;
 use Nowo\BlogKitBundle\Entity\BlogTag;
+use Nowo\BlogKitBundle\Security\Internal\ObjectAccessCheckerInterface;
 
 /**
  * Object access is a no-op: anyone who passed the role checker may act on every row.
  */
-final class AllowAllBlogKitResourceAccessChecker implements BlogKitResourceAccessCheckerInterface
+final class AllowAllBlogKitResourceAccessChecker implements ObjectAccessCheckerInterface
 {
     public function canManageArticle(BlogArticle $article): bool
     {

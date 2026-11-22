@@ -14,9 +14,9 @@ use Nowo\BlogKitBundle\Port\BlogCommentCaptchaVerifierGate;
 use Nowo\BlogKitBundle\Port\BlogCommentRateLimitPolicyGate;
 use Nowo\BlogKitBundle\Port\BlogKitResourcePolicyGate;
 use Nowo\BlogKitBundle\Security\BlogKitAccessCheckerInterface;
-use Nowo\BlogKitBundle\Security\Captcha\BlogCommentCaptchaStrategyInterface;
 use Nowo\BlogKitBundle\Security\Captcha\CaptchaHttpClientInterface;
-use Nowo\BlogKitBundle\Security\RateLimit\BlogCommentRateLimiterInterface;
+use Nowo\BlogKitBundle\Security\Internal\CommentCaptchaInterface;
+use Nowo\BlogKitBundle\Security\Internal\CommentRateLimiterInterface;
 use Nowo\BlogKitBundle\Tests\Support\Legacy183\LegacyCacheBlogCommentRateLimiter;
 use Nowo\BlogKitBundle\Tests\Support\Legacy183\LegacyOwnerBlogKitResourceAccessChecker;
 use Nowo\BlogKitBundle\Tests\Support\Legacy183\LegacyRemoteCommentCaptchaStrategy;
@@ -129,7 +129,7 @@ final class PortTwinsEquivalenceTest extends TestCase
         }
     }
 
-    private function outcome(BlogCommentRateLimiterInterface $limiter, Request $request, BlogArticle $article): string
+    private function outcome(CommentRateLimiterInterface $limiter, Request $request, BlogArticle $article): string
     {
         try {
             $limiter->consume($request, $article);
@@ -140,7 +140,7 @@ final class PortTwinsEquivalenceTest extends TestCase
         }
     }
 
-    private function accepts(BlogCommentCaptchaStrategyInterface $strategy): bool
+    private function accepts(CommentCaptchaInterface $strategy): bool
     {
         $builder = Forms::createFormFactory()->createBuilder(FormType::class);
         $builder->add('body', TextType::class);

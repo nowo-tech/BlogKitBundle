@@ -4,7 +4,7 @@ services:
         autoconfigure: true
         bind:
             # Since 1.9.0 (REQ-ARCH-001 rule 6): every bundle service writes through the bundle's entity manager:
-            # doctrine.entity_manager when set (a manager dedicated to the blog), else the one that maps the entities.
+            # doctrine.entity_manager when set (a manager dedicated to the blog), else (since 2.0) its private manager.
             Doctrine\ORM\EntityManagerInterface $entityManager: '@nowo_blog_kit.entity_manager'
 
     Nowo\BlogKitBundle\:
@@ -48,14 +48,13 @@ services:
 
     Nowo\BlogKitBundle\Twig\BlogKitExtension:
         arguments:
-            $layoutTemplate: '%nowo_blog_kit.web_ui.layout_template%'
-            $publicLayoutTemplate: '%nowo_blog_kit.web_ui.public_layout_template%'
-            $cssFramework: '%nowo_blog_kit.web_ui.css_framework%'
+            # Since 2.0: the layout / CSS / icon / row-action arguments feed no global any more (deprecated, null).
+            $layoutTemplate: null
+            $publicLayoutTemplate: null
+            $cssFramework: null
             $defaultLocale: '%nowo_blog_kit.default_locale%'
             $locales: '%nowo_blog_kit.locales%'
             $privacyUrl: '%nowo_blog_kit.web_ui.privacy_url%'
-            $iconSet: '%nowo_blog_kit.web_ui.icon_set%'
-            $rowActionsDisplay: '%nowo_blog_kit.web_ui.row_actions_display%'
             $protection: '@Nowo\BlogKitBundle\Security\BlogProtection'
         tags: ['twig.extension']
 

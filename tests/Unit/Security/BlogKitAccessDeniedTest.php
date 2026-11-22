@@ -9,7 +9,7 @@ use Nowo\BlogKitBundle\Entity\BlogComment;
 use Nowo\BlogKitBundle\Entity\BlogTag;
 use Nowo\BlogKitBundle\Security\AllowAllBlogKitResourceAccessChecker;
 use Nowo\BlogKitBundle\Security\BlogKitAccessDenied;
-use Nowo\BlogKitBundle\Security\BlogKitResourceAccessCheckerInterface;
+use Nowo\BlogKitBundle\Security\Internal\ObjectAccessCheckerInterface;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
@@ -64,9 +64,9 @@ final class BlogKitAccessDeniedTest extends TestCase
         $denied->denyUnlessCanModerateComment(new BlogComment());
     }
 
-    private function rejectingChecker(): BlogKitResourceAccessCheckerInterface
+    private function rejectingChecker(): ObjectAccessCheckerInterface
     {
-        $checker = $this->createMock(BlogKitResourceAccessCheckerInterface::class);
+        $checker = $this->createMock(ObjectAccessCheckerInterface::class);
         $checker->method('canManageArticle')->willReturn(false);
         $checker->method('canManageTag')->willReturn(false);
         $checker->method('canModerateComment')->willReturn(false);

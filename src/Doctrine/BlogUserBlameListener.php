@@ -40,9 +40,9 @@ use function str_starts_with;
  * the reference instead (an existing author is kept). Without a security user (console, Messenger) nothing changes; a
  * security user whose id cannot be kept exactly (more than 128 characters, edge whitespace, control or format
  * characters) makes the flush fail with an AccessDeniedException (audit ON-M1: fail closed); nothing of the refused
- * blog write stays on the manager (audit ON-R1). The bundle's own manager (the private one of
- * `doctrine.private_entity_manager: true`, or the dedicated `doctrine.entity_manager`) is then closed like after any
- * failed flush; one of your managers (host mode) is never closed (since 1.12.0, audit XD-3).
+ * blog write stays on the manager (audit ON-R1). The bundle's own manager (its private one, or the dedicated
+ * `doctrine.entity_manager`) is then closed like after any failed flush; one of your managers (a blog entity flushed
+ * through your own manager) is never closed (since 1.12.0, audit XD-3).
  *
  * Registered only in the id mode; stateless (the token is read per flush; safe in a FrankenPHP worker with the kernel
  * reset off).
@@ -106,7 +106,7 @@ final readonly class BlogUserBlameListener
      *   Doctrine keeps scheduled after an exception thrown from `onFlush`, which detaching alone cannot undo. The closed
      *   manager is replaced at the next use (transaction-doctrine's private manager, DoctrineBundle, and
      *   {@see BlogKitWorkerStateSubscriber}).
-     * - One of your managers (host mode, audit XD-3): it is never closed, cleared or reset. Only the blog's own work is
+     * - One of your managers (a blog entity flushed through it, audit XD-3): it is never closed, cleared or reset. Only the blog's own work is
      *   undone (see undoBlogWork()); your own pending changes stay on it, for you to flush or clear.
      *
      * @throws AccessDeniedException always
@@ -131,7 +131,7 @@ final readonly class BlogUserBlameListener
 
     /**
      * Whether the flushing manager is one of yours: a manager of the registry other than the dedicated
-     * `doctrine.entity_manager`. The private manager of `doctrine.private_entity_manager: true` is in no registry. Only
+     * `doctrine.entity_manager`. The bundle's private manager is in no registry. Only
      * called on a refusal, so looking the managers up costs nothing on a normal flush.
      */
     private function isHostManager(EntityManagerInterface $manager): bool

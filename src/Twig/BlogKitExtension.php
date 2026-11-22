@@ -9,12 +9,14 @@ use Nowo\BlogKitBundle\Entity\BlogComment;
 use Nowo\BlogKitBundle\Entity\BlogTag;
 use Nowo\BlogKitBundle\Enum\CssFramework;
 use Nowo\BlogKitBundle\Security\BlogKitAccessCheckerInterface;
-use Nowo\BlogKitBundle\Security\BlogKitResourceAccessCheckerInterface;
 use Nowo\BlogKitBundle\Security\BlogProtection;
+use Nowo\BlogKitBundle\Security\Internal\ObjectAccessCheckerInterface;
 use Nowo\BlogKitBundle\User\BlogUsers;
 use Twig\Extension\AbstractExtension;
 use Twig\Extension\GlobalsInterface;
 use Twig\TwigFunction;
+
+use function trigger_deprecation;
 
 /**
  * Twig globals and markup helpers for blog kit layouts and access flags.
@@ -22,22 +24,31 @@ use Twig\TwigFunction;
 final class BlogKitExtension extends AbstractExtension implements GlobalsInterface
 {
     /**
+     * @param string|null $layoutTemplate deprecated since 2.0, ignored (the global it fed was removed); removed in 3.0
+     * @param string|null $publicLayoutTemplate deprecated since 2.0, ignored (the global it fed was removed); removed in 3.0
+     * @param string|null $cssFramework deprecated since 2.0 (the `web_ui.css_framework` key was removed): only read by
+     *                                  the deprecated {@see containerClass()}; the bundle passes null; removed in 3.0
      * @param list<string> $locales
+     * @param string|null $iconSet deprecated since 2.0, ignored (the global it fed was removed); removed in 3.0
+     * @param string|null $rowActionsDisplay deprecated since 2.0, ignored (the global it fed was removed); removed in 3.0
      */
     public function __construct(
-        private readonly ?string $layoutTemplate,
-        private readonly ?string $publicLayoutTemplate,
+        ?string $layoutTemplate,
+        ?string $publicLayoutTemplate,
         private readonly ?string $cssFramework,
         private readonly string $defaultLocale,
         private readonly array $locales,
         private readonly string $privacyUrl,
         private readonly BlogKitAccessCheckerInterface $accessChecker,
-        private readonly ?string $iconSet = null,
-        private readonly ?string $rowActionsDisplay = null,
+        ?string $iconSet = null,
+        ?string $rowActionsDisplay = null,
         private readonly ?BlogProtection $protection = null,
-        private readonly ?BlogKitResourceAccessCheckerInterface $resourceAccess = null,
+        private readonly ?ObjectAccessCheckerInterface $resourceAccess = null,
         private readonly ?BlogUsers $users = null,
     ) {
+        if ($layoutTemplate !== null || $publicLayoutTemplate !== null || $iconSet !== null || $rowActionsDisplay !== null) {
+            trigger_deprecation('nowo-tech/blog-kit-bundle', '2.0', 'The $layoutTemplate, $publicLayoutTemplate, $iconSet and $rowActionsDisplay arguments of "%s" are ignored since 2.0 (the Twig globals they fed were removed) and are removed in 3.0: pass null.', self::class);
+        }
     }
 
     /**
@@ -77,8 +88,8 @@ final class BlogKitExtension extends AbstractExtension implements GlobalsInterfa
      * Semantic width wrapper plus the host framework container class when it exists.
      *
      * Deprecated since 1.7: the bundle pages no longer call it (REQ-UI-003: no framework classes in bundle markup;
-     * the page width comes from the UiKit layout). Kept for host templates; returns `blog-container` unless the
-     * deprecated `web_ui.css_framework` is set.
+     * the page width comes from the UiKit layout). Kept for host templates. Since 2.0 (the `web_ui.css_framework` key
+     * was removed) it returns `blog-container` in the bundle's wiring.
      */
     public function containerClass(): string
     {
@@ -124,9 +135,9 @@ final class BlogKitExtension extends AbstractExtension implements GlobalsInterfa
     }
 
     /**
-     * Deprecated since 1.7 (REQ-UI-003): `nowo_blog_kit_layout` / `nowo_blog_kit_public_layout` (the pages resolve the
-     * layout through BlogKitPages), `nowo_blog_kit_css_framework` / `_icon_set` / `_row_actions_display` (null unless
-     * the deprecated `web_ui.*` keys are set; read `nowo_ui_kit_*`).
+     * Since 2.0 the 1.7 deprecated globals `nowo_blog_kit_layout`, `nowo_blog_kit_public_layout`,
+     * `nowo_blog_kit_css_framework`, `nowo_blog_kit_icon_set` and `nowo_blog_kit_row_actions_display` are removed (the
+     * pages resolve the layout through BlogKitPages; read `nowo_ui_layout` and `nowo_ui_kit.*`).
      *
      * The `nowo_blog_kit_can_*` globals are deprecated: Twig resolves globals once per environment,
      * so in long-running workers without `services_resetter` they keep the first user's flags.
@@ -135,14 +146,9 @@ final class BlogKitExtension extends AbstractExtension implements GlobalsInterfa
     public function getGlobals(): array
     {
         return [
-            'nowo_blog_kit_layout'              => $this->layoutTemplate,
-            'nowo_blog_kit_public_layout'       => $this->publicLayoutTemplate,
-            'nowo_blog_kit_css_framework'       => $this->cssFramework,
-            'nowo_blog_kit_default_locale'      => $this->defaultLocale,
-            'nowo_blog_kit_locales'             => $this->locales,
-            'nowo_blog_kit_privacy_url'         => $this->privacyUrl,
-            'nowo_blog_kit_icon_set'            => $this->iconSet,
-            'nowo_blog_kit_row_actions_display' => $this->rowActionsDisplay,
+            'nowo_blog_kit_default_locale' => $this->defaultLocale,
+            'nowo_blog_kit_locales'        => $this->locales,
+            'nowo_blog_kit_privacy_url'    => $this->privacyUrl,
             // Fail closed (SEC-004 I6): a global is computed once per Twig environment, so in a worker it would keep
             // the first user's flags. The functions nowo_blog_kit_can_*() are evaluated per call.
             'nowo_blog_kit_can_manage'    => false,

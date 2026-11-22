@@ -21,6 +21,7 @@ use Nowo\BlogKitBundle\Transaction\BlogKitTransactionRunner;
 use Nowo\TransactionContract\TransientStorageFailure;
 use PHPUnit\Framework\Attributes\Test;
 use RuntimeException;
+use stdClass;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 
 /**
@@ -39,7 +40,7 @@ final class BlogKitTransactionRunnerTest extends DoctrineTestCase
 
         $dispatcher = new EventDispatcher();
         $dispatcher->addListener(BlogArticlePublishedEvent::class, function (BlogArticlePublishedEvent $event): void {
-            $this->published[] = ['slug' => $event->getArticle()->getSlug(), 'inTransaction' => $this->connection->isTransactionActive()];
+            $this->published[] = ['slug' => $event->getArticleSnapshot()->slug, 'inTransaction' => $this->connection->isTransactionActive()];
         });
         $this->publishedEvents = new BlogArticlePublishedDoctrineSubscriber($dispatcher);
         $this->entityManager->getEventManager()->addEventListener([Events::onFlush, Events::postFlush], $this->publishedEvents);
@@ -60,8 +61,12 @@ final class BlogKitTransactionRunnerTest extends DoctrineTestCase
         self::assertSame(0, $this->connection->getTransactionNestingLevel());
     }
 
+    /**
+     * Built directly on a caller's manager (no manager name: never the bundle's own wiring since 2.0), the runner treats
+     * it as the caller's: it refuses to start a unit over pending changes rather than flush them.
+     */
     #[Test]
-    public function aUnitOnTheHostManagerRefusesPendingHostChanges(): void
+    public function aRunnerBuiltDirectlyOnACallersManagerRefusesItsPendingChanges(): void
     {
         $this->entityManager->persist(new BlogTag()->setSlug('pending'));
 
@@ -171,7 +176,7 @@ final class BlogKitTransactionRunnerTest extends DoctrineTestCase
     }
 
     #[Test]
-    public function withoutARegistryOrAKnownNameTheHostManagerHasNoName(): void
+    public function withoutARegistryOrAKnownNameTheCallersManagerHasNoName(): void
     {
         new BlogKitTransactionRunner($this->entityManager)->run(function (): void {
             $this->entityManager->persist(new BlogTag()->setSlug('no-registry'));
@@ -186,6 +191,18 @@ final class BlogKitTransactionRunnerTest extends DoctrineTestCase
         });
 
         self::assertSame(['no-registry', 'unknown-name'], $this->connection->fetchFirstColumn("SELECT slug FROM content_blog_tag WHERE slug IN ('no-registry', 'unknown-name') ORDER BY slug"));
+    }
+
+    /** Since 2.0 the 1.12 host-flush reporter argument is accepted and ignored (deprecated; removed in 3.0). */
+    #[Test]
+    public function theHostFlushReporterArgumentIsIgnored(): void
+    {
+        $runner = new BlogKitTransactionRunner($this->entityManager, $this->registry, 'blog', $this->publishedEvents, hostFlushReporter: new stdClass());
+        $runner->run(function (): void {
+            $this->entityManager->persist(new BlogTag()->setSlug('ignored-reporter'));
+        });
+
+        self::assertSame(1, (int) $this->connection->fetchOne("SELECT COUNT(*) FROM content_blog_tag WHERE slug = 'ignored-reporter'"));
     }
 
     private function runner(): BlogKitTransactionRunner

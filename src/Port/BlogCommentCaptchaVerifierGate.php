@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Nowo\BlogKitBundle\Port;
 
-use Nowo\BlogKitBundle\Security\Captcha\BlogCommentCaptchaStrategyInterface;
 use Nowo\BlogKitBundle\Security\Captcha\BlogCommentCaptchaVerifierInterface;
+use Nowo\BlogKitBundle\Security\Internal\CommentCaptchaInterface;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Form\FormError;
 use Symfony\Component\Form\FormEvent;
@@ -20,7 +20,7 @@ use Symfony\Component\HttpFoundation\RequestStack;
  *
  * @internal built by {@see Ports}
  */
-final readonly class BlogCommentCaptchaVerifierGate implements BlogCommentCaptchaStrategyInterface
+final readonly class BlogCommentCaptchaVerifierGate implements CommentCaptchaInterface
 {
     public function __construct(
         private BlogCommentCaptchaVerifierInterface $verifier,

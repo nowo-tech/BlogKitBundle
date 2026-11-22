@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Nowo\BlogKitBundle\Tests\Integration;
 
+use LogicException;
 use Nowo\BlogKitBundle\Tests\Integration\Kernel\LegacyBridgeKernel;
 use Nowo\BlogKitBundle\Ui\BlogKitPages;
-use PHPUnit\Framework\Attributes\IgnoreDeprecations;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Filesystem\Filesystem;
@@ -16,12 +16,10 @@ use function uniqid;
 
 /**
  * The container injects the TwigBundle `twig` service into BlogKitPages, so a configured 1.x layout (no UiKit
- * canonical blocks) is detected and wrapped in the deprecated bridge. Up to 1.8.0 the argument used
- * `#[Autowire('@?twig')]`, which is not an optional reference (the id became "?twig") and compiled to null: the bridge
- * was never taken.
+ * canonical blocks) is detected. Since 2.0 the 1.7 bridge around such a layout (deprecated since 1.7) is removed: the
+ * layout fails clearly, naming itself and the option, instead of rendering a page without its content.
  */
-#[IgnoreDeprecations]
-final class LegacyLayoutBridgeWiringTest extends TestCase
+final class LayoutContractWiringTest extends TestCase
 {
     private string $dir;
 
@@ -39,14 +37,24 @@ final class LegacyLayoutBridgeWiringTest extends TestCase
     }
 
     #[Test]
-    public function aConfigured1xLayoutIsWrappedInTheLegacyBridges(): void
+    public function aConfigured1xLayoutFailsClearly(): void
     {
         $pages = $this->pages('legacy.html.twig');
 
-        $this->expectUserDeprecationMessageMatches('/legacy\.html\.twig/');
-        self::assertSame(BlogKitPages::LEGACY_ADMIN_BRIDGE, $pages->layout());
-        self::assertSame(BlogKitPages::LEGACY_PUBLIC_BRIDGE, $pages->publicLayout());
-        self::assertSame('legacy.html.twig', $pages->context([])['nowo_blog_kit_legacy_layout']);
+        foreach ([
+            'web_ui.layout_template'        => $pages->layout(...),
+            'web_ui.public_layout_template' => $pages->publicLayout(...),
+        ] as $key => $resolve) {
+            try {
+                $resolve();
+                self::fail('A 1.x layout must fail: ' . $key);
+            } catch (LogicException $exception) {
+                self::assertStringContainsString('The layout "legacy.html.twig" (nowo_blog_kit.' . $key . ') does not render the UiKit canonical blocks', $exception->getMessage());
+                self::assertStringContainsString('The 1.x layout bridge (deprecated since 1.7) was removed in 2.0', $exception->getMessage());
+            }
+        }
+
+        self::assertSame(['x' => 1], $pages->context(['x' => 1]), 'no bridge variables any more');
     }
 
     #[Test]
@@ -56,6 +64,7 @@ final class LegacyLayoutBridgeWiringTest extends TestCase
 
         self::assertSame('canonical.html.twig', $pages->layout());
         self::assertSame('canonical.html.twig', $pages->publicLayout());
+        self::assertSame(['nowo_blog_kit_page_layout' => 'canonical.html.twig'], $pages->publicContext([]));
     }
 
     private function pages(string $layout): BlogKitPages

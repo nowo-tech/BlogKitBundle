@@ -14,15 +14,13 @@ use Nowo\BlogKitBundle\Port\Ports;
 use Nowo\BlogKitBundle\Security\AllowAllBlogKitAccessChecker;
 use Nowo\BlogKitBundle\Security\AllowAllBlogKitResourceAccessChecker;
 use Nowo\BlogKitBundle\Security\BlogKitAccessCheckerInterface;
-use Nowo\BlogKitBundle\Security\BlogKitResourceAccessCheckerInterface;
 use Nowo\BlogKitBundle\Security\BlogProtection;
-use Nowo\BlogKitBundle\Security\Captcha\BlogCommentCaptchaStrategyInterface;
 use Nowo\BlogKitBundle\Security\Captcha\BlogCommentCaptchaVerifierInterface;
 use Nowo\BlogKitBundle\Security\Captcha\PublicBlogCommentCaptchaTypeExtension;
 use Nowo\BlogKitBundle\Security\Captcha\StreamCaptchaHttpClient;
 use Nowo\BlogKitBundle\Security\ConfigurableBlogKitAccessChecker;
+use Nowo\BlogKitBundle\Security\Internal\ObjectAccessCheckerInterface;
 use Nowo\BlogKitBundle\Security\OwnerBlogKitResourceAccessChecker;
-use Nowo\BlogKitBundle\Security\RateLimit\BlogCommentRateLimiterInterface;
 use Nowo\BlogKitBundle\Security\RateLimit\BlogCommentRateLimitPolicyInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\IgnoreDeprecations;
@@ -74,9 +72,9 @@ final class NowoBlogKitExtensionTest extends TestCase
         self::assertNull($container->getParameter('nowo_blog_kit.web_ui.layout_template'));
         self::assertNull($container->getParameter('nowo_blog_kit.web_ui.public_layout_template'));
         self::assertSame([], $container->getParameter('nowo_blog_kit.web_ui.templates'));
-        self::assertNull($container->getParameter('nowo_blog_kit.web_ui.css_framework'));
-        self::assertNull($container->getParameter('nowo_blog_kit.web_ui.icon_set'));
-        self::assertNull($container->getParameter('nowo_blog_kit.web_ui.row_actions_display'));
+        foreach (['css_framework', 'icon_set', 'row_actions_display'] as $removed) {
+            self::assertFalse($container->hasParameter('nowo_blog_kit.web_ui.' . $removed), 'removed in 2.0 with its key');
+        }
         self::assertSame(20, $container->getParameter('nowo_blog_kit.web_ui.page_size'));
         self::assertSame('#', $container->getParameter('nowo_blog_kit.web_ui.privacy_url'));
         self::assertSame('paginated', $container->getParameter('nowo_blog_kit.listing.mode'));
@@ -187,7 +185,7 @@ final class NowoBlogKitExtensionTest extends TestCase
         );
         self::assertSame(
             'nowo_blog_kit.object_access.allow_all',
-            (string) $container->getAlias(BlogKitResourceAccessCheckerInterface::class),
+            (string) $container->getAlias(ObjectAccessCheckerInterface::class),
         );
         self::assertFalse($container->hasDefinition('nowo_blog_kit.access_checker.default'));
     }
@@ -234,7 +232,7 @@ final class NowoBlogKitExtensionTest extends TestCase
         );
         self::assertSame(
             'nowo_blog_kit.object_access.allow_all',
-            (string) $container->getAlias(BlogKitResourceAccessCheckerInterface::class),
+            (string) $container->getAlias(ObjectAccessCheckerInterface::class),
         );
     }
 
@@ -259,7 +257,7 @@ final class NowoBlogKitExtensionTest extends TestCase
         );
         self::assertSame(
             'nowo_blog_kit.object_access.owner',
-            (string) $container->getAlias(BlogKitResourceAccessCheckerInterface::class),
+            (string) $container->getAlias(ObjectAccessCheckerInterface::class),
         );
     }
 
@@ -280,7 +278,7 @@ final class NowoBlogKitExtensionTest extends TestCase
 
         self::assertSame(
             'nowo_blog_kit.object_access.service',
-            (string) $container->getAlias(BlogKitResourceAccessCheckerInterface::class),
+            (string) $container->getAlias(ObjectAccessCheckerInterface::class),
         );
         $definition = $container->getDefinition('nowo_blog_kit.object_access.service');
         self::assertSame(Ports::class . '::resourceAccess', implode('::', (array) $definition->getFactory()));
@@ -364,7 +362,7 @@ final class NowoBlogKitExtensionTest extends TestCase
         self::assertSame('owner', $container->getParameter('nowo_blog_kit.security.object_access.strategy'));
         self::assertSame(
             'nowo_blog_kit.object_access.allow_all',
-            (string) $container->getAlias(BlogKitResourceAccessCheckerInterface::class),
+            (string) $container->getAlias(ObjectAccessCheckerInterface::class),
         );
         self::assertFalse($container->hasDefinition('nowo_blog_kit.object_access.owner'));
     }
@@ -395,7 +393,7 @@ final class NowoBlogKitExtensionTest extends TestCase
         ]], $container);
 
         $arguments = $container->getDefinition(BlogProtection::class)->getArguments();
-        // Since 1.9.0 the rate limiter and captcha go through Port\Ports (1.x interface or twin).
+        // Since 1.9.0 the rate limiter and captcha go through Port\Ports (since 2.0: the 1.9 interface only).
         self::assertEquals(new Reference('nowo_blog_kit.comments.rate_limit.service'), $arguments[6]);
         self::assertEquals(new Reference('nowo_blog_kit.comments.captcha.service'), $arguments[7]);
         self::assertEquals(new Reference('app.blog_sanitizer'), $arguments[8]);
@@ -404,8 +402,8 @@ final class NowoBlogKitExtensionTest extends TestCase
         self::assertSame(Ports::class . '::captcha', implode('::', (array) $container->getDefinition('nowo_blog_kit.comments.captcha.service')->getFactory()));
         self::assertEquals([new Reference('app.blog_captcha'), new Reference('request_stack')], $container->getDefinition('nowo_blog_kit.comments.captcha.service')->getArguments());
         self::assertSame([
-            'comments.rate_limit.service' => ['app.blog_rate_limiter', BlogCommentRateLimiterInterface::class, BlogCommentRateLimitPolicyInterface::class],
-            'comments.captcha.service'    => ['app.blog_captcha', BlogCommentCaptchaStrategyInterface::class, BlogCommentCaptchaVerifierInterface::class],
+            'comments.rate_limit.service' => ['app.blog_rate_limiter', BlogCommentRateLimitPolicyInterface::class],
+            'comments.captcha.service'    => ['app.blog_captcha', BlogCommentCaptchaVerifierInterface::class],
         ], $container->getParameter(NowoBlogKitExtension::PORTS_PARAMETER));
     }
 
@@ -582,57 +580,22 @@ final class NowoBlogKitExtensionTest extends TestCase
         self::assertSame([], $container->getExtensionConfig('doctrine'));
     }
 
+    /**
+     * Since 2.0 the deprecated `web_ui.css_framework` / `icon_set` / `row_actions_display` are removed, so nothing is
+     * copied to UiKit any more: the CSS stack is UiKit's alone (REQ-UI-003).
+     */
     #[Test]
-    public function prependSeedsUiKitDefaultsWhenHostDidNotConfigureThem(): void
+    public function prependLeavesUiKitAlone(): void
     {
         $container = new ContainerBuilder();
         $container->registerExtension($this->createExtension('nowo_ui_kit'));
         $container->registerExtension(new NowoBlogKitExtension());
-        $container->loadFromExtension('nowo_blog_kit', [
-            'web_ui' => [
-                'css_framework' => 'tailwind',
-                'icon_set'      => 'bootstrap-icons',
-            ],
-        ]);
+        $container->prependExtensionConfig('nowo_ui_kit', ['css_framework' => 'bootstrap5']);
+        $container->loadFromExtension('nowo_blog_kit', ['web_ui' => ['page_size' => 10]]);
 
         new NowoBlogKitExtension()->prepend($container);
 
-        $configs = $container->getExtensionConfig('nowo_ui_kit');
-        self::assertNotEmpty($configs);
-
-        $merged = array_replace_recursive(...array_reverse($configs));
-
-        self::assertSame('tailwind', $merged['css_framework']);
-        self::assertSame('bootstrap-icons', $merged['icon_set']);
-        self::assertArrayNotHasKey('row_actions_display', $merged, 'unset deprecated keys inherit the UiKit value');
-    }
-
-    #[Test]
-    public function prependDoesNotOverrideHostUiKitValues(): void
-    {
-        $container = new ContainerBuilder();
-        $container->registerExtension($this->createExtension('nowo_ui_kit'));
-        $container->registerExtension(new NowoBlogKitExtension());
-        $container->prependExtensionConfig('nowo_ui_kit', [
-            'css_framework'       => 'bootstrap5',
-            'icon_set'            => 'fontawesome',
-            'row_actions_display' => 'text',
-        ]);
-        $container->loadFromExtension('nowo_blog_kit', [
-            'web_ui' => [
-                'css_framework' => 'tailwind',
-                'icon_set'      => 'bootstrap-icons',
-            ],
-        ]);
-
-        new NowoBlogKitExtension()->prepend($container);
-
-        $configs = $container->getExtensionConfig('nowo_ui_kit');
-
-        self::assertCount(1, $configs);
-        self::assertSame('bootstrap5', $configs[0]['css_framework']);
-        self::assertSame('fontawesome', $configs[0]['icon_set']);
-        self::assertSame('text', $configs[0]['row_actions_display']);
+        self::assertSame([['css_framework' => 'bootstrap5']], $container->getExtensionConfig('nowo_ui_kit'));
     }
 
     #[Test]

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Nowo\BlogKitBundle\Security\Captcha;
 
+use Nowo\BlogKitBundle\Security\Internal\CommentCaptchaInterface;
 use Override;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
@@ -16,7 +17,7 @@ use function is_string;
 /**
  * Hidden extra field that bots tend to fill (`honeypot` strategy).
  */
-final readonly class HoneypotCommentCaptchaStrategy implements BlogCommentCaptchaStrategyInterface
+final readonly class HoneypotCommentCaptchaStrategy implements CommentCaptchaInterface
 {
     public function __construct(
         private string $fieldName = 'website',

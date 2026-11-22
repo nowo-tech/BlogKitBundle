@@ -9,17 +9,15 @@ use Nowo\BlogKitBundle\Enum\BlogMasonryStrategy;
 use Nowo\BlogKitBundle\Enum\BlogObjectAccessStrategy;
 use Nowo\BlogKitBundle\Enum\CommentCaptchaStrategy;
 use Nowo\BlogKitBundle\Enum\CommentRateLimitStrategy;
-use Nowo\BlogKitBundle\Enum\CssFramework;
 use Nowo\BlogKitBundle\Enum\HtmlSanitizeStrategy;
-use Nowo\BlogKitBundle\Enum\IconSet;
-use Nowo\BlogKitBundle\Enum\RowActionsDisplay;
 use Symfony\Component\Config\Definition\Builder\ArrayNodeDefinition;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
+use Symfony\Component\Config\Definition\Exception\InvalidConfigurationException;
 
 use function array_key_exists;
-use function is_array;
 use function is_string;
+use function sprintf;
 
 /**
  * Validates and normalizes `nowo_blog_kit` configuration.
@@ -53,7 +51,7 @@ final class Configuration implements ConfigurationInterface
                     ->addDefaultsIfNotSet()
                     ->beforeNormalization()
                         ->ifArray()
-                        ->then(static fn (array $security): array => self::mapDeprecatedRoleKeys($security))
+                        ->then(static fn (array $security): array => self::refuseRemovedKeys($security, self::REMOVED_SECURITY_KEYS, 'security.'))
                     ->end()
                     ->children()
                         ->arrayNode('access_roles')
@@ -82,21 +80,6 @@ final class Configuration implements ConfigurationInterface
                                 ->end()
                             ->end()
                         ->end()
-                        ->variableNode('manage_roles')
-                            ->defaultNull()
-                            ->info('Deprecated since 1.7: use security.roles.manage.')
-                            ->setDeprecated('nowo-tech/blog-kit-bundle', '1.7', 'The "%node%" option at "%path%" is deprecated, use "security.roles.manage" instead.')
-                        ->end()
-                        ->variableNode('moderate_roles')
-                            ->defaultNull()
-                            ->info('Deprecated since 1.7: use security.roles.moderate.')
-                            ->setDeprecated('nowo-tech/blog-kit-bundle', '1.7', 'The "%node%" option at "%path%" is deprecated, use "security.roles.moderate" instead.')
-                        ->end()
-                        ->variableNode('configure_roles')
-                            ->defaultNull()
-                            ->info('Deprecated since 1.7: use security.roles.configure.')
-                            ->setDeprecated('nowo-tech/blog-kit-bundle', '1.7', 'The "%node%" option at "%path%" is deprecated, use "security.roles.configure" instead.')
-                        ->end()
                         ->scalarNode('access_checker')->defaultNull()->end()
                         ->booleanNode('allow_unauthenticated')->defaultFalse()->end()
                         ->arrayNode('object_access')
@@ -118,6 +101,10 @@ final class Configuration implements ConfigurationInterface
                 ->end()
                 ->arrayNode('web_ui')
                     ->addDefaultsIfNotSet()
+                    ->beforeNormalization()
+                        ->ifArray()
+                        ->then(static fn (array $webUi): array => self::refuseRemovedKeys($webUi, self::REMOVED_WEB_UI_KEYS, 'web_ui.'))
+                    ->end()
                     ->children()
                         ->scalarNode('layout_template')
                             ->beforeNormalization()
@@ -125,7 +112,7 @@ final class Configuration implements ConfigurationInterface
                                 ->then(static fn (): ?string => null)
                             ->end()
                             ->defaultNull()
-                            ->info('Admin layout of the UiKit page scaffolds (REQ-UI-003); null = nowo_ui_kit.layouts.admin. A 1.x layout (no UiKit canonical blocks) is wrapped by a deprecated bridge.')
+                            ->info('Admin layout of the UiKit page scaffolds (REQ-UI-003); null = nowo_ui_kit.layouts.admin. It must render the UiKit canonical blocks (nowo_ui_page_header, nowo_ui_content, ...): the 1.x layout bridge was removed in 2.0.')
                         ->end()
                         ->scalarNode('public_layout_template')
                             ->beforeNormalization()
@@ -133,31 +120,13 @@ final class Configuration implements ConfigurationInterface
                                 ->then(static fn (): ?string => null)
                             ->end()
                             ->defaultNull()
-                            ->info('Layout of the public blog pages; null = nowo_ui_kit.layouts.guest. A 1.x layout (block body) is wrapped by a deprecated bridge.')
+                            ->info('Layout of the public blog pages; null = nowo_ui_kit.layouts.guest. It must render the UiKit canonical blocks (nowo_ui_page_header, nowo_ui_content, ...): the 1.x layout bridge was removed in 2.0.')
                         ->end()
                         ->arrayNode('templates')
                             ->info('Per-page template overrides (page id => template), e.g. article_index: "admin/blog/articles.html.twig" extending the bundle page.')
                             ->useAttributeAsKey('page')
                             ->scalarPrototype()->end()
                             ->defaultValue([])
-                        ->end()
-                        ->enumNode('css_framework')
-                            ->values([...CssFramework::values(), null])
-                            ->defaultNull()
-                            ->info('Deprecated since 1.7: set nowo_ui_kit.css_framework. When set (and nowo_ui_kit.css_framework is not), it is copied to UiKit.')
-                            ->setDeprecated('nowo-tech/blog-kit-bundle', '1.7', 'The "%node%" option at "%path%" is deprecated, set "nowo_ui_kit.css_framework" instead.')
-                        ->end()
-                        ->enumNode('icon_set')
-                            ->values([...IconSet::values(), null])
-                            ->defaultNull()
-                            ->info('Deprecated since 1.7: set nowo_ui_kit.icon_set.')
-                            ->setDeprecated('nowo-tech/blog-kit-bundle', '1.7', 'The "%node%" option at "%path%" is deprecated, set "nowo_ui_kit.icon_set" instead.')
-                        ->end()
-                        ->enumNode('row_actions_display')
-                            ->values([...RowActionsDisplay::values(), null])
-                            ->defaultNull()
-                            ->info('Deprecated since 1.7: set nowo_ui_kit.row_actions_display.')
-                            ->setDeprecated('nowo-tech/blog-kit-bundle', '1.7', 'The "%node%" option at "%path%" is deprecated, set "nowo_ui_kit.row_actions_display" instead.')
                         ->end()
                         ->integerNode('page_size')
                             ->min(1)
@@ -169,6 +138,12 @@ final class Configuration implements ConfigurationInterface
                 ->end()
                 ->arrayNode('doctrine')
                     ->addDefaultsIfNotSet()
+                    ->validate()
+                        ->ifTrue(static fn (array $doctrine): bool => ($doctrine['private_entity_manager'] ?? null) === false)
+                        ->then(static function (array $doctrine): never {
+                            throw new InvalidConfigurationException(self::privateEntityManagerFalseMessage(is_string($doctrine['entity_manager'] ?? null) ? $doctrine['entity_manager'] : null));
+                        })
+                    ->end()
                     ->children()
                         ->scalarNode('table_prefix')->defaultValue('')->end()
                         ->scalarNode('connection')->defaultValue('default')->end()
@@ -178,11 +153,12 @@ final class Configuration implements ConfigurationInterface
                                 ->ifTrue(static fn (mixed $value): bool => $value !== null && (!is_string($value) || $value === ''))
                                 ->thenInvalid('doctrine.entity_manager must be a non-empty entity manager name or null.')
                             ->end()
-                            ->info('Since 1.9.0 (REQ-ARCH-001 rule 6, opt-in): name of a Doctrine entity manager dedicated to the blog entities (declared in doctrine.orm.entity_managers, not the default one). The bundle maps its entities there, flushes only that manager and clears it at every request / message / command boundary. Needs user_reference: id. Null (default): the manager that maps the blog entities (your default manager), as in 1.8.')
+                            ->info('Since 1.9.0 (REQ-ARCH-001 rule 6, opt-in): name of a Doctrine entity manager dedicated to the blog entities (declared in doctrine.orm.entity_managers, not the default one). The bundle maps its entities there, flushes only that manager and clears it at every request / message / command boundary. Needs user_reference: id. Null (default): the bundle\'s private entity manager on your default manager (2.0: the bundle never flushes your manager).')
                         ->end()
                         ->booleanNode('private_entity_manager')
                             ->defaultNull()
-                            ->info('Since 1.12.0 (REQ-ARCH-001 rule 6, opt-in): true = the bundle reads and writes its entities through a private entity manager of its own, created on the connection, mapping and event listeners of your default entity manager (same tables, nothing else to configure), so a blog write never flushes your pending changes. false = the bundle flushes your default manager (the 1.x behaviour; deprecated, the option value false is removed in 2.0). Null (default) = false plus a deprecation notice: 2.0 always uses the private manager unless entity_manager is set. Cannot be combined with entity_manager (the DDD option, kept in 2.0).')
+                            ->setDeprecated('nowo-tech/blog-kit-bundle', '2.0', self::PRIVATE_ENTITY_MANAGER_DEPRECATION)
+                            ->info('Deprecated since 2.0, removed in 3.0. Without doctrine.entity_manager the bundle always reads and writes its entities through a private entity manager of its own, created on the connection, mapping and event listeners of your default entity manager (same tables, nothing to configure), so a blog write never flushes your pending changes. true: accepted, no effect (still refused together with doctrine.entity_manager, as in 1.12). false: refused (the 1.x mode in which the bundle flushed your manager was removed in 2.0).')
                         ->end()
                         ->enumNode('mapping_type')
                             ->values(['attribute', 'xml'])
@@ -334,6 +310,23 @@ final class Configuration implements ConfigurationInterface
         return $treeBuilder;
     }
 
+    /** `security` keys removed in 2.0 (deprecated since 1.7) => what replaces them. */
+    public const array REMOVED_SECURITY_KEYS = [
+        'manage_roles'    => 'use "security.roles.manage"',
+        'moderate_roles'  => 'use "security.roles.moderate"',
+        'configure_roles' => 'use "security.roles.configure"',
+    ];
+
+    /** `web_ui` keys removed in 2.0 (deprecated since 1.7) => what replaces them. */
+    public const array REMOVED_WEB_UI_KEYS = [
+        'css_framework'       => 'set "nowo_ui_kit.css_framework"',
+        'icon_set'            => 'set "nowo_ui_kit.icon_set"',
+        'row_actions_display' => 'set "nowo_ui_kit.row_actions_display"',
+    ];
+
+    /** Since 2.0: deprecation of `doctrine.private_entity_manager` (any value accepted; the key is removed in 3.0). */
+    public const string PRIVATE_ENTITY_MANAGER_DEPRECATION = 'The "%node%" option at "%path%" has no effect since 2.0 (without doctrine.entity_manager the private entity manager is the only mode): remove it. The key is removed in 3.0.';
+
     /** 1.x default layouts: mapped to null (UiKit layouts). */
     public const array LEGACY_DEFAULT_LAYOUTS = [
         '@NowoBlogKitBundle/admin/layout.html.twig',
@@ -341,25 +334,34 @@ final class Configuration implements ConfigurationInterface
     ];
 
     /**
-     * Copies the deprecated `security.*_roles` keys into `security.roles.*` when the canonical key is not set.
+     * Since 2.0: build error of `doctrine.private_entity_manager: false` (2.0 removed the 1.x mode it kept).
+     */
+    public static function privateEntityManagerFalseMessage(?string $entityManager): string
+    {
+        $message = 'nowo_blog_kit.doctrine.private_entity_manager: false is no longer supported: 2.0 removed the mode in which blog writes flush your entity manager. Remove the key.';
+        $message .= $entityManager !== null && $entityManager !== ''
+            ? sprintf(' doctrine.entity_manager "%s" stays: your dedicated manager keeps working as in 1.x.', $entityManager)
+            : ' The bundle then writes through its private entity manager (same connection and tables), which never flushes your pending changes; or set doctrine.entity_manager to a dedicated manager.';
+
+        return $message . ' See UPGRADING.md "To 2.0.0".';
+    }
+
+    /**
+     * Since 2.0: fails on a key removed in 2.0, naming its replacement.
      *
-     * @param array<mixed> $security
+     * @param array<mixed> $values
+     * @param array<string, string> $removed key => what replaces it
      *
      * @return array<mixed>
      */
-    private static function mapDeprecatedRoleKeys(array $security): array
+    private static function refuseRemovedKeys(array $values, array $removed, string $path): array
     {
-        $roles = is_array($security['roles'] ?? null) ? $security['roles'] : [];
-        foreach (['manage', 'moderate', 'configure'] as $action) {
-            $legacy = $security[$action . '_roles'] ?? null;
-            if ($legacy !== null && !array_key_exists($action, $roles)) {
-                $roles[$action] = $legacy;
+        foreach ($removed as $key => $replacement) {
+            if (array_key_exists($key, $values)) {
+                throw new InvalidConfigurationException(sprintf('The option "nowo_blog_kit.%s%s" was removed in 2.0 (deprecated since 1.7): %s. See UPGRADING.md "To 2.0.0".', $path, $key, $replacement));
             }
         }
-        if ($roles !== []) {
-            $security['roles'] = $roles;
-        }
 
-        return $security;
+        return $values;
     }
 }

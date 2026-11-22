@@ -14,7 +14,7 @@ use Nowo\BlogKitBundle\Form\BlogInlineModalType;
 use Nowo\BlogKitBundle\Repository\BlogArticleRepository;
 use Nowo\BlogKitBundle\Security\AllowAllBlogKitResourceAccessChecker;
 use Nowo\BlogKitBundle\Security\BlogKitAccessDenied;
-use Nowo\BlogKitBundle\Security\BlogKitResourceAccessCheckerInterface;
+use Nowo\BlogKitBundle\Security\Internal\ObjectAccessCheckerInterface;
 use Nowo\BlogKitBundle\Tests\Support\ControllerTestHelper;
 use Nowo\BlogKitBundle\Tests\Support\LocaleTestSupport;
 use Nowo\BlogKitBundle\Tests\Support\PageFixtures;
@@ -272,7 +272,7 @@ final class BlogArticleControllerTest extends TestCase
                 'total_pages' => 1,
             ]);
 
-        $resourceAccess = $this->createMock(BlogKitResourceAccessCheckerInterface::class);
+        $resourceAccess = $this->createMock(ObjectAccessCheckerInterface::class);
         $resourceAccess->method('articleListingCreatedById')->willReturn(10);
         $resourceAccess->method('canManageArticle')->willReturn(false);
 
@@ -644,7 +644,7 @@ final class BlogArticleControllerTest extends TestCase
 
     private function rejectingAccessDenied(): BlogKitAccessDenied
     {
-        $checker = $this->createMock(BlogKitResourceAccessCheckerInterface::class);
+        $checker = $this->createMock(ObjectAccessCheckerInterface::class);
         $checker->method('canManageArticle')->willReturn(false);
 
         return new BlogKitAccessDenied($checker);

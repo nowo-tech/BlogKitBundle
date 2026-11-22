@@ -7,8 +7,8 @@ namespace Nowo\BlogKitBundle\Port;
 use Nowo\BlogKitBundle\Entity\BlogArticle;
 use Nowo\BlogKitBundle\Entity\BlogComment;
 use Nowo\BlogKitBundle\Entity\BlogTag;
-use Nowo\BlogKitBundle\Security\BlogKitResourceAccessCheckerInterface;
 use Nowo\BlogKitBundle\Security\BlogKitResourcePolicyInterface;
+use Nowo\BlogKitBundle\Security\Internal\ObjectAccessCheckerInterface;
 use Nowo\BlogKitBundle\ValueObject\BlogArticleSnapshot;
 use Nowo\BlogKitBundle\ValueObject\BlogCommentSnapshot;
 use Nowo\BlogKitBundle\ValueObject\BlogTagSnapshot;
@@ -19,7 +19,7 @@ use Nowo\BlogKitBundle\ValueObject\BlogTagSnapshot;
  *
  * @internal built by {@see Ports}
  */
-final readonly class BlogKitResourcePolicyGate implements BlogKitResourceAccessCheckerInterface
+final readonly class BlogKitResourcePolicyGate implements ObjectAccessCheckerInterface
 {
     public function __construct(
         private BlogKitResourcePolicyInterface $policy,
