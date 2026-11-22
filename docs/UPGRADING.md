@@ -3,6 +3,7 @@
 ## Table of contents
 
 - [Unreleased](#unreleased)
+- [To 1.12.2](#to-1122)
 - [To 1.12.1](#to-1121)
   - [The article form tag field is a choice of tag ids](#the-article-form-tag-field-is-a-choice-of-tag-ids)
 - [To 1.12.0](#to-1120)
@@ -60,6 +61,14 @@
 - [Future releases](#future-releases)
 
 ## Unreleased
+
+## To 1.12.2
+
+From **1.12.1**:
+
+```bash
+composer update nowo-tech/blog-kit-bundle
+```
 
 ## To 1.12.1
 
