@@ -2,21 +2,11 @@
 
 How to publish articles, render the public blog, moderate comments, and override templates.
 
-## Screenshots
-
-Demo gallery (masthead + blog UI) in the [README](../README.md). Regenerate with:
-
-```bash
-make -C demo/symfony8 demo-screenshots
-```
-
-(REQ-DEMO-013 — Playwright under `demo/symfony8/e2e/`.)
-
 ## Table of contents
 
 - [Screenshots](#screenshots)
 - [Standard Symfony host](#standard-symfony-host)
-  - [Preparing for 2.0](#preparing-for-20)
+  - [The private entity manager](#the-private-entity-manager)
 - [DDD / hexagonal host](#ddd--hexagonal-host)
 - [Public pages](#public-pages)
 - [Admin screens](#admin-screens)
@@ -32,27 +22,31 @@ make -C demo/symfony8 demo-screenshots
 - [Infinite scroll assets](#infinite-scroll-assets)
 - [Rich text notes](#rich-text-notes)
 
+## Screenshots
+
+Demo gallery (masthead + blog UI) in the [README](../README.md). Regenerate with:
+
+```bash
+make -C demo/symfony8 demo-screenshots
+```
+
+(REQ-DEMO-013 — Playwright under `demo/symfony8/e2e/`.)
+
 ## Standard Symfony host
 
 The default. Your user entity implements `Nowo\BlogKitBundle\Model\BlogUserInterface` and is named in `user_class`; the
-blog entities are mapped with attributes on your default entity manager; the host ports below take the bundle entities.
-Nothing else to configure. See [ARCHITECTURE](ARCHITECTURE.md) for the full picture.
+blog entities are mapped with attributes on your default entity manager's connection and tables; the host ports below
+take snapshots and request value objects. Nothing else to configure. See [ARCHITECTURE](ARCHITECTURE.md) for the full
+picture.
 
-### Preparing for 2.0
+### The private entity manager
 
-Since 1.12.0, opt in to the 2.0 persistence now (the notice asks you to):
-
-```yaml
-nowo_blog_kit:
-    doctrine:
-        private_entity_manager: true
-```
-
-Blog writes then go through a private entity manager on your default manager's connection and tables and never flush
-your pending changes. Before switching, read the probe deprecations ("Your pending changes to App\X were flushed by
-NowoBlogKitBundle; 2.0 no longer does.") as the list of places to flush yourself: see
-[UPGRADING "To 1.12.0"](UPGRADING.md#to-1120). 2.0 contains only deprecations announced in 1.x; the 1.x line gets 6
-months of security support after 2.0 (Moderate and higher backported).
+Since 2.0 every blog write goes through the bundle's private entity manager, created on your default manager's
+connection, mapping and listeners (same tables, nothing to configure). A blog write never flushes, clears or closes
+your manager: a change you leave pending in it is saved by your own `flush()`, never by the bundle. Change blog rows
+through the bundle's services (or through `nowo_blog_kit.entity_manager` and flush that one), and point your own
+entities at blog rows with `$yourManager->getReference(BlogArticle::class, $id)`. Upgrading from 1.x: see
+[UPGRADING "To 2.0.0"](UPGRADING.md#to-200).
 
 ## DDD / hexagonal host
 
@@ -138,7 +132,7 @@ php bin/console nowo:blog:sync-hashtags --dry-run
 ## Published event
 
 When an article transitions to published, `BlogArticlePublishedDoctrineSubscriber` dispatches `BlogArticlePublishedEvent` from `postFlush`, after the flush committed its own transaction; when you
-wrap the write in a transaction of yours, the event runs before your commit (the transaction is yours). Listen to it in the host application (for example to send Web Push via PwaBundle). Since 1.9.0 read `getArticleId()` and `getArticleSnapshot()` (slug, titles, dates, author id); `getArticle()` is deprecated and removed in 2.0.
+wrap the write in a transaction of yours, the event runs before your commit (the transaction is yours). Listen to it in the host application (for example to send Web Push via PwaBundle). Read `getArticleId()` and `getArticleSnapshot()` (slug, titles, dates, author id); the entity accessor `getArticle()` was removed in 2.0. A change your listener makes to one of your entities is saved by your own `flush()`: the bundle never flushes your manager.
 
 ## Custom access logic
 
@@ -185,7 +179,7 @@ nowo_blog_kit:
             strategy: owner   # none | owner | service
 ```
 
-`owner` lets editors change articles they created (`createdBy` / AuditKit). Users with `canConfigure()` still see every row. Unowned legacy articles stay editable by any manager. Implement `BlogKitResourcePolicyInterface` (since 1.9.0: snapshots, ids compared byte for byte) and set `strategy: service` for teams or workflow rules; the deprecated `BlogKitResourceAccessCheckerInterface` (entities) is still accepted until 2.0. Controllers throw via `BlogKitAccessDenied`. This is **not** a Symfony Security voter or ACL.
+`owner` lets editors change articles they created (`createdBy` / AuditKit). Users with `canConfigure()` still see every row. Unowned legacy articles stay editable by any manager. Implement `BlogKitResourcePolicyInterface` (since 1.9.0: snapshots, ids compared byte for byte) and set `strategy: service` for teams or workflow rules; the 1.x `BlogKitResourceAccessCheckerInterface` (entities) was removed in 2.0. Controllers throw via `BlogKitAccessDenied`. This is **not** a Symfony Security voter or ACL.
 
 The extension prepends FormKit `type_map.entity` (kept for compatibility: since 1.12.1 the `BlogArticleType` tags are a choice of tag ids read per form build, which keeps the form working in worker mode). Hosts can still override `nowo_form_kit.type_map`.
 
@@ -271,7 +265,8 @@ Pages stack them in `nowo_ui_styles` / `nowo_ui_scripts` after `{{ parent() }}` 
 `nowo_ui_kit.layouts.admin` / `guest` (or `web_ui.layout_template` / `public_layout_template`). Do not copy page
 templates to add CSS / JS.
 
-`nowo_blog_kit_container_class()` is deprecated (1.7): the bundle pages use the semantic `blog-container` only.
+`nowo_blog_kit_container_class()` is deprecated (1.7): the bundle pages use the semantic `blog-container` only. Since 2.0
+(the `web_ui.css_framework` key was removed) it always returns `blog-container`.
 
 `blog-kit.js` boots:
 

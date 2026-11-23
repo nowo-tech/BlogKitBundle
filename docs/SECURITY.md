@@ -22,7 +22,7 @@ Security considerations for public blog pages, comments, admin CRUD, and CMS HTM
 | Risk | Mitigation |
 | --- | --- |
 | Unauthorized editors reach article/tag/settings admin | `access_roles` / `roles.manage` / `roles.configure`, custom `access_checker`, object access (`none` / `owner` / host `service`), Symfony Security. **An empty role list grants nothing** (only `access_roles` then); every list empty fails at container compile time |
-| IDOR on another editor's publication | `security.object_access.strategy: owner` or a host `BlogKitResourceAccessCheckerInterface`; `BlogKitAccessDenied` on edit/delete/inline |
+| IDOR on another editor's publication | `security.object_access.strategy: owner` or a host `BlogKitResourcePolicyInterface`; `BlogKitAccessDenied` on edit/delete/inline |
 | Unauthorized comment moderation | `roles.moderate` (or `roles.manage`); the guard picks the capability by **controller class** (`BlogCommentController` → moderate), so the queue `admin_blog_comments_index` and the actions `admin_blog_comment_approve\|reject\|reply\|delete` are covered, whatever routing `name_prefix` the host uses |
 | Stored XSS through article HTML | `article.body` is printed `\|raw`: `html.sanitize` (`allowlist` default / `strip` / host `service`) runs on persist, on update (`PreUpdateEventArgs::setNewValue`) and **last** on render, after the hashtag-link and body-enhancer rewrites (hashtag links are rewritten on the DOM). `strip` outputs escaped plain text |
 | `javascript:` links | Article LinkedIn URL: http(s) only (form constraint + render-time check). Image fields (`image`, resource images) are free text printed in `<img src>`: browsers do not run `javascript:` there, but treat them as editor-controlled URLs (no tracking pixels from untrusted editors) |
@@ -61,7 +61,7 @@ nowo_blog_kit:
     security:
         object_access:
             strategy: none      # none | owner | service
-            service: null       # BlogKitResourceAccessCheckerInterface when strategy=service
+            service: null       # BlogKitResourcePolicyInterface when strategy=service
 ```
 
 Firewall the admin prefix in the host app (`path_prefix` `/admin/blog`):
@@ -75,7 +75,7 @@ security:
         - { path: ^/admin/blog, roles: ROLE_EDITOR }
 ```
 
-If your project needs more context-aware **role** rules, implement `BlogKitAccessCheckerInterface` and configure `security.access_checker`. For per-publication rules, use `security.object_access` (`owner` or a host `BlogKitResourceAccessCheckerInterface`). Controllers deny through `BlogKitAccessDenied`.
+If your project needs more context-aware **role** rules, implement `BlogKitAccessCheckerInterface` and configure `security.access_checker`. For per-publication rules, use `security.object_access` (`owner` or a host `BlogKitResourcePolicyInterface`). Controllers deny through `BlogKitAccessDenied`.
 
 Setting `allow_unauthenticated: true` is supported for local demos only.
 
@@ -153,7 +153,7 @@ Before tagging a release, confirm:
 | **Input / output** | Comment bodies escaped; article `\|raw` documented as trusted-editor HTML. |
 | **CSRF** | Mutations use Symfony forms. |
 | **Dependencies** | `composer audit` run; issues triaged. |
-| **Permissions / exposure** | Manage / moderate / configure roles, optional `owner` object access, or custom checkers (`BlogKitAccessCheckerInterface` / `BlogKitResourceAccessCheckerInterface`). |
+| **Permissions / exposure** | Manage / moderate / configure roles, optional `owner` object access, or custom checkers (`BlogKitAccessCheckerInterface` / `BlogKitResourcePolicyInterface`). |
 | **AI security audit (REQ-SEC-004)** | Grade **Pass (good)** / risk **Low** (2026-10-27, re-audit of `main` `2f595df` + fixes in PR #44, shipped in 1.7.0). See [AI security audit](#ai-security-audit). |
 
 Record confirmation in the release PR or tag notes.

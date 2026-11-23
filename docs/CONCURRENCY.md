@@ -43,12 +43,12 @@ read of an empty table inserts it with one DBAL `INSERT`, which the unique `sing
 `TransactionRunnerInterface` on `nowo-tech/transaction-doctrine` ^1.6:
 
 - `run($operation)`: the operation builds and changes the entities, the runner flushes and commits.
-  - Your default manager (no `doctrine.entity_manager`): `DoctrineTransactionRunner::forHostEntityManager()`. An open
-    manager is never cleared, closed or reset; a closed one (after a failed flush) is replaced through the registry;
-    the manager must have **no pending changes** when the unit starts, or `LogicException` (see
-    [UPGRADING](UPGRADING.md#the-host-entity-manager-must-be-clean-before-a-blog-write)).
-  - A dedicated `doctrine.entity_manager`: `DoctrineTransactionRunner::forEntityManager()` (reset after a storage
-    failure, as REQ-RUNTIME-002 rule 4 allows for a bundle-owned manager).
+  - The bundle's private entity manager (no `doctrine.entity_manager`; the only mode since 2.0) or a dedicated
+    `doctrine.entity_manager`: `DoctrineTransactionRunner::forEntityManager()` (a failure closes and drops only the
+    bundle's manager, as REQ-RUNTIME-002 rule 4 allows for a bundle-owned manager; yours is never flushed, cleared,
+    closed or reset). Your manager may have pending changes: they stay pending.
+  - Built directly on a manager of yours (not the bundle's wiring): `DoctrineTransactionRunner::forHostEntityManager()`
+    as in 1.x (never cleared or reset; it must have no pending changes when the unit starts, or `LogicException`).
 - `runRereadingOnDuplicate($operation)`: `run()`, once more after a unique violation (the operation reads again).
 - `flushPending()`: the admin forms bind the managed entity before the save, so their changes are pending already;
   they are flushed in one transaction on the manager's connection (`DoctrineTransactionRunner::forConnection()`).

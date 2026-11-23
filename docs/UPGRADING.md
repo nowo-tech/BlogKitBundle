@@ -3,6 +3,12 @@
 ## Table of contents
 
 - [Unreleased](#unreleased)
+- [To 2.0.0](#to-200)
+  - [Before you upgrade](#before-you-upgrade)
+  - [The private entity manager is the only mode](#the-private-entity-manager-is-the-only-mode)
+  - [Removed](#removed)
+  - [Private manager only](#private-manager-only)
+  - [1.x support](#1x-support)
 - [To 1.12.2](#to-1122)
 - [To 1.12.1](#to-1121)
   - [The article form tag field is a choice of tag ids](#the-article-form-tag-field-is-a-choice-of-tag-ids)
@@ -61,6 +67,173 @@
 - [Future releases](#future-releases)
 
 ## Unreleased
+
+## To 2.0.0
+
+From **1.12.x**:
+
+```bash
+composer require nowo-tech/blog-kit-bundle:^2.0 -W
+```
+
+2.0 contains only changes that 1.x announced through deprecation notices: an application that runs the last 1.x
+minor without deprecation notices from this bundle upgrades without code changes. After 2.0.0 is released, the 1.x
+line receives security fixes for 6 months: fixes rated Moderate and above are backported to the last 1.x minor;
+Low ones are fixed in 2.x only.
+
+This section corrects the "Preparing for 2.0" list of 1.12.0 in two places:
+
+- 1.12.0 spoke of "the **four** deprecated port interfaces". There are **three** port interfaces
+  (`BlogKitResourceAccessCheckerInterface`, `BlogCommentRateLimiterInterface`, `BlogCommentCaptchaStrategyInterface`),
+  plus the event accessor `BlogArticlePublishedEvent::getArticle()`: four removals in all, three of them interfaces.
+- 1.12.0 said "nothing else breaks". 2.0 also removes what 1.7 deprecated, with runtime notices and in "To 1.7.0", but
+  1.12.0 did not list: the role keys `security.manage_roles` / `moderate_roles` / `configure_roles`, the keys
+  `web_ui.css_framework` / `icon_set` / `row_actions_display`, five Twig globals and the two 1.x layout bridges.
+
+There is no schema change and no Composer change: same PHP, Symfony, Doctrine and database ranges;
+`nowo-tech/audit-kit-bundle` `^1.1 || ^2.0` and `nowo-tech/transaction-doctrine` `^1.9.1` as in 1.12.
+
+### Before you upgrade
+
+On 1.12, with deprecations logged (Symfony's `php` / `deprecation` log channel, the profiler, PHPUnit's deprecation
+report), clear every notice of this bundle. Step 1 is the one that protects your data.
+
+1. **Find the changes of yours that only a blog write saved.** In 1.x without `doctrine.entity_manager`, Blog Kit
+   flushed your default entity manager, including every change your application had left pending in it. 2.0 never
+   does: such a change is **no longer saved, and nothing fails** — it simply stays pending until your code flushes,
+   or is lost at the end of the request. The 1.12 host-flush probe tells you where that happens. While
+   `private_entity_manager` is unset (or `false`), right before each flush of your manager by the bundle it triggers,
+   once per entity class and per request (or Messenger message, or console command):
+
+   > Your pending changes to App\Entity\Invoice were flushed by NowoBlogKitBundle; 2.0 no longer does.
+
+   Run your test suite and at least one deploy cycle on 1.12 with deprecations logged, then collect the classes:
+
+   ```bash
+   grep -ho 'Your pending changes to [^ ]* were flushed by NowoBlogKitBundle' var/log/*.log | sort | uniq -c
+   ```
+
+   **Each class named is a change of yours that reached the database only because a blog write flushed your
+   manager.** Typical places: a listener of `BlogArticlePublishedEvent`, a port of yours (access policy, rate limiter,
+   captcha verifier, user directory), or code that changes one of your entities and then saves a blog admin form, a
+   comment or a tag. Make that code `flush()` its own manager (or stop leaving the change pending). **No probe line
+   at all** (with the probe running: option unset or `false`) means nothing of yours depended on the bundle's flush.
+   Then set `private_entity_manager: true` on 1.12 (the exact 2.0 behaviour) and run your application once more. In
+   2.0 that key is a deprecated no-op: remove it after the upgrade.
+
+   The probe cannot see the reverse case, see [Private manager only](#private-manager-only).
+2. The 1.12 notices of the option itself: `Not setting "nowo_blog_kit.doctrine.private_entity_manager" is deprecated:
+   blog writes flush your default entity manager, including your own pending changes. [...]` and `Setting
+   "nowo_blog_kit.doctrine.private_entity_manager" to false is deprecated: the value false is removed in 2.0, [...]`.
+   Both disappear once step 1 is done and the key is `true`.
+3. The port notices, `The service "App\..." of "nowo_blog_kit.security.object_access.service" implements the
+   deprecated Nowo\BlogKitBundle\Security\BlogKitResourceAccessCheckerInterface, removed in 2.0. Implement
+   Nowo\BlogKitBundle\Security\BlogKitResourcePolicyInterface instead [...]` (and the same for
+   `comments.rate_limit.service` / `BlogCommentRateLimiterInterface` and `comments.captcha.service` /
+   `BlogCommentCaptchaStrategyInterface`): implement the 1.9 interface (table in [To 1.9.0](#to-190)); the same key
+   takes it. Also move any decorator of the 1.x object access checker (the service id
+   `Nowo\BlogKitBundle\Security\BlogKitResourceAccessCheckerInterface`) into your own `BlogKitResourcePolicyInterface`
+   service (`security.object_access: { strategy: service, service: <id> }`): 2.0 has no other hook for it, and a
+   decorator of the removed id fails the build.
+4. `Calling "Nowo\BlogKitBundle\Event\BlogArticlePublishedEvent::getArticle()" is deprecated and the method is removed
+   in 2.0 [...]`: read `getArticleId()` / `getArticleSnapshot()`.
+5. The 1.7 key notices, `The "manage_roles" option at "nowo_blog_kit.security.manage_roles" is deprecated, use
+   "security.roles.manage" instead.` (likewise `moderate_roles`, `configure_roles`) and `The "css_framework" option at
+   "nowo_blog_kit.web_ui.css_framework" is deprecated, set "nowo_ui_kit.css_framework" instead.` (likewise `icon_set`,
+   `row_actions_display`): move the values to `security.roles.*` and `nowo_ui_kit.*`.
+6. The 1.7 layout notice, `The layout "..." does not render the UiKit canonical blocks (nowo_ui_page_header,
+   nowo_ui_content, ...); it is wrapped in a deprecated bridge. [...]`: render the canonical blocks in your
+   `web_ui.layout_template` / `public_layout_template` (UiKit's one-file `_bridge`, see
+   [CONFIGURATION](CONFIGURATION.md)), or set them to `null` to use `nowo_ui_kit.layouts`.
+7. Templates of yours that read the Twig globals `nowo_blog_kit_layout`, `nowo_blog_kit_public_layout`,
+   `nowo_blog_kit_css_framework`, `nowo_blog_kit_icon_set` or `nowo_blog_kit_row_actions_display` (no runtime notice
+   is possible for a global): read `nowo_ui_layout` and `nowo_ui_kit.*` instead.
+
+### The private entity manager is the only mode
+
+| 1.12 setting | 2.0 |
+|---|---|
+| neither `doctrine.private_entity_manager` nor `doctrine.entity_manager` (the bundle flushed your default manager) | the private entity manager on your default manager's connection, mapping and listeners; same tables; your manager is never flushed, cleared or closed by the bundle |
+| `private_entity_manager: true` | the same; the key is a deprecated no-op (notice `The "private_entity_manager" option at "nowo_blog_kit.doctrine" has no effect since 2.0 [...]`): remove it; removed in 3.0 |
+| `private_entity_manager: false` | **container build error**: remove the key |
+| `entity_manager: <a dedicated manager>` (the DDD option) | unchanged: the bundle uses that manager, no notice |
+| `entity_manager: <your default manager's name>` | build error, as in 1.x (the option names a manager the bundle owns): remove it to get the private manager |
+| `private_entity_manager: true` + `entity_manager: <name>` | build error, as in 1.12 |
+
+There is no option to keep the 1.x behaviour: no 2.0 setting lets a blog write flush your manager.
+
+### Removed
+
+| Removed | Deprecated since | Replacement |
+|---|---|---|
+| the mode in which the bundle flushed your entity manager, its two notices (`NowoBlogKitExtension::PRIVATE_ENTITY_MANAGER_UNSET_DEPRECATION` / `_FALSE_DEPRECATION`), the host-flush probe `Doctrine\BlogKitHostFlushReporter` and `Doctrine\BlogKitEntityManagerFactory` (both internal) | 1.12 | the private entity manager (above). `BlogKitTransactionRunner`'s `$hostFlushReporter` argument stays, ignored, until 3.0 |
+| the 1.10 `LogicException` "your manager must be clean before a blog write" ([To 1.10.0](#the-host-entity-manager-must-be-clean-before-a-blog-write)) | with the mode above | nothing: the bundle no longer writes through your manager, so your pending changes may stay pending |
+| `doctrine.private_entity_manager: false` | 1.12 | remove the key (`true` is a deprecated no-op until 3.0) |
+| `Security\BlogKitResourceAccessCheckerInterface` and its service alias | 1.9 | `Security\BlogKitResourcePolicyInterface` (`security.object_access.service`) |
+| `Security\RateLimit\BlogCommentRateLimiterInterface` | 1.9 | `Security\RateLimit\BlogCommentRateLimitPolicyInterface` (`comments.rate_limit.service`) |
+| `Security\Captcha\BlogCommentCaptchaStrategyInterface` | 1.9 | `Security\Captcha\BlogCommentCaptchaVerifierInterface` (`comments.captcha.service`) |
+| `Event\BlogArticlePublishedEvent::getArticle()` | 1.9 | `getArticleId()`, `getArticleSnapshot()` |
+| `security.manage_roles`, `security.moderate_roles`, `security.configure_roles` | 1.7 | `security.roles.manage` / `moderate` / `configure` |
+| `web_ui.css_framework`, `web_ui.icon_set`, `web_ui.row_actions_display` and their container parameters `nowo_blog_kit.web_ui.*` | 1.7 | `nowo_ui_kit.css_framework` / `icon_set` / `row_actions_display` |
+| Twig globals `nowo_blog_kit_layout`, `nowo_blog_kit_public_layout`, `nowo_blog_kit_css_framework`, `nowo_blog_kit_icon_set`, `nowo_blog_kit_row_actions_display` | 1.7 | `nowo_ui_layout`, `nowo_ui_kit.*` |
+| layout bridges `@NowoBlogKitBundle/admin/_legacy_layout.html.twig`, `@NowoBlogKitBundle/public/_legacy_layout.html.twig`, `BlogKitPages::LEGACY_ADMIN_BRIDGE` / `LEGACY_PUBLIC_BRIDGE` and the page variables `nowo_blog_kit_legacy_layout`, `nowo_blog_kit_legacy_public_layout`, `nowo_blog_kit_legacy_blocks` | 1.7 | a layout with the UiKit canonical blocks, or `null` |
+
+How the removals fail (never silently):
+
+- A leftover removed key fails the container build and names what to set instead.
+- A removed port fails the build, also where Symfony would drop it without a word: a class of yours that still
+  implements a removed interface (it can no longer be loaded), an alias or `#[AsAlias]` of a removed id, and an
+  `#[AsDecorator]` of one (also with `onInvalid: IGNORE`). A decorator that restricted the 1.x object access checker
+  would otherwise silently stop running, which would widen access to the blog administration. The message names the
+  service, the removed interface and its replacement.
+- A configured layout without the UiKit canonical blocks fails before the first admin or public page renders
+  (`LogicException` naming the layout and the option).
+- Inside the bundle the built-in checkers, limiters and captcha strategies now implement `@internal` interfaces
+  (`Security\Internal\*`); they are not extension points.
+
+Kept (deprecated, no removal announced): the Twig function `nowo_blog_kit_container_class()` (it now always returns
+`blog-container`, since its `web_ui.css_framework` input is gone), the always-`false` globals `nowo_blog_kit_can_*`,
+and the `BlogKitExtension` constructor arguments of the removed globals (ignored, a non-null
+value triggers a notice; removed in 3.0).
+
+### Private manager only
+
+What 1.12's [Opt in to the private entity manager now](#opt-in-to-the-private-entity-manager-now) listed now applies to
+every host without a dedicated `doctrine.entity_manager`:
+
+- **Your pending changes are no longer flushed by the bundle.** A change of yours that was only stored because a blog
+  write flushed your manager is no longer stored: typically in a listener of `BlogArticlePublishedEvent`, a port of
+  yours, or code that changes an entity and then saves a blog admin form, a comment or a tag. That code must flush
+  (commit) its own change. The 1.12 probe lines (step 1 above) are the list of such classes. A port of yours whose
+  correctness depended on the bundle's flush (one that only changed a managed row) must commit its own change.
+- **The reverse is not reported by any probe:** host code that loads a blog row through the bundle's repository
+  services (`BlogArticleRepository`, `$yourManager->getRepository(BlogArticle::class)`, which read through the private
+  manager), changes it and flushes its own manager saves nothing: the private manager drops it at the end of the
+  request, message or command with only a warning. Change blog rows through the bundle's services, or through
+  `nowo_blog_kit.entity_manager` and flush that.
+- Do not `persist()` or `flush()` blog entities through your manager. A comment your manager loaded
+  (`$yourManager->find(BlogComment::class, $id)`) and handed to `BlogCommentManager` (approve, reject, delete, staff
+  reply) is re-loaded by id in the private manager, never inserted again; one whose row is gone fails with a
+  `LogicException`. Your manager's copy is not updated: read the row again if you need its new state.
+- An entity of yours with a to-one association to a blog entity (for example `Page::$article`) must point at an object
+  of your manager: `$yourManager->getReference(BlogArticle::class, $id)` (or an entity your manager loaded), never one
+  returned by the bundle's repositories or services ("A new entity was found through the relationship").
+- Your user entity assigned to a blog row (author, moderator, AuditKit's blame) is stored as a reference to the same
+  row; a user that has no identifier yet (persisted but not flushed) fails the blog write with a `LogicException`
+  ("save (flush) your user before the blog writes for it"), before anything is written.
+- Listeners of `BlogArticlePublishedEvent` and of Doctrine events receive blog entities of the private manager: read
+  them, do not persist, remove or flush them through your manager.
+- The connection is shared: a transaction you open around a blog write includes it (savepoint), and your rollback
+  undoes it.
+- A failed blog write closes only the private manager (replaced on the next use); your manager stays open. The private
+  manager is dropped at every request, Messenger message and console command boundary and at `kernel.reset`
+  (FrankenPHP worker mode with the kernel reset off included).
+
+### 1.x support
+
+The 1.x line receives security fixes for 6 months after 2.0.0: Moderate and above are backported to the last 1.x
+minor (1.12) as a patch release; Low ones are fixed in 2.x only, with the advice to upgrade. Advisories name both
+lines ([SECURITY](../.github/SECURITY.md)).
 
 ## To 1.12.2
 

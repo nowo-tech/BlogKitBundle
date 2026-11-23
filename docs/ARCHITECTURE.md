@@ -1,7 +1,7 @@
 # Architecture: standard Symfony and DDD hosts
 
-Blog Kit works out of the box in a **standard Symfony application** (attribute-mapped entities, the bundle's
-controllers and services on your entity manager, Twig overrides). Since 1.9.0 it can also be used from a **strict DDD /
+Blog Kit works out of the box in a **standard Symfony application** (attribute-mapped entities on your default
+connection and tables, the bundle's controllers and services on its own private entity manager, Twig overrides). Since 1.9.0 it can also be used from a **strict DDD /
 hexagonal host** (plain-PHP users, framework-free ports, the blog as a separate bounded context on its own entity
 manager). The standard path is the zero-config default; the DDD path is opt-in and never forced (REQ-ARCH-001). Both
 work in FrankenPHP worker mode with the kernel kept alive and not reset (REQ-RUNTIME-002, see
@@ -25,22 +25,22 @@ work in FrankenPHP worker mode with the kernel kept alive and not reset (REQ-RUN
 |---|---|---|
 | Entity mapping | ORM attributes | `doctrine.mapping_type: xml` (`src/Resources/config/doctrine-xml`, same metadata) |
 | Host users on blog rows | `ManyToOne` to `user_class`, which implements `Model\BlogUserInterface` | `doctrine.user_reference: id`: the user's id in a string column (`ValueObject\BlogUserRef`); the user class implements nothing of the bundle |
-| Entity manager | the manager that maps the blog entities (your default one) | `doctrine.entity_manager: <name>`: a manager dedicated to the blog |
-| Host ports | 1.x interfaces (deprecated, removed in 2.0) or the twins | twins only: snapshots and request VOs |
-| Events | `getArticle()` (deprecated) or ids / snapshots | ids / snapshots |
+| Entity manager | since 2.0 the bundle's private manager on your default manager's connection, mapping and tables (your manager is never flushed by the bundle) | `doctrine.entity_manager: <name>`: a manager dedicated to the blog |
+| Host ports | snapshots and request VOs (since 2.0 the only interfaces) | the same |
+| Events | ids / snapshots | ids / snapshots |
 | Base classes / traits on host entities | none required | none |
 
 ## Host ports
 
-A host extends Blog Kit through ports it implements and names in the configuration. Since 1.9.0 every port that took a
-bundle entity, the HTTP `Request` or a Symfony Form builder has a **twin** that takes and returns only bundle value
-objects and scalars:
+A host extends Blog Kit through ports it implements and names in the configuration. Every port takes and returns only
+bundle value objects and scalars (1.9.0 added these twins; 2.0 removed the 1.x interfaces that took a bundle entity,
+the HTTP `Request` or a Symfony Form builder):
 
-| Configuration key | Deprecated interface (removed in 2.0) | 1.9.0 twin |
+| Configuration key | Interface (since 1.9.0; the only one since 2.0) | Removed in 2.0 (deprecated since 1.9) |
 |---|---|---|
-| `security.object_access.service` | `Security\BlogKitResourceAccessCheckerInterface` (entities) | `Security\BlogKitResourcePolicyInterface` (`BlogArticleSnapshot`, `BlogTagSnapshot`, `BlogCommentSnapshot`) |
-| `comments.rate_limit.service` | `Security\RateLimit\BlogCommentRateLimiterInterface` (`Request`, entity) | `Security\RateLimit\BlogCommentRateLimitPolicyInterface` (`BlogCommentRequestContext`, `BlogArticleSnapshot` → `BlogCommentRateLimitDecision`) |
-| `comments.captcha.service` | `Security\Captcha\BlogCommentCaptchaStrategyInterface` (`FormBuilderInterface`) | `Security\Captcha\BlogCommentCaptchaVerifierInterface` (`widget(): BlogCommentCaptchaWidget`, `verify(BlogCommentRequestContext): bool`) |
+| `security.object_access.service` | `Security\BlogKitResourcePolicyInterface` (`BlogArticleSnapshot`, `BlogTagSnapshot`, `BlogCommentSnapshot`) | `Security\BlogKitResourceAccessCheckerInterface` (entities) |
+| `comments.rate_limit.service` | `Security\RateLimit\BlogCommentRateLimitPolicyInterface` (`BlogCommentRequestContext`, `BlogArticleSnapshot` → `BlogCommentRateLimitDecision`) | `Security\RateLimit\BlogCommentRateLimiterInterface` (`Request`, entity) |
+| `comments.captcha.service` | `Security\Captcha\BlogCommentCaptchaVerifierInterface` (`widget(): BlogCommentCaptchaWidget`, `verify(BlogCommentRequestContext): bool`) | `Security\Captcha\BlogCommentCaptchaStrategyInterface` (`FormBuilderInterface`) |
 
 Value objects (`src/ValueObject`): `BlogArticleSnapshot`, `BlogTagSnapshot` and `BlogCommentSnapshot` are copied when
 the port is called (ids, slugs, state, dates, titles and the author / editor / moderator ids; never an entity, a
@@ -48,12 +48,18 @@ collection or a user object; a comment snapshot leaves out the author's e-mail a
 `BlogCommentRequestContext` carries the client IP, host, method, path and the top-level string fields of the submitted
 body, never a cookie, a header bag or the session.
 
-**Selection rule.** The same configuration key takes either interface. A service that implements the deprecated one is
-asked exactly as in 1.8, also when it implements the twin too; one that implements only the twin is asked through an
-internal gate (`Port\*Gate`, built by `Port\Ports`). `DependencyInjection\Compiler\BlogKitPortsPass` stops the container
-build when a configured service implements neither; a factory service, whose class the build cannot know, fails closed
-when it is built. Equivalence tests run the 1.8.3 classes against the same policies written for the twins
-(`tests/Unit/Port/PortTwinsEquivalenceTest.php`).
+**Selection rule.** Each key takes only its interface; the bundle asks it through an internal gate (`Port\*Gate`, built by
+`Port\Ports`, implementing the `@internal` `Security\Internal\*` interfaces the built-in strategies implement).
+`DependencyInjection\Compiler\BlogKitPortsPass` stops the container build when a configured service does not implement
+it (also when its class still implements a removed 1.x interface and cannot be loaded); a factory service, whose class
+the build cannot know, fails closed when it is built. `DependencyInjection\Compiler\BlogKitRemovedPortsPass` fails the
+build on every other trace of a removed port, so Symfony never drops a host service silently: an autodiscovered class
+that still implements one, an alias or `#[AsAlias]` of a removed id, and an `#[AsDecorator]` of one (also with
+`onInvalid: IGNORE`; in 1.x the object access checker was aliased as `BlogKitResourceAccessCheckerInterface`). The
+hook a decorator of the 1.x object access checker used is your own `BlogKitResourcePolicyInterface` service
+(`strategy: service`). Equivalence tests run the 1.8.3 classes against the same policies written for the twins
+(`tests/Unit/Port/PortTwinsEquivalenceTest.php`); the build errors run through the real `Bundle::build()`
+(`tests/Integration/RemovedPorts/RemovedPortsKernelTest.php`).
 
 The other ports already take values only: `BlogKitAccessCheckerInterface`, `BlogHtmlSanitizerInterface`,
 `CaptchaHttpClientInterface`, `BlogIndexMetaProviderInterface`, `BlogBrandNameProviderInterface`, and the new
@@ -62,22 +68,18 @@ The other ports already take values only: `BlogKitAccessCheckerInterface`, `Blog
 ## Events
 
 `Event\BlogArticlePublishedEvent` carries the article id (`getArticleId()`) and a `BlogArticleSnapshot`
-(`getArticleSnapshot()`) copied when the event is created. `getArticle()` is deprecated and removed in 2.0. The event is
+(`getArticleSnapshot()`) copied when the event is created; it holds no entity (`getArticle()` was removed in 2.0). The event is
 dispatched from `postFlush`, after the flush committed its own transaction, and never for a flush that rolled back
 (REQ-ARCH-001 rule 7, `tests/Integration/BlogArticlePublishedAfterCommitTest.php`). Inside a transaction **you** opened
 around a bundle write, `postFlush` still runs before your commit: the transaction is yours.
 
 ## Persistence
 
-**Standard host (default).** Blog Kit reads and writes through the manager that maps its entities (your default one),
-as in 1.8: an admin save flushes that manager, including what your application left pending in it. Since 1.12.0 this
-mode triggers a deprecation notice, and the host-flush probe (transaction-doctrine `HostFlushProbe`, through
-`Doctrine\BlogKitHostFlushReporter`) reports each of your entity classes with pending changes right before a bundle
-flush of your manager. 2.0 drops this mode (REQ-ARCH-001 rule 6 stays ⚠️ until then).
-
-**Private entity manager (opt-in since 1.12.0, `doctrine.private_entity_manager: true`; the 2.0 behaviour).** The
+**Standard host (default): the private entity manager.** Since 2.0 (REQ-ARCH-001 rule 6 ✅; opt-in since 1.12.0) the
 bundle's services work through transaction-doctrine's `PrivateManager\PrivateEntityManager`, created on the connection,
-configuration and event manager of your default manager:
+configuration and event manager of your default manager, with no configuration. The 1.x mode in which a blog write
+flushed your default manager, including what your application left pending in it, was removed with its notice and the
+1.12 host-flush probe; `doctrine.private_entity_manager` is a deprecated no-op (`false` fails the build):
 
 - same connection and tables, nothing to declare; inside a transaction you opened, the bundle's flushes use savepoints;
 - every bundle service gets it (`nowo_blog_kit.entity_manager`); the service repositories, the transaction runner and
@@ -91,9 +93,13 @@ configuration and event manager of your default manager:
   `nowo_transaction_doctrine.private_entity_manager` tag when NowoTransactionDoctrineBundle is registered, and
   `kernel.reset`), replaced when closed; a failed unit closes and drops only it;
 - `Doctrine\BlogKitPrivateUserReferenceListener` (`user_reference: entity`): your user instance set on a blog row
-  becomes a reference of the private manager before its flush, so your user is never inserted or written by the bundle.
+  (also by AuditKit's blame) becomes a reference of the private manager before its flush, so your user is never
+  inserted or written by the bundle; a user with no identifier yet fails the write with a clear message (2.0);
+- `Service\BlogCommentManager` re-loads by id a comment your own manager loaded before it moderates, deletes or answers
+  it (2.0), so it is never inserted again nor changed where nobody saves it.
 
-Your managers are never flushed, cleared, closed or reset by the bundle in this mode.
+Your managers are never flushed, cleared, closed or reset by the bundle
+(`tests/Integration/Worker/HostPendingChangesTestCase.php`, on SQLite and the real servers).
 
 **Own entity manager (opt-in, `doctrine.entity_manager: <name>`).** Declare a manager for the blog under
 `doctrine.orm.entity_managers` (no mappings, `auto_mapping: false`, any connection). The bundle then:
@@ -196,9 +202,11 @@ own table. No dependency on InstanceSettings.
 
 ## Both host kinds, tested
 
-- **Standard host**: the whole unit and integration suite (attribute mapping, `MappedTestUser` Doctrine entity, the 1.x
-  ports), and `tests/Integration/Worker/WorkerKeptAliveKernelTest.php` in `WorkerTestKernel::STANDARD` (built-in owner
-  access, 1,000 alternating requests of two users).
+- **Standard host**: the whole unit and integration suite (attribute mapping, `MappedTestUser` Doctrine entity, the
+  private manager with zero configuration), `tests/Integration/Worker/WorkerKeptAliveKernelTest.php` and
+  `PrivateEntityManagerKernelTest.php` in `WorkerTestKernel::STANDARD` (built-in owner access, alternating requests of
+  two users, the private manager dropped at every boundary), `HostPendingChangesTestCase` (your pending changes never
+  flushed by a blog write) and `AuditKitPrivateManagerKernelTest` (AuditKit 2.x blame through the private manager).
 - **DDD host**: `WorkerTestKernel::DDD` (plain PHP users, `doctrine.entity_manager: blog`, XML mapping, user references
   by id, twin-only ports): 1,000 alternating requests with fresh reads and an empty own manager after each one, the
   host's manager never flushed nor cleared by a bundle write, a closed own manager recreated;
