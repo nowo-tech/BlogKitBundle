@@ -116,7 +116,7 @@ final class PrivateEntityManagerKernelTest extends TestCase
         $private = $this->privateManager($container);
         $runner  = $this->service($container, BlogKitTransactionRunner::class);
 
-        $deprecations = self::deprecationsOf(function () use ($container, $private, $runner, $alice): void {
+        $deprecations = self::blogKitDeprecationsOf(function () use ($container, $private, $runner, $alice): void {
             $article = $private->getRepository(BlogArticle::class)->findOneBy(['slug' => 'post-alice']);
             self::assertInstanceOf(BlogArticle::class, $article);
             $comments = $this->service($container, BlogCommentManager::class);
@@ -263,7 +263,7 @@ final class PrivateEntityManagerKernelTest extends TestCase
         self::assertSame(
             ['Since nowo-tech/blog-kit-bundle 2.0: The "private_entity_manager" option at "nowo_blog_kit.doctrine" has no effect since 2.0 (without doctrine.entity_manager the private entity manager is the only mode): remove it. The key is removed in 3.0.'],
             // Once per processing of the configuration while the container is built (never per request).
-            array_values(array_unique(self::deprecationsOf(fn () => $this->kernel?->boot()))),
+            array_values(array_unique(self::blogKitDeprecationsOf(fn () => $this->kernel?->boot()))),
         );
         $container = $this->kernel->getContainer();
         $private   = $this->service($container, NowoBlogKitExtension::ENTITY_MANAGER_SERVICE, PrivateEntityManager::class);
@@ -276,7 +276,7 @@ final class PrivateEntityManagerKernelTest extends TestCase
         new Filesystem()->mkdir($this->directory);
         $this->kernel = new WorkerTestKernel($mode, $this->directory);
         // Since 2.0 the zero-config host builds its container without any notice (no host mode left).
-        self::assertSame([], self::deprecationsOf(fn () => $this->kernel?->boot()));
+        self::assertSame([], self::blogKitDeprecationsOf(fn () => $this->kernel?->boot()));
         $container = $this->kernel->getContainer();
 
         $doctrine = $container->get('doctrine');

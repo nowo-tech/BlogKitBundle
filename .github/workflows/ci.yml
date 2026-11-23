@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main, master]
+    branches: [main, master, 1.x]
   pull_request:
-    branches: [main, master]
+    branches: [main, master, 1.x]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
@@ -354,6 +354,35 @@ jobs:
           BLOG_KIT_DATABASE_URL: ${{ matrix.url }}
         run: vendor/bin/phpunit --no-coverage --group database --fail-on-skipped
         if: env.HEAVY == 'true'
+
+  auditkit-1x:
+    # BlogKit 2.x accepts nowo-tech/audit-kit-bundle ^1.1 || ^2.0; the lock and the coverage cell use 2.x, this leg keeps
+    # the last 1.x green (BlogArticle implements AuditKit's AuditableInterface; AuditKit's blame runs on the private manager).
+    name: AuditKit 1.x
+    needs: changes
+    # Light mode: skipped (a skipped non-matrix job reports its own name as success).
+    if: ${{ !cancelled() && needs.changes.outputs.mode != 'light' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          tools: composer:v2
+          coverage: none
+
+      - name: Install dependencies with AuditKit 1.x
+        run: |
+          composer require nowo-tech/audit-kit-bundle:^1.17 --no-update --no-interaction
+          composer update nowo-tech/audit-kit-bundle -W --prefer-dist --no-progress --no-interaction
+          composer show nowo-tech/audit-kit-bundle | head -3
+
+      - name: Test suites (no databases)
+        run: vendor/bin/phpunit --no-coverage --testsuite Unit,Integration
 
   static-analysis:
     name: Static analysis (PHPStan, Rector, Igor)

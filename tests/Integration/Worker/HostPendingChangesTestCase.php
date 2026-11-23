@@ -27,7 +27,6 @@ use Nowo\BlogKitBundle\Tests\Support\CollectsDeprecations;
 use Nowo\BlogKitBundle\Tests\Support\HostRef\HostArticleLink;
 use Nowo\BlogKitBundle\Tests\Support\MappedTestUser;
 use Nowo\BlogKitBundle\Transaction\BlogKitTransactionRunner;
-use Nowo\BlogKitBundle\Worker\UnitOfWorkBoundaries;
 use Nowo\TransactionDoctrine\PrivateManager\PrivateEntityManager;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
@@ -39,6 +38,8 @@ use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
 use Symfony\Component\HttpKernel\TerminableInterface;
+use Symfony\Component\Messenger\Envelope;
+use Symfony\Component\Messenger\Event\WorkerMessageReceivedEvent;
 
 use function sys_get_temp_dir;
 use function uniqid;
@@ -150,7 +151,7 @@ abstract class HostPendingChangesTestCase extends TestCase
         $tags = new BlogTagRegistry($blogManager, $this->service($container, BlogTagRepository::class), $this->service($container, BlogLocales::class), $runner);
 
         $yours        = null;
-        $deprecations = self::deprecationsOf(function () use ($container, $default, $blogManager, $runner, $comments, $articles, $tags, $alice, $dispatcher, &$yours): void {
+        $deprecations = self::blogKitDeprecationsOf(function () use ($container, $default, $blogManager, $runner, $comments, $articles, $tags, $alice, $dispatcher, &$yours): void {
             // A unit of the runner: a published article (its event runs your listener after the commit).
             $runner->run(static function () use ($blogManager): void {
                 $article = new BlogArticle()->setSlug('launch')->setPublished(true)->setPublishedAt(new DateTimeImmutable('2026-03-01'));
@@ -192,7 +193,7 @@ abstract class HostPendingChangesTestCase extends TestCase
             // purpose: Symfony's own DoctrineClearEntityManagerWorkerSubscriber clears every manager there, yours
             // included, in 1.x as in 2.0; that is the framework, not the bundle.)
             $this->adminListing($container);
-            $dispatcher->dispatch(new stdClass(), UnitOfWorkBoundaries::MESSENGER_WORKER_MESSAGE_RECEIVED);
+            $dispatcher->dispatch(new WorkerMessageReceivedEvent(new Envelope(new stdClass()), 'async'));
         });
 
         self::assertSame([], $deprecations, 'no notice and no host-flush probe in 2.0');
@@ -269,7 +270,7 @@ abstract class HostPendingChangesTestCase extends TestCase
         // A new unit of work (here: a Messenger message): the private manager starts empty.
         $dispatcher = $container->get('event_dispatcher');
         self::assertInstanceOf(EventDispatcherInterface::class, $dispatcher);
-        $dispatcher->dispatch(new stdClass(), UnitOfWorkBoundaries::MESSENGER_WORKER_MESSAGE_RECEIVED);
+        $dispatcher->dispatch(new WorkerMessageReceivedEvent(new Envelope(new stdClass()), 'async'));
         $this->expectException(LogicException::class);
         $this->expectExceptionMessage('The blog comment #' . $comment->getId() . ' no longer exists.');
         $comments->approve($yours, $moderator);
@@ -281,7 +282,7 @@ abstract class HostPendingChangesTestCase extends TestCase
         new Filesystem()->mkdir($this->directory);
         $this->databaseUrl = $this->databaseUrl();
         $this->kernel      = new WorkerTestKernel(WorkerTestKernel::STANDARD, $this->directory, $this->databaseUrl);
-        self::assertSame([], self::deprecationsOf(fn () => $this->kernel?->boot()), 'zero configuration: no notice');
+        self::assertSame([], self::blogKitDeprecationsOf(fn () => $this->kernel?->boot()), 'zero configuration: no notice');
         $container = $this->kernel->getContainer();
 
         $manager  = $this->manager($container);

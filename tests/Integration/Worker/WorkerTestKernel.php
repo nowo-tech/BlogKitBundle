@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Nowo\BlogKitBundle\Tests\Integration\Worker;
 
+use Composer\InstalledVersions;
 use Doctrine\Bundle\DoctrineBundle\DoctrineBundle;
 use Nowo\AuditKitBundle\NowoAuditKitBundle;
 use Nowo\BlogKitBundle\NowoBlogKitBundle;
@@ -28,6 +29,7 @@ use Symfony\Component\Routing\Loader\Configurator\RoutingConfigurator;
 
 use function dirname;
 use function md5;
+use function str_starts_with;
 use function Symfony\Component\DependencyInjection\Loader\Configurator\inline_service;
 use function Symfony\Component\DependencyInjection\Loader\Configurator\service;
 use function sys_get_temp_dir;
@@ -135,6 +137,9 @@ final class WorkerTestKernel extends Kernel
         $container->extension('doctrine', [
             'dbal' => ['url' => $this->databaseUrl ?? 'sqlite:///' . $this->directory . DIRECTORY_SEPARATOR . 'blog.sqlite'],
             'orm'  => [
+                // DoctrineBundle 2.x (the DBAL 3 legs) proxies through var-exporter lazy ghosts, which symfony/var-exporter 8
+                // no longer has; 3.x always uses PHP 8.4 native lazy objects (and refuses the key).
+                ...(str_starts_with((string) InstalledVersions::getVersion('doctrine/doctrine-bundle'), '2.') ? ['enable_native_lazy_objects' => true] : []),
                 'default_entity_manager' => 'default',
                 'entity_managers'        => $ddd
                     ? [

@@ -168,7 +168,7 @@ final class AuditKitPrivateManagerKernelTest extends TestCase
         $this->directory = sys_get_temp_dir() . '/nowo-blog-kit-auditkit-' . uniqid('', true);
         new Filesystem()->mkdir($this->directory);
         $this->kernel = new WorkerTestKernel(WorkerTestKernel::STANDARD, $this->directory, null, null, 'reference');
-        self::assertSame([], self::deprecationsOf(fn () => $this->kernel?->boot()));
+        self::assertSame([], self::blogKitDeprecationsOf(fn () => $this->kernel?->boot()));
         $container = $this->kernel->getContainer();
 
         $manager = $this->manager($container);
