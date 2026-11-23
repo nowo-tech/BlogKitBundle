@@ -3,6 +3,7 @@
 ## Table of contents
 
 - [Unreleased](#unreleased)
+- [To 2.1.0](#to-210)
 - [To 2.0.0](#to-200)
   - [Before you upgrade](#before-you-upgrade)
   - [The private entity manager is the only mode](#the-private-entity-manager-is-the-only-mode)
@@ -67,6 +68,14 @@
 - [Future releases](#future-releases)
 
 ## Unreleased
+
+## To 2.1.0
+
+From **2.0.0**:
+
+```bash
+composer update nowo-tech/blog-kit-bundle
+```
 
 ## To 2.0.0
 
