@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Nowo\BlogKitBundle\Tests\Support\Legacy183;
 
 use Nowo\BlogKitBundle\Enum\CommentCaptchaStrategy;
-use Nowo\BlogKitBundle\Security\Captcha\BlogCommentCaptchaStrategyInterface;
 use Nowo\BlogKitBundle\Security\Captcha\CaptchaHttpClientInterface;
+use Nowo\BlogKitBundle\Security\Internal\CommentCaptchaInterface;
 use Override;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Form\FormError;
@@ -28,7 +28,7 @@ use function strtolower;
  * (when returned) matches the current request host, and, for reCAPTCHA v3, the `action` is
  * {@see self::RECAPTCHA_V3_ACTION} and the score reaches the minimum.
  */
-final readonly class LegacyRemoteCommentCaptchaStrategy implements BlogCommentCaptchaStrategyInterface
+final readonly class LegacyRemoteCommentCaptchaStrategy implements CommentCaptchaInterface
 {
     /** reCAPTCHA v3 action sent by the comment form and expected back from siteverify. */
     public const string RECAPTCHA_V3_ACTION = 'blog_comment';

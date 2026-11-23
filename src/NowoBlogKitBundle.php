@@ -8,6 +8,7 @@ use Doctrine\Bundle\DoctrineBundle\DependencyInjection\Compiler\DoctrineOrmMappi
 use Nowo\BlogKitBundle\DependencyInjection\Compiler\BlogKitEntityManagerPass;
 use Nowo\BlogKitBundle\DependencyInjection\Compiler\BlogKitPortsPass;
 use Nowo\BlogKitBundle\DependencyInjection\Compiler\BlogKitPrivateEntityManagerPass;
+use Nowo\BlogKitBundle\DependencyInjection\Compiler\BlogKitRemovedPortsPass;
 use Nowo\BlogKitBundle\DependencyInjection\Compiler\ConflictResponsePass;
 use Nowo\BlogKitBundle\DependencyInjection\Compiler\CsrfProtectionPass;
 use Nowo\BlogKitBundle\DependencyInjection\Compiler\TwigPathsPass;
@@ -27,6 +28,10 @@ class NowoBlogKitBundle extends Bundle
         $container->addCompilerPass(new TwigPathsPass());
         $container->addCompilerPass(new CsrfProtectionPass());
         $container->addCompilerPass(new BlogKitPortsPass());
+        // Since 2.0 (lesson W1-1): a host service still tied to a removed 1.x port fails the build instead of being
+        // dropped silently: loading errors at 1000, #[AsDecorator] (turned into decorated services) at 99.
+        $container->addCompilerPass(new BlogKitRemovedPortsPass(), PassConfig::TYPE_BEFORE_OPTIMIZATION, 1000);
+        $container->addCompilerPass(new BlogKitRemovedPortsPass(), PassConfig::TYPE_BEFORE_OPTIMIZATION, 99);
         // Since 1.10.0 (REQ-RUNTIME-003 rule 6): the conflict answer of the bundle routes.
         $container->addCompilerPass(new ConflictResponsePass());
 
@@ -44,8 +49,8 @@ class NowoBlogKitBundle extends Bundle
         $container->addCompilerPass(DoctrineOrmMappingsPass::createXmlMappingDriver([$xml => $namespace], $dedicated, NowoBlogKitExtension::MAPPING_XML_DEDICATED));
         $container->addCompilerPass(new BlogKitEntityManagerPass(), PassConfig::TYPE_BEFORE_OPTIMIZATION, -10);
 
-        // Since 1.12.0 (doctrine.private_entity_manager: true): the private manager's source and its DBAL middleware,
-        // before DoctrineBundle's MiddlewaresPass (priority 0).
+        // Since 1.12.0 (the only mode without doctrine.entity_manager since 2.0): the private manager's source and its
+        // DBAL middleware, before DoctrineBundle's MiddlewaresPass (priority 0).
         $container->addCompilerPass(new BlogKitPrivateEntityManagerPass(), PassConfig::TYPE_BEFORE_OPTIMIZATION, 5);
     }
 

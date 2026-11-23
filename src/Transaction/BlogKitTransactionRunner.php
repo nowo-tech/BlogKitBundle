@@ -8,7 +8,6 @@ use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\Persistence\ManagerRegistry;
 use LogicException;
-use Nowo\BlogKitBundle\Doctrine\BlogKitHostFlushReporter;
 use Nowo\BlogKitBundle\Entity\BlogArticle;
 use Nowo\BlogKitBundle\EventSubscriber\BlogArticlePublishedDoctrineSubscriber;
 use Nowo\BlogKitBundle\EventSubscriber\BlogKitConflictSubscriber;
@@ -24,10 +23,8 @@ use Throwable;
  * entity manager, through nowo-tech/transaction-doctrine.
  *
  * - {@see run()}: a unit of work whose operation makes the changes (persist, remove, setters); the runner flushes and
- *   commits. On the host's manager (no `doctrine.entity_manager`) it is
- *   {@see DoctrineTransactionRunner::forHostEntityManager()}: an open manager is never cleared or reset, a closed one is
- *   replaced through the registry, and the manager must have no pending changes when the unit starts (LogicException).
- *   On the bundle's own manager it is {@see DoctrineTransactionRunner::forEntityManager()}.
+ *   commits, with {@see DoctrineTransactionRunner::forEntityManager()} on the bundle's manager: its private manager
+ *   (since 2.0 the only mode without `doctrine.entity_manager`) or the dedicated `doctrine.entity_manager`.
  * - {@see runRereadingOnDuplicate()}: the same, run once more after a unique violation: the expected race of a
  *   check-then-insert backed by a unique key (two writers creating the same tag). The second attempt reads again and
  *   finds the winner's row; a second violation is a real error.
@@ -41,13 +38,13 @@ use Throwable;
  * aware; inside your transaction, to the savepoint). {@see BlogArticlePublishedDoctrineSubscriber} holds the publish
  * events of the unit until it committed.
  *
- * Since 1.12.0:
- *
- * - `doctrine.private_entity_manager: true`: the manager is the bundle's private one and the registry the private
- *   registry; units run with {@see DoctrineTransactionRunner::forEntityManager()} (a failure closes and drops only the
- *   private manager; yours is never touched).
- * - While the bundle flushes your manager (no option, or `false`), {@see BlogKitHostFlushReporter} reports your pending
- *   changes right before each flush (one deprecation per class and unit of work).
+ * Since 2.0 the container always builds it on the bundle's private manager (the private registry, a failure closes
+ * and drops only the private manager; yours is never flushed, cleared or touched) or on the dedicated manager. The
+ * 1.x mode in which it flushed your default manager, the 1.10 "your manager must be clean before a blog write"
+ * `LogicException` of that mode and the 1.12 host-flush probe are gone with it. Built directly with neither a
+ * private source manager nor `$ownManagerName`, it treats the manager it was given as the caller's
+ * ({@see DoctrineTransactionRunner::forHostEntityManager()}: never cleared or reset; it must be clean when a unit
+ * starts; a closed one is replaced through the registry, as in 1.x); the bundle's own wiring never does that.
  *
  * Stateless (the transaction-doctrine runner is built per call): safe in a FrankenPHP worker with the kernel kept.
  */
@@ -56,9 +53,11 @@ final readonly class BlogKitTransactionRunner implements TransactionRunnerInterf
     /**
      * @param string|null $ownManagerName `nowo_blog_kit.doctrine.entity_manager`: a manager dedicated to the blog (null: the host's)
      * @param bool $direct internal: {@see unmanaged()}
-     * @param string|null $privateSourceManager since 1.12.0: in the private mode, the name your manager the private one
-     *                                          is created on has in the registry (null or '': not the private mode)
-     * @param BlogKitHostFlushReporter|null $hostFlushReporter since 1.12.0: the host-flush probe of the host mode
+     * @param string|null $privateSourceManager since 1.12.0: with the private manager, the name your manager the
+     *                                          private one is created on has in the registry (null or '': not the
+     *                                          private manager)
+     * @param object|null $hostFlushReporter deprecated since 2.0, ignored (the 1.12 host-flush probe was removed with the
+     *                                       mode that flushed your manager); removed in 3.0
      */
     public function __construct(
         private EntityManagerInterface $entityManager,
@@ -71,8 +70,9 @@ final readonly class BlogKitTransactionRunner implements TransactionRunnerInterf
         private bool $direct = false,
         #[Autowire('%nowo_blog_kit.private_entity_manager.source_manager%')]
         private ?string $privateSourceManager = null,
-        private ?BlogKitHostFlushReporter $hostFlushReporter = null,
+        ?object $hostFlushReporter = null,
     ) {
+        unset($hostFlushReporter);
     }
 
     /**
@@ -94,7 +94,7 @@ final readonly class BlogKitTransactionRunner implements TransactionRunnerInterf
      * @param callable(): T $operation
      *
      * @throws TransientStorageFailure When the unit hit a deadlock, lock wait timeout or serialization failure
-     * @throws LogicException On the host's manager, when it has pending changes before the unit
+     * @throws LogicException Built directly on a caller's manager (no manager name), when it has pending changes before the unit
      *
      * @return T
      */
@@ -107,13 +107,7 @@ final readonly class BlogKitTransactionRunner implements TransactionRunnerInterf
             return $result;
         }
 
-        return $this->holdingPublishedEvents(fn (): mixed => $this->unitRunner()->run(function () use ($operation): mixed {
-            $result = $operation();
-            // The runner flushes right after the operation: what it would write of yours is reported first.
-            $this->hostFlushReporter?->beforeFlush($this->entityManager);
-
-            return $result;
-        }));
+        return $this->holdingPublishedEvents(fn (): mixed => $this->unitRunner()->run($operation));
     }
 
     /**
@@ -154,7 +148,6 @@ final readonly class BlogKitTransactionRunner implements TransactionRunnerInterf
 
         $this->holdingPublishedEvents(fn (): mixed => DoctrineTransactionRunner::forConnection($this->entityManager->getConnection(), $this->retryAfterSeconds, $this->logger)
             ->run(function (): null {
-                $this->hostFlushReporter?->beforeFlush($this->entityManager);
                 $this->entityManager->flush();
 
                 return null;
@@ -195,17 +188,17 @@ final readonly class BlogKitTransactionRunner implements TransactionRunnerInterf
             return DoctrineTransactionRunner::forEntityManager($this->entityManager, $this->registry, $this->ownManagerName, $this->retryAfterSeconds, $this->logger);
         }
 
-        // transaction-doctrine fetches the manager from the registry by name: without the name of the manager that
-        // maps the blog entities, no registry (a closed manager is then replaced at the next request).
-        $name = $this->hostManagerName();
+        // Built directly on a caller's manager (never the bundle's wiring since 2.0): as in 1.x, never cleared or reset;
+        // a closed one is replaced through the registry when the manager that maps the blog entities has a name there.
+        $name = $this->callersManagerName();
 
         return DoctrineTransactionRunner::forHostEntityManager($this->entityManager, $name !== null ? $this->registry : null, $name, $this->retryAfterSeconds, $this->logger);
     }
 
     /**
-     * The registry name of the host's manager that maps the blog entities (null when there is no registry or no name).
+     * The registry name of the manager that maps the blog entities (null when there is no registry or no name).
      */
-    private function hostManagerName(): ?string
+    private function callersManagerName(): ?string
     {
         if (!$this->registry instanceof ManagerRegistry) {
             return null;

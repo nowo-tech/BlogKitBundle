@@ -6,11 +6,10 @@ namespace Nowo\BlogKitBundle\Tests\Integration\Worker;
 
 use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\Event\PreFlushEventArgs;
 use Doctrine\ORM\Tools\SchemaTool;
 use Doctrine\Persistence\ManagerRegistry;
+use LogicException;
 use Nowo\BlogKitBundle\DependencyInjection\NowoBlogKitExtension;
-use Nowo\BlogKitBundle\Doctrine\BlogKitPrivateUserReferenceListener;
 use Nowo\BlogKitBundle\Entity\BlogArticle;
 use Nowo\BlogKitBundle\Entity\BlogArticleTranslation;
 use Nowo\BlogKitBundle\Entity\BlogTag;
@@ -33,6 +32,8 @@ use Symfony\Component\HttpKernel\HttpKernelInterface;
 use Symfony\Component\HttpKernel\TerminableInterface;
 
 use function array_slice;
+use function array_unique;
+use function array_values;
 use function count;
 use function gc_collect_cycles;
 use function implode;
@@ -43,16 +44,15 @@ use function sys_get_temp_dir;
 use function uniqid;
 
 /**
- * Since 1.12.0 (REQ-ARCH-001 rule 6, REQ-RUNTIME-002): `doctrine.private_entity_manager: true` through ONE kept-alive
- * kernel (FrankenPHP worker mode, kernel reset false: `handle()` + `terminate()`, the services resetter never runs),
- * and the host-flush probe of the host mode.
+ * Since 1.12.0 (REQ-ARCH-001 rule 6, REQ-RUNTIME-002): the bundle's private entity manager through ONE kept-alive
+ * kernel (FrankenPHP worker mode, kernel reset false: `handle()` + `terminate()`, the services resetter never runs).
+ * Since 2.0 it is the zero-config default ({@see WorkerTestKernel::STANDARD}); the 1.12 opt-in `true` is a no-op.
  *
  * - The private manager is dropped at every request, Messenger and console boundary, and replaced when closed.
  * - A blog write never flushes nor clears your manager: your pending change stays pending; your user entity assigned
  *   to a blog row becomes a reference of the private manager.
  * - Repositories (also through your manager's getRepository(), as the entity value resolver uses it) and the admin
  *   tag choice read through the private manager.
- * - Host mode: a flush of your manager by the bundle reports your pending change once per class and unit of work.
  */
 final class PrivateEntityManagerKernelTest extends TestCase
 {
@@ -77,7 +77,7 @@ final class PrivateEntityManagerKernelTest extends TestCase
     #[Test]
     public function everyRequestDropsThePrivateManagerAndYourManagerIsNeverTouched(): void
     {
-        $container     = $this->boot(WorkerTestKernel::PRIVATE);
+        $container     = $this->boot(WorkerTestKernel::STANDARD);
         $default       = $this->manager($container);
         [$alice, $bob] = $this->users($default);
         $this->seed($default, $alice, $bob);
@@ -107,7 +107,7 @@ final class PrivateEntityManagerKernelTest extends TestCase
     #[Test]
     public function blogWritesKeepYourPendingChangesAndReferenceYourUsers(): void
     {
-        $container     = $this->boot(WorkerTestKernel::PRIVATE);
+        $container     = $this->boot(WorkerTestKernel::STANDARD);
         $default       = $this->manager($container);
         [$alice, $bob] = $this->users($default);
         $this->seed($default, $alice, $bob);
@@ -116,7 +116,7 @@ final class PrivateEntityManagerKernelTest extends TestCase
         $private = $this->privateManager($container);
         $runner  = $this->service($container, BlogKitTransactionRunner::class);
 
-        $deprecations = self::deprecationsOf(function () use ($container, $private, $runner, $alice): void {
+        $deprecations = self::blogKitDeprecationsOf(function () use ($container, $private, $runner, $alice): void {
             $article = $private->getRepository(BlogArticle::class)->findOneBy(['slug' => 'post-alice']);
             self::assertInstanceOf(BlogArticle::class, $article);
             $comments = $this->service($container, BlogCommentManager::class);
@@ -145,7 +145,7 @@ final class PrivateEntityManagerKernelTest extends TestCase
     #[Test]
     public function repositoriesAndTheTagChoiceReadThroughThePrivateManager(): void
     {
-        $container     = $this->boot(WorkerTestKernel::PRIVATE);
+        $container     = $this->boot(WorkerTestKernel::STANDARD);
         $default       = $this->manager($container);
         [$alice, $bob] = $this->users($default);
         $this->seed($default, $alice, $bob);
@@ -174,7 +174,7 @@ final class PrivateEntityManagerKernelTest extends TestCase
     #[Test]
     public function aClosedPrivateManagerIsReplacedAndMessengerBoundariesDropIt(): void
     {
-        $container     = $this->boot(WorkerTestKernel::PRIVATE);
+        $container     = $this->boot(WorkerTestKernel::STANDARD);
         $default       = $this->manager($container);
         [$alice, $bob] = $this->users($default);
         $this->seed($default, $alice, $bob);
@@ -198,7 +198,7 @@ final class PrivateEntityManagerKernelTest extends TestCase
     #[Test]
     public function theSettingsInsertRolledBackWithYourTransactionMakesThePrivateManagerStale(): void
     {
-        $container  = $this->boot(WorkerTestKernel::PRIVATE);
+        $container  = $this->boot(WorkerTestKernel::STANDARD);
         $default    = $this->manager($container);
         $private    = $this->privateManager($container);
         $settings   = $this->service($container, BlogSettingsRepository::class);
@@ -213,41 +213,61 @@ final class PrivateEntityManagerKernelTest extends TestCase
         self::assertSame(0, (int) $connection->fetchOne('SELECT COUNT(*) FROM content_blog_settings'));
     }
 
+    /**
+     * Since 2.0 (XS-I2): a user of yours persisted but not flushed fails the blog write with a clear message, before
+     * anything is written; your manager keeps it pending, and once you flushed it the same write works.
+     */
     #[Test]
-    public function aNewUserWithoutIdentifierIsLeftToDoctrine(): void
-    {
-        $container = $this->boot(WorkerTestKernel::PRIVATE);
-        $private   = $this->privateManager($container);
-        $user      = new MappedTestUser()->setEmail('new@example.test');
-        $article   = new BlogArticle()->setSlug('draft');
-        $article->setCreatedBy($user);
-        $live = $private->live();
-        $live->persist($article);
-
-        new BlogKitPrivateUserReferenceListener()->preFlush(new PreFlushEventArgs($live));
-
-        self::assertSame($user, $article->getCreatedBy(), 'nothing to reference: Doctrine reports the new entity itself');
-    }
-
-    #[Test]
-    public function hostModeReportsYourPendingChangesOncePerUnitOfWork(): void
+    public function aUserYouHaveNotFlushedYetFailsClearlyAndNothingIsWritten(): void
     {
         $container = $this->boot(WorkerTestKernel::STANDARD);
         $default   = $this->manager($container);
+        $private   = $this->privateManager($container);
         $runner    = $this->service($container, BlogKitTransactionRunner::class);
-        $message   = 'Your pending changes to ' . HostNote::class . ' were flushed by NowoBlogKitBundle; 2.0 no longer does.';
+        $user      = new MappedTestUser()->setEmail('new@example.test');
+        $default->persist($user);
+        $write = static function () use ($private, $user): void {
+            $article = new BlogArticle()->setSlug('draft')->setPublishedAt(new DateTimeImmutable('2026-02-01'));
+            $article->setCreatedBy($user);
+            $private->persist($article);
+        };
 
-        $default->persist(new HostNote('first'));
-        self::assertSame([$message], self::deprecationsOf(static fn () => $runner->flushPending()));
-        $default->persist(new HostNote('second'));
-        self::assertSame([], self::deprecationsOf(static fn () => $runner->flushPending()), 'once per class and unit of work');
-        self::assertSame(2, (int) $default->getConnection()->fetchOne('SELECT COUNT(*) FROM worker_host_note'), '1.x behaviour: your changes are written');
+        try {
+            $runner->run($write);
+            self::fail('The blog write must fail.');
+        } catch (LogicException $exception) {
+            self::assertSame('The ' . MappedTestUser::class . ' "createdBy" of a ' . BlogArticle::class . ' has no identifier yet: save (flush) your user before the blog writes for it; the blog entity manager only stores a reference to a user row that exists. Nothing was written.', $exception->getMessage());
+        }
 
-        $dispatcher = $container->get('event_dispatcher');
-        self::assertInstanceOf(EventDispatcherInterface::class, $dispatcher);
-        $dispatcher->dispatch(new stdClass(), UnitOfWorkBoundaries::MESSENGER_WORKER_MESSAGE_RECEIVED);
-        $default->persist(new HostNote('third'));
-        self::assertSame([$message], self::deprecationsOf(static fn () => $runner->flushPending()), 'a new unit of work reports again');
+        $connection = $default->getConnection();
+        self::assertSame(0, (int) $connection->fetchOne('SELECT COUNT(*) FROM content_blog_article'));
+        self::assertSame(0, (int) $connection->fetchOne('SELECT COUNT(*) FROM blog_kit_test_user'), 'your user was not inserted by the bundle');
+        self::assertTrue($default->getUnitOfWork()->isScheduledForInsert($user), 'and is still pending on your manager');
+
+        $default->flush();
+        $runner->run($write);
+        self::assertSame((int) $user->getId(), (int) $connection->fetchOne("SELECT created_by_id FROM content_blog_article WHERE slug = 'draft'"));
+    }
+
+    /**
+     * The 1.12 opt-in `doctrine.private_entity_manager: true` is a deprecated no-op since 2.0: the same private manager,
+     * plus the deprecation of the key when the container is built.
+     */
+    #[Test]
+    public function explicitTrueIsADeprecatedNoOp(): void
+    {
+        $this->directory = sys_get_temp_dir() . '/nowo-blog-kit-worker-db-' . uniqid('', true);
+        new Filesystem()->mkdir($this->directory);
+        $this->kernel = new WorkerTestKernel(WorkerTestKernel::PRIVATE, $this->directory);
+
+        self::assertSame(
+            ['Since nowo-tech/blog-kit-bundle 2.0: The "private_entity_manager" option at "nowo_blog_kit.doctrine" has no effect since 2.0 (without doctrine.entity_manager the private entity manager is the only mode): remove it. The key is removed in 3.0.'],
+            // Once per processing of the configuration while the container is built (never per request).
+            array_values(array_unique(self::blogKitDeprecationsOf(fn () => $this->kernel?->boot()))),
+        );
+        $container = $this->kernel->getContainer();
+        $private   = $this->service($container, NowoBlogKitExtension::ENTITY_MANAGER_SERVICE, PrivateEntityManager::class);
+        self::assertSame($this->privateManager($container), $private);
     }
 
     private function boot(string $mode): ContainerInterface
@@ -255,8 +275,8 @@ final class PrivateEntityManagerKernelTest extends TestCase
         $this->directory = sys_get_temp_dir() . '/nowo-blog-kit-worker-db-' . uniqid('', true);
         new Filesystem()->mkdir($this->directory);
         $this->kernel = new WorkerTestKernel($mode, $this->directory);
-        // The host mode kernel (no option) triggers the 1.12.0 notice when its container is built.
-        self::deprecationsOf(fn () => $this->kernel?->boot());
+        // Since 2.0 the zero-config host builds its container without any notice (no host mode left).
+        self::assertSame([], self::blogKitDeprecationsOf(fn () => $this->kernel?->boot()));
         $container = $this->kernel->getContainer();
 
         $doctrine = $container->get('doctrine');

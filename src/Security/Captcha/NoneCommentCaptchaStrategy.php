@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace Nowo\BlogKitBundle\Security\Captcha;
 
+use Nowo\BlogKitBundle\Security\Internal\CommentCaptchaInterface;
 use Symfony\Component\Form\FormBuilderInterface;
 
 /**
  * Disables CAPTCHA (`none` strategy).
  */
-final class NoneCommentCaptchaStrategy implements BlogCommentCaptchaStrategyInterface
+final class NoneCommentCaptchaStrategy implements CommentCaptchaInterface
 {
     public function configureForm(FormBuilderInterface $builder): void
     {

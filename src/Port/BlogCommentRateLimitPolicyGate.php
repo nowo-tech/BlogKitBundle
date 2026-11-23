@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Nowo\BlogKitBundle\Port;
 
 use Nowo\BlogKitBundle\Entity\BlogArticle;
-use Nowo\BlogKitBundle\Security\RateLimit\BlogCommentRateLimiterInterface;
+use Nowo\BlogKitBundle\Security\Internal\CommentRateLimiterInterface;
 use Nowo\BlogKitBundle\Security\RateLimit\BlogCommentRateLimitPolicyInterface;
 use Nowo\BlogKitBundle\ValueObject\BlogArticleSnapshot;
 use Symfony\Component\HttpFoundation\Request;
@@ -17,7 +17,7 @@ use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
  *
  * @internal built by {@see Ports}
  */
-final readonly class BlogCommentRateLimitPolicyGate implements BlogCommentRateLimiterInterface
+final readonly class BlogCommentRateLimitPolicyGate implements CommentRateLimiterInterface
 {
     public function __construct(
         private BlogCommentRateLimitPolicyInterface $policy,

@@ -22,13 +22,13 @@ final class BlogArticlePublishedDoctrineSubscriberTest extends TestCase
     #[Test]
     public function postFlushDispatchesEventForPublishedInsertions(): void
     {
-        $article    = new BlogArticle()->setPublished(true);
+        $article    = new BlogArticle()->setSlug('launch')->setPublished(true);
         $dispatcher = $this->createMock(EventDispatcherInterface::class);
         $dispatcher->expects(self::once())
             ->method('dispatch')
             ->with(self::callback(
                 static fn (object $event): bool => $event instanceof BlogArticlePublishedEvent
-                    && $event->getArticle() === $article,
+                    && $event->getArticleSnapshot()->slug === 'launch',
             ))
             ->willReturnArgument(0);
 
@@ -41,13 +41,13 @@ final class BlogArticlePublishedDoctrineSubscriberTest extends TestCase
     #[Test]
     public function postFlushDispatchesEventForFalseToTruePublishedUpdates(): void
     {
-        $article    = new BlogArticle()->setPublished(true);
+        $article    = new BlogArticle()->setSlug('launch')->setPublished(true);
         $dispatcher = $this->createMock(EventDispatcherInterface::class);
         $dispatcher->expects(self::once())
             ->method('dispatch')
             ->with(self::callback(
                 static fn (object $event): bool => $event instanceof BlogArticlePublishedEvent
-                    && $event->getArticle() === $article,
+                    && $event->getArticleSnapshot()->slug === 'launch',
             ))
             ->willReturnArgument(0);
 
@@ -98,14 +98,14 @@ final class BlogArticlePublishedDoctrineSubscriberTest extends TestCase
     #[Test]
     public function failedFlushDoesNotLeakPendingArticlesIntoTheNextFlush(): void
     {
-        $rolledBack = new BlogArticle()->setPublished(true);
-        $published  = new BlogArticle()->setPublished(true);
+        $rolledBack = new BlogArticle()->setSlug('rolled-back')->setPublished(true);
+        $published  = new BlogArticle()->setSlug('published')->setPublished(true);
         $dispatched = [];
         $dispatcher = $this->createMock(EventDispatcherInterface::class);
         $dispatcher->method('dispatch')->willReturnCallback(
             static function (object $event) use (&$dispatched): object {
                 self::assertInstanceOf(BlogArticlePublishedEvent::class, $event);
-                $dispatched[] = $event->getArticle();
+                $dispatched[] = $event->getArticleSnapshot()->slug;
 
                 return $event;
             },
@@ -118,7 +118,7 @@ final class BlogArticlePublishedDoctrineSubscriberTest extends TestCase
         $subscriber->onFlush($this->createOnFlushEventArgs([$published]));
         $subscriber->postFlush($this->createMock(PostFlushEventArgs::class));
 
-        self::assertSame([$published], $dispatched);
+        self::assertSame(['published'], $dispatched);
     }
 
     #[Test]
@@ -148,7 +148,7 @@ final class BlogArticlePublishedDoctrineSubscriberTest extends TestCase
         $dispatcher = $this->createMock(EventDispatcherInterface::class);
         $dispatcher->method('dispatch')->willReturnCallback(static function (object $event) use (&$dispatched): object {
             self::assertInstanceOf(BlogArticlePublishedEvent::class, $event);
-            $dispatched[] = $event->getArticle()->getSlug();
+            $dispatched[] = $event->getArticleSnapshot()->slug;
 
             return $event;
         });

@@ -6,7 +6,7 @@ namespace Nowo\BlogKitBundle\Tests\Support\Legacy183;
 
 use Nowo\BlogKitBundle\Entity\BlogArticle;
 use Nowo\BlogKitBundle\Enum\CommentRateLimitStrategy;
-use Nowo\BlogKitBundle\Security\RateLimit\BlogCommentRateLimiterInterface;
+use Nowo\BlogKitBundle\Security\Internal\CommentRateLimiterInterface;
 use Psr\Cache\CacheItemPoolInterface;
 use Psr\Clock\ClockInterface;
 use Symfony\Component\HttpFoundation\Request;
@@ -30,7 +30,7 @@ use const FILTER_VALIDATE_IP;
  * the imports changed.
  * Cache-backed comment rate limiter (fixed window, per IP+article, or sliding window).
  */
-final readonly class LegacyCacheBlogCommentRateLimiter implements BlogCommentRateLimiterInterface
+final readonly class LegacyCacheBlogCommentRateLimiter implements CommentRateLimiterInterface
 {
     public function __construct(
         private ?CacheItemPoolInterface $cachePool,

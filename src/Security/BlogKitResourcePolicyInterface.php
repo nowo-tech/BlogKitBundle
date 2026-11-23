@@ -9,9 +9,9 @@ use Nowo\BlogKitBundle\ValueObject\BlogCommentSnapshot;
 use Nowo\BlogKitBundle\ValueObject\BlogTagSnapshot;
 
 /**
- * Since 1.9.0 (REQ-ARCH-001 rules 1 and 3): twin of {@see BlogKitResourceAccessCheckerInterface} that takes snapshots
- * instead of the bundle entities. Configure it exactly like the 1.x interface
- * (`security.object_access: { strategy: service, service: <id> }`).
+ * Since 1.9.0 (REQ-ARCH-001 rules 1 and 3): object-level admin access with snapshots instead of the bundle entities.
+ * Configure it with `security.object_access: { strategy: service, service: <id> }`. Since 2.0 it is the only interface
+ * that key takes (the 1.x twin `BlogKitResourceAccessCheckerInterface` was removed).
  */
 interface BlogKitResourcePolicyInterface
 {

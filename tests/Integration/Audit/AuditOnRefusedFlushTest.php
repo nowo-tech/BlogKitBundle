@@ -51,7 +51,7 @@ final class AuditOnRefusedFlushTest extends DoctrineTestCase
         $this->tokenStorage = new TokenStorage();
     }
 
-    /** The private manager of `doctrine.private_entity_manager: true` is in no registry: it is the bundle's own. */
+    /** The bundle's private manager is in no registry: it is the bundle's own. */
     #[Test]
     public function aRefusedEditNeverReachesTheDatabaseThroughALaterFlush(): void
     {
@@ -69,7 +69,7 @@ final class AuditOnRefusedFlushTest extends DoctrineTestCase
     }
 
     /**
-     * Audits XD-3 / XD2-1: in host mode the flushing manager is yours; it stays open. Nothing of the refused blog write
+     * Audits XD-3 / XD2-1: when a blog entity is flushed through your own manager, that manager stays open. Nothing of the refused blog write
      * (fields, a new article, a new tag, a translation's orphan removal, the tags) is written by your next flush on the
      * same manager, the blog entities stay managed (restored), and your own pending changes are written, including
      * your entities pointing at the article and at the refused new entities (unlinked from these).

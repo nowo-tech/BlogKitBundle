@@ -8,7 +8,7 @@ use Nowo\BlogKitBundle\Entity\BlogArticle;
 use Nowo\BlogKitBundle\Entity\BlogComment;
 use Nowo\BlogKitBundle\Entity\BlogTag;
 use Nowo\BlogKitBundle\Security\BlogKitAccessCheckerInterface;
-use Nowo\BlogKitBundle\Security\BlogKitResourceAccessCheckerInterface;
+use Nowo\BlogKitBundle\Security\Internal\ObjectAccessCheckerInterface;
 use Nowo\BlogKitBundle\Support\BlogUserIdResolver;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 
@@ -20,7 +20,7 @@ use function is_object;
  * Editors manage publications they created. Configure roles bypass ownership.
  * Tags and comments stay role-gated unless a host `service` replaces this checker.
  */
-final readonly class LegacyOwnerBlogKitResourceAccessChecker implements BlogKitResourceAccessCheckerInterface
+final readonly class LegacyOwnerBlogKitResourceAccessChecker implements ObjectAccessCheckerInterface
 {
     public function __construct(
         private BlogKitAccessCheckerInterface $accessChecker,

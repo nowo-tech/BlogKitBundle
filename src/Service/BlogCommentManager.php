@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Nowo\BlogKitBundle\Service;
 
 use Doctrine\ORM\EntityManagerInterface;
+use LogicException;
 use Nowo\BlogKitBundle\Entity\BlogArticle;
 use Nowo\BlogKitBundle\Entity\BlogComment;
 use Nowo\BlogKitBundle\Entity\BlogCommentStatus;
@@ -12,6 +13,7 @@ use Nowo\BlogKitBundle\Model\BlogStaffDisplayNameInterface;
 use Nowo\BlogKitBundle\Model\BlogUserInterface;
 use Nowo\BlogKitBundle\Repository\BlogCommentRepository;
 use Nowo\BlogKitBundle\Transaction\BlogKitTransactionRunner;
+use Nowo\TransactionDoctrine\PrivateManager\PrivateEntityManager;
 use Psr\Clock\ClockInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
@@ -21,6 +23,7 @@ use Symfony\Component\HttpFoundation\Request;
 
 use function hash;
 use function preg_match;
+use function sprintf;
 
 /**
  * Creates and moderates blog comments.
@@ -127,7 +130,8 @@ final readonly class BlogCommentManager
         $approved = false;
         // @igor-ignore - The closure runs at once inside the unit; the runner keeps no reference to it.
         $reply = $this->transactionRunner->run(function () use ($blogComment, $user, $body, $approvePendingParent, &$approved): BlogComment {
-            $reply = new BlogComment()
+            $blogComment = $this->own($blogComment);
+            $reply       = new BlogComment()
                 ->setArticle($blogComment->getArticle())
                 ->setParent($blogComment)
                 ->setAuthorName($this->staffDisplayName($user))
@@ -158,7 +162,7 @@ final readonly class BlogCommentManager
     {
         // @igor-ignore - The closure runs at once inside the unit; the runner keeps no reference to it.
         $this->transactionRunner->run(function () use ($blogComment, $user): void {
-            $this->moderate($blogComment, BlogCommentStatus::Approved, $user);
+            $this->moderate($this->own($blogComment), BlogCommentStatus::Approved, $user);
         });
         $this->logModeration('comment_approved', $blogComment);
     }
@@ -167,7 +171,7 @@ final readonly class BlogCommentManager
     {
         // @igor-ignore - The closure runs at once inside the unit; the runner keeps no reference to it.
         $this->transactionRunner->run(function () use ($blogComment, $user): void {
-            $this->moderate($blogComment, BlogCommentStatus::Rejected, $user);
+            $this->moderate($this->own($blogComment), BlogCommentStatus::Rejected, $user);
         });
         $this->logModeration('comment_rejected', $blogComment);
     }
@@ -177,7 +181,7 @@ final readonly class BlogCommentManager
         $commentId = $blogComment->getId();
         // @igor-ignore - The closure runs at once inside the unit; the runner keeps no reference to it.
         $this->transactionRunner->run(function () use ($blogComment): void {
-            $this->entityManager->remove($blogComment);
+            $this->entityManager->remove($this->own($blogComment));
         });
         $this->logger->info('Blog comment deleted.', ['bundle' => 'blog_kit', 'action' => 'comment_deleted', 'comment_id' => $commentId]);
     }
@@ -186,6 +190,25 @@ final readonly class BlogCommentManager
     public function approvedCommentsForArticle(BlogArticle $blogArticle): array
     {
         return $this->blogCommentRepository->findApprovedRootCommentsByArticle($blogArticle);
+    }
+
+    /**
+     * Since 2.0 (REQ-ARCH-001 rule 6, lesson W1-2): the comment as the bundle's private manager holds it. A comment your
+     * own manager loaded (`$yourManager->find(BlogComment::class, $id)`, a host query) is not the instance the private
+     * manager writes: changing it there would be saved by nobody (1.x flushed your manager), so it is re-loaded by id,
+     * never inserted again. A new comment (no id) and the dedicated `doctrine.entity_manager` are left as they are.
+     *
+     * @throws LogicException when the row no longer exists
+     */
+    private function own(BlogComment $blogComment): BlogComment
+    {
+        $id = $blogComment->getId();
+        if (!$this->entityManager instanceof PrivateEntityManager || $id === null || $this->entityManager->contains($blogComment)) {
+            return $blogComment;
+        }
+
+        return $this->entityManager->find(BlogComment::class, $id)
+            ?? throw new LogicException(sprintf('The blog comment #%d no longer exists.', $id));
     }
 
     private function moderate(BlogComment $blogComment, BlogCommentStatus $status, BlogUserInterface $user): void

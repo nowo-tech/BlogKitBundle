@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace Nowo\BlogKitBundle\Tests\Support;
 
+use function array_filter;
+use function array_values;
 use function restore_error_handler;
 use function set_error_handler;
+use function str_contains;
 
 use const E_USER_DEPRECATED;
 
@@ -40,5 +43,22 @@ trait CollectsDeprecations
         }
 
         return $messages;
+    }
+
+    /**
+     * Since 2.0: {@see deprecationsOf()} keeping only this bundle's notices (its own `trigger_deprecation()` package, and
+     * the 1.12 host-flush probe line, which names NowoBlogKitBundle): a framework notice of another package (Symfony 7.4
+     * `framework.property_info`, ...) is not this bundle's.
+     *
+     * @param callable(): mixed $operation
+     *
+     * @return list<string>
+     */
+    private static function blogKitDeprecationsOf(callable $operation): array
+    {
+        return array_values(array_filter(
+            self::deprecationsOf($operation),
+            static fn (string $message): bool => str_contains($message, 'nowo-tech/blog-kit-bundle') || str_contains($message, 'NowoBlogKitBundle'),
+        ));
     }
 }

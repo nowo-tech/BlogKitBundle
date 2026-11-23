@@ -7,6 +7,7 @@ namespace Nowo\BlogKitBundle\Security;
 use Nowo\BlogKitBundle\Entity\BlogArticle;
 use Nowo\BlogKitBundle\Entity\BlogComment;
 use Nowo\BlogKitBundle\Entity\BlogTag;
+use Nowo\BlogKitBundle\Security\Internal\ObjectAccessCheckerInterface;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
 /**
@@ -15,11 +16,11 @@ use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 final readonly class BlogKitAccessDenied
 {
     public function __construct(
-        private BlogKitResourceAccessCheckerInterface $resourceAccess,
+        private ObjectAccessCheckerInterface $resourceAccess,
     ) {
     }
 
-    public function resourceAccess(): BlogKitResourceAccessCheckerInterface
+    public function resourceAccess(): ObjectAccessCheckerInterface
     {
         return $this->resourceAccess;
     }

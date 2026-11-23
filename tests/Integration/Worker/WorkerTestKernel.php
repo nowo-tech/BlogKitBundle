@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace Nowo\BlogKitBundle\Tests\Integration\Worker;
 
+use Composer\InstalledVersions;
 use Doctrine\Bundle\DoctrineBundle\DoctrineBundle;
+use Nowo\AuditKitBundle\NowoAuditKitBundle;
 use Nowo\BlogKitBundle\NowoBlogKitBundle;
 use Nowo\BlogKitBundle\Security\BlogKitAccessCheckerInterface;
 use Nowo\BlogKitBundle\Security\Captcha\CaptchaHttpClientInterface;
+use Nowo\BlogKitBundle\Tests\Support\AuditedTestUser;
 use Nowo\BlogKitBundle\Tests\Support\MappedTestUser;
 use Nowo\BlogKitBundle\Tests\Support\Twin\FixedWindowRateLimitPolicy;
 use Nowo\BlogKitBundle\Tests\Support\Twin\OwnerResourcePolicy;
@@ -26,6 +29,7 @@ use Symfony\Component\Routing\Loader\Configurator\RoutingConfigurator;
 
 use function dirname;
 use function md5;
+use function str_starts_with;
 use function Symfony\Component\DependencyInjection\Loader\Configurator\inline_service;
 use function Symfony\Component\DependencyInjection\Loader\Configurator\service;
 use function sys_get_temp_dir;
@@ -35,13 +39,20 @@ use const DIRECTORY_SEPARATOR;
 /**
  * A real kernel for the kept-alive (worker mode, kernel reset false) and DDD host tests.
  *
- * - {@see self::STANDARD}: a standard Symfony host. Attribute mapping on the default manager, `user_reference: entity`
- *   (`MappedTestUser` Doctrine entity), the built-in `owner` object access, the 1.x ports.
+ * - {@see self::STANDARD}: a standard Symfony host with zero Doctrine configuration for the bundle. Attribute mapping
+ *   on the default manager, `user_reference: entity` (`MappedTestUser` Doctrine entity), the built-in `owner` object
+ *   access. Since 2.0 (REQ-ARCH-001 rule 6) the blog writes through the bundle's private manager on the default
+ *   manager's connection, mapping and tables: the default manager is never flushed by the bundle.
  * - {@see self::DDD}: a strict DDD host. The blog on its own manager `blog` (`doctrine.entity_manager`), XML mapping,
  *   `user_reference: id` with plain PHP users, and twin-only host ports (snapshots / request VOs). The host's default
  *   manager maps only the host's `HostNote`.
- * - {@see self::PRIVATE}: the standard host with `doctrine.private_entity_manager: true` (1.12.0): the blog writes through
- *   the bundle's private manager on the default manager's connection, mapping and tables.
+ * - {@see self::PRIVATE}: the standard host with `doctrine.private_entity_manager: true` (the 1.12 opt-in; since 2.0 a
+ *   deprecated no-op): the same wiring as {@see self::STANDARD}, plus the deprecation of the key.
+ *
+ * `$databaseUrl` runs it on a real server (the database group); `$fixtures` registers a directory of
+ * `tests/Fixtures/RemovedPorts` by resource autodiscovery (autowired, autoconfigured), as a host's `services.yaml` does;
+ * `$auditKitBlameMode` registers NowoAuditKitBundle 2.x (`attribute_opt_in: true`, one profile on `AuditedTestUser`, also
+ * the blog's `user_class` then).
  */
 final class WorkerTestKernel extends Kernel
 {
@@ -62,6 +73,9 @@ final class WorkerTestKernel extends Kernel
     public function __construct(
         private readonly string $mode,
         private readonly string $directory,
+        private readonly ?string $databaseUrl = null,
+        private readonly ?string $fixtures = null,
+        private readonly ?string $auditKitBlameMode = null,
     ) {
         parent::__construct('test', false);
     }
@@ -76,6 +90,7 @@ final class WorkerTestKernel extends Kernel
             new NowoUiKitBundle(),
             new NowoFormKitBundle(),
             new NowoBlogKitBundle(),
+            ...($this->auditKitBlameMode !== null ? [new NowoAuditKitBundle()] : []),
         ];
     }
 
@@ -86,7 +101,7 @@ final class WorkerTestKernel extends Kernel
 
     public function getCacheDir(): string
     {
-        return sys_get_temp_dir() . '/nowo-blog-kit-worker/' . md5($this->directory) . '/' . $this->mode . '/cache';
+        return sys_get_temp_dir() . '/nowo-blog-kit-worker/' . md5($this->directory . $this->databaseUrl . $this->fixtures . $this->auditKitBlameMode) . '/' . $this->mode . '/cache';
     }
 
     public function getLogDir(): string
@@ -120,8 +135,11 @@ final class WorkerTestKernel extends Kernel
         ];
         $naming = 'doctrine.orm.naming_strategy.underscore_number_aware';
         $container->extension('doctrine', [
-            'dbal' => ['url' => 'sqlite:///' . $this->directory . DIRECTORY_SEPARATOR . 'blog.sqlite'],
+            'dbal' => ['url' => $this->databaseUrl ?? 'sqlite:///' . $this->directory . DIRECTORY_SEPARATOR . 'blog.sqlite'],
             'orm'  => [
+                // DoctrineBundle 2.x (the DBAL 3 legs) proxies through var-exporter lazy ghosts, which symfony/var-exporter 8
+                // no longer has; 3.x always uses PHP 8.4 native lazy objects (and refuses the key).
+                ...(str_starts_with((string) InstalledVersions::getVersion('doctrine/doctrine-bundle'), '2.') ? ['enable_native_lazy_objects' => true] : []),
                 'default_entity_manager' => 'default',
                 'entity_managers'        => $ddd
                     ? [
@@ -146,7 +164,7 @@ final class WorkerTestKernel extends Kernel
         ]);
 
         $blog = [
-            'user_class' => $ddd ? null : MappedTestUser::class,
+            'user_class' => $ddd ? null : ($this->auditKitBlameMode !== null ? AuditedTestUser::class : MappedTestUser::class),
             'security'   => [
                 'access_roles'  => [],
                 'roles'         => ['manage' => ['ROLE_EDITOR'], 'moderate' => ['ROLE_EDITOR'], 'configure' => ['ROLE_CONFIG']],
@@ -173,6 +191,19 @@ final class WorkerTestKernel extends Kernel
         }
 
         $container->extension('nowo_blog_kit', $blog);
+
+        if ($this->auditKitBlameMode !== null) {
+            $container->extension('nowo_audit_kit', [
+                'blame_mode'       => $this->auditKitBlameMode,
+                'attribute_opt_in' => true,
+                'profiles'         => ['default' => ['user_class' => AuditedTestUser::class]],
+            ]);
+        }
+
+        if ($this->fixtures !== null) {
+            $container->services()->defaults()->autowire()->autoconfigure()
+                ->load('Nowo\\BlogKitBundle\\Tests\\Fixtures\\RemovedPorts\\' . $this->fixtures . '\\', '%kernel.project_dir%/tests/Fixtures/RemovedPorts/' . $this->fixtures . '/*');
+        }
     }
 
     protected function configureRoutes(RoutingConfigurator $routes): void

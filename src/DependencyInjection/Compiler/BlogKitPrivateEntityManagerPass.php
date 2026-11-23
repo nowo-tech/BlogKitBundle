@@ -12,12 +12,12 @@ use Symfony\Component\DependencyInjection\ContainerBuilder;
 use function is_string;
 
 /**
- * Since 1.12.0 (`doctrine.private_entity_manager: true`): resolves your manager the private one is created on — your
+ * Since 1.12.0 (the private entity manager; since 2.0 the only mode without `doctrine.entity_manager`): resolves your manager the private one is created on — your
  * default entity manager (`doctrine.default_entity_manager`, so a default manager not named "default" works without
  * configuration) — then runs transaction-doctrine's {@see PrivateEntityManagerPass}, which checks that manager exists
  * and tags the bundle's PrivateEntityManagerMiddleware `doctrine.middleware` for its connection only.
  *
- * Runs before DoctrineBundle's MiddlewaresPass (priority 0). Does nothing outside the private mode.
+ * Runs before DoctrineBundle's MiddlewaresPass (priority 0). Does nothing with a dedicated `doctrine.entity_manager`.
  */
 final class BlogKitPrivateEntityManagerPass implements CompilerPassInterface
 {

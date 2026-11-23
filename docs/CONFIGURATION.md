@@ -75,8 +75,7 @@ nowo_blog_kit:
     doctrine:
         table_prefix: ''
         connection: default
-        entity_manager: null           # 1.9.0: a manager dedicated to the blog (opt-in, DDD)
-        private_entity_manager: null   # 1.12.0: true = private manager on your default one (2.0 behaviour)
+        entity_manager: null           # 1.9.0: a manager dedicated to the blog (opt-in, DDD); null = the private manager
         mapping_type: attribute        # 1.9.0: attribute | xml
         user_reference: entity         # 1.9.0: entity | id
     conflict_response:                 # 1.10.0: lock conflicts of the bundle routes (REQ-RUNTIME-003)
@@ -106,11 +105,11 @@ This bundle uses a single configuration tree. It does not expose `default_profil
 | `roles.manage` | `[ROLE_EDITOR]` | Article and tag admin access (`admin_blog` except comments/settings). |
 | `roles.moderate` | `[ROLE_MODERATOR]` | Comment moderation (queue `admin_blog_comments_index` and actions `admin_blog_comment_*`). Editors with `roles.manage` also moderate. An empty `roles.*` list grants nothing (only `access_roles`); every list empty fails at compile time. |
 | `roles.configure` | `[ROLE_ADMIN]` | Settings screen (`admin_blog_settings`). |
-| `manage_roles`, `moderate_roles`, `configure_roles` | `null` | **Deprecated since 1.7** (REQ-UI-003 vocabulary): mapped to `roles.manage` / `roles.moderate` / `roles.configure` when those are not set. |
+| `manage_roles`, `moderate_roles`, `configure_roles` | — | **Removed in 2.0** (deprecated since 1.7): a leftover key fails the build; use `roles.manage` / `roles.moderate` / `roles.configure`. |
 | `access_checker` | `null` | Optional service id implementing `BlogKitAccessCheckerInterface`. |
 | `allow_unauthenticated` | `false` | When `true`, the bundle uses an allow-all checker. Intended only for trusted demos. |
 | `object_access.strategy` | `none` | After roles: `none` (every granted editor sees all rows), `owner` (publications scoped to `createdBy`; configure roles see all), or `service`. |
-| `object_access.service` | `null` | Service id implementing `BlogKitResourcePolicyInterface` (1.9.0 twin: snapshots) or the deprecated `BlogKitResourceAccessCheckerInterface` (entities) when `strategy: service`. |
+| `object_access.service` | `null` | Service id implementing `BlogKitResourcePolicyInterface` (snapshots) when `strategy: service`. Since 2.0 the only interface it takes (the 1.x `BlogKitResourceAccessCheckerInterface` was removed). |
 
 The bundle enforces **roles** on route names beginning with `admin_blog` (`BlogKitAdminAccessSubscriber`). Object checks run in admin controllers via `BlogKitAccessDenied` (edit/delete/inline, and listing filter for `owner` / custom services). Twig helpers `nowo_blog_kit_can_manage_article()`, `nowo_blog_kit_can_manage_tag()`, and `nowo_blog_kit_can_moderate_comment()` hide row actions; they are not a substitute for the service.
 
@@ -118,10 +117,9 @@ The bundle enforces **roles** on route names beginning with `admin_blog` (`BlogK
 
 | Key | Default | Description |
 | --- | --- | --- |
-| `layout_template` | `null` | Layout of the admin pages (UiKit scaffolds). `null` = `nowo_ui_kit.layouts.admin` (recommended: set your layout once in UiKit for every bundle). A layout that renders the UiKit canonical blocks is used as it is; a 1.x layout (no `nowo_ui_page_header` block, content in `admin`) is wrapped by the deprecated bridge `admin/_legacy_layout.html.twig`. The former default `@NowoBlogKitBundle/admin/layout.html.twig` maps to `null`. |
-| `public_layout_template` | `null` | Layout of the public index and article. `null` = `nowo_ui_kit.layouts.guest`. A 1.x layout (content in `body`, e.g. `base.html.twig`) is wrapped by the deprecated bridge `public/_legacy_layout.html.twig`. The former default `@NowoBlogKitBundle/public/layout.html.twig` maps to `null`. |
+| `layout_template` | `null` | Layout of the admin pages (UiKit scaffolds). `null` = `nowo_ui_kit.layouts.admin` (recommended: set your layout once in UiKit for every bundle). It must render the UiKit canonical blocks; since 2.0 a 1.x layout (no `nowo_ui_page_header` block, content in `admin`) fails with a `LogicException` naming it (the 1.7 bridge was removed). The former default `@NowoBlogKitBundle/admin/layout.html.twig` maps to `null`. |
+| `public_layout_template` | `null` | Layout of the public index and article. `null` = `nowo_ui_kit.layouts.guest`. It must render the UiKit canonical blocks; since 2.0 a 1.x layout (content in `body`, e.g. `base.html.twig`) fails with a `LogicException` naming it. The former default `@NowoBlogKitBundle/public/layout.html.twig` maps to `null`. |
 | `templates` | `{}` | Per-page template overrides: `article_index`, `article_form`, `tag_index`, `tag_form`, `comment_index`, `settings`, `public_index`, `public_show` => a host template extending `@!NowoBlogKitBundle/...` (see [TEMPLATES](TEMPLATES.md#per-page-overrides)). |
-| `css_framework`, `icon_set`, `row_actions_display` | `null` | **Deprecated since 1.7**: the CSS stack is inherited from `nowo_ui_kit.css_framework` / `icon_set` / `row_actions_display`. When set (and the UiKit key is not), the value is copied to UiKit. |
 | `page_size` | `20` | Admin list page size (1–200). |
 | `privacy_url` | `#` | URL used in the public comment privacy checkbox label. |
 
@@ -154,7 +152,7 @@ Public `POST /blog/{slug}/comments` protection. Admin settings (`/admin/blog/set
 | `strategy` | `fixed_window` | `none`, `fixed_window` (per IP), `per_ip_article`, `sliding_window`, or `service`. |
 | `limit` | `5` | Max posts per interval. `0` disables the limiter. |
 | `interval_seconds` | `60` | Window length. |
-| `service` | `null` | Service id implementing `BlogCommentRateLimitPolicyInterface` (1.9.0 twin: request context + snapshot → decision) or the deprecated `BlogCommentRateLimiterInterface` when `strategy: service`. |
+| `service` | `null` | Service id implementing `BlogCommentRateLimitPolicyInterface` (1.9.0 twin: request context + snapshot → decision) when `strategy: service`. Since 2.0 the only interface it takes. |
 
 Requires Symfony `cache.app`. Without a cache pool, limiting is skipped.
 
@@ -168,7 +166,7 @@ Requires Symfony `cache.app`. Without a cache pool, limiting is skipped.
 | `min_score` | `0.5` | Minimum reCAPTCHA v3 score. |
 | `honeypot_field` | `website` | Hidden field name for the honeypot strategy. |
 | `timeout_seconds` | `5.0` | Timeout (0.1–60 s) of the remote verification call made by the default `StreamCaptchaHttpClient`. DNS resolution is not covered; alias `CaptchaHttpClientInterface` to a Symfony HttpClient implementation for full control. |
-| `service` | `null` | Service id implementing `BlogCommentCaptchaVerifierInterface` (1.9.0 twin: widget + verify(request context)) or the deprecated `BlogCommentCaptchaStrategyInterface` when `strategy: service`. |
+| `service` | `null` | Service id implementing `BlogCommentCaptchaVerifierInterface` (1.9.0 twin: widget + verify(request context)) when `strategy: service`. Since 2.0 the only interface it takes. |
 
 Remote providers need `site_key` and `secret_key`. Missing keys fail closed (form invalid).
 
@@ -191,8 +189,8 @@ Sanitizing runs on article translation persist and again on public render (befor
 | --- | --- | --- |
 | `table_prefix` | `''` | Prefix applied to all bundle entity tables through `TablePrefixListener`. |
 | `connection` | `default` | Connection name recorded in configuration for host alignment. |
-| `entity_manager` | `null` | Since 1.9.0 (REQ-ARCH-001 rule 6, opt-in): a Doctrine entity manager dedicated to the blog, declared under `doctrine.orm.entity_managers` (not your default one, no other mappings). The bundle maps its entities there, flushes only that manager and clears it at every request / message / command boundary. Needs `user_reference: id`. `null`: the manager that maps the entities (your default one), as in 1.8; see `private_entity_manager`. Kept in 2.0 as the DDD option. |
-| `private_entity_manager` | `null` | Since 1.12.0 (REQ-ARCH-001 rule 6, opt-in): `true` = the bundle reads and writes through a private entity manager created on your default manager's connection, mapping and listeners (same tables, nothing else to configure); a blog write never flushes your pending changes. `false` = the bundle flushes your default manager (1.x; deprecated, removed in 2.0). `null` = `false` plus a deprecation notice; 2.0 always uses the private manager. Cannot be combined with `entity_manager`. See [UPGRADING](UPGRADING.md#to-1120). |
+| `entity_manager` | `null` | Since 1.9.0 (REQ-ARCH-001 rule 6, opt-in): a Doctrine entity manager dedicated to the blog, declared under `doctrine.orm.entity_managers` (not your default one, no other mappings). The bundle maps its entities there, flushes only that manager and clears it at every request / message / command boundary. Needs `user_reference: id`. `null` (default): the bundle's private entity manager, created on your default manager's connection, mapping and listeners (same tables, nothing else to configure): a blog write never flushes your manager (REQ-ARCH-001 rule 6, the only mode since 2.0). The DDD option, unchanged in 2.0. |
+| `private_entity_manager` | `null` | **Deprecated since 2.0, removed in 3.0.** The 1.12 opt-in to the private manager, which 2.0 always uses: `true` is accepted and has no effect (still refused together with `entity_manager`); `false` (the 1.x mode that flushed your manager) fails the build. Remove the key. See [UPGRADING](UPGRADING.md#to-200). |
 | `mapping_type` | `attribute` | Since 1.9.0: `attribute` or `xml` (`src/Resources/config/doctrine-xml`, the same metadata). |
 | `user_reference` | `entity` | Since 1.9.0: `entity` = a relation to `user_class` (which implements `BlogUserInterface`), as in 1.8; `id` = the user's id in a string column, compared byte for byte (your user class implements nothing of the bundle). See [ARCHITECTURE](ARCHITECTURE.md). |
 
@@ -217,18 +215,15 @@ the request committed), with the `X-Conflict-Code` header. See [CONCURRENCY](CON
 
 ## Twig globals
 
-The bundle Twig extension publishes:
+The bundle Twig extension publishes (since 2.0 the 1.7 globals `nowo_blog_kit_layout`, `nowo_blog_kit_public_layout`,
+`nowo_blog_kit_css_framework`, `nowo_blog_kit_icon_set` and `nowo_blog_kit_row_actions_display` are removed: read
+`nowo_ui_layout` and `nowo_ui_kit.*`):
 
 | Global | Meaning |
 | --- | --- |
-| `nowo_blog_kit_layout` | **Deprecated** (1.7): configured `web_ui.layout_template`; the pages resolve the layout through `BlogKitPages` |
-| `nowo_blog_kit_public_layout` | **Deprecated** (1.7): configured `web_ui.public_layout_template` |
-| `nowo_blog_kit_css_framework` | **Deprecated** (1.7): deprecated `web_ui.css_framework` (null unless set); read `nowo_ui_kit_css_framework` |
 | `nowo_blog_kit_default_locale` | Configured default locale |
 | `nowo_blog_kit_locales` | Configured locales |
 | `nowo_blog_kit_privacy_url` | Privacy policy URL for the comment form |
-| `nowo_blog_kit_icon_set` | **Deprecated** (1.7): deprecated `web_ui.icon_set` (null unless set) |
-| `nowo_blog_kit_row_actions_display` | **Deprecated** (1.7): deprecated `web_ui.row_actions_display` (null unless set) |
 | `nowo_blog_kit_can_manage` | **Deprecated**, use `nowo_blog_kit_can_manage()`. Whether the current user may manage articles and tags |
 | `nowo_blog_kit_can_moderate` | **Deprecated**, use `nowo_blog_kit_can_moderate()`. Whether the current user may moderate comments |
 | `nowo_blog_kit_can_configure` | **Deprecated**, use `nowo_blog_kit_can_configure()`. Whether the current user may edit blog settings |
@@ -369,13 +364,13 @@ nowo_ui_kit: { css_framework: foundation, icon_set: svg_inline, row_actions_disp
 nowo_ui_kit: { css_framework: custom, icon_set: svg_inline, row_actions_display: text }
 ```
 
-`nowo_blog_kit.web_ui.css_framework` / `icon_set` / `row_actions_display` still accept the same values (validated) but
-are deprecated: they are only copied to UiKit when `nowo_ui_kit` has no value of its own.
+`nowo_blog_kit.web_ui.css_framework` / `icon_set` / `row_actions_display` were removed in 2.0 (deprecated since 1.7): a
+leftover key fails the build and names the `nowo_ui_kit` key to set.
 
 Theme the look once in `nowo_ui_kit.theme` (class / attribute maps, `--nowo-ui-*` tokens, exceptions under
 `theme.bundles.NowoBlogKitBundle`) and with `--nowo-blog-*` / `blog-*` CSS for the public cards, instead of copying
-`public/index.html.twig`. `web_ui.layout_template` / `public_layout_template` remain per-bundle overrides; 1.x layouts
-still work through the deprecated bridges (see [UPGRADING](UPGRADING.md)).
+`public/index.html.twig`. `web_ui.layout_template` / `public_layout_template` remain per-bundle overrides; they must
+render the UiKit canonical blocks (the 1.x bridges were removed in 2.0, see [UPGRADING](UPGRADING.md)).
 
 **Public listing (paginator or infinite scroll):**
 

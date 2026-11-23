@@ -47,6 +47,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+
+- **BREAKING:** the mode in which blog writes flushed your default entity manager (REQ-ARCH-001 rule 6). Without `doctrine.entity_manager` the bundle always writes through its private entity manager (see Changed). Removed with it: the two 1.12 notices and their constants `NowoBlogKitExtension::PRIVATE_ENTITY_MANAGER_UNSET_DEPRECATION` / `PRIVATE_ENTITY_MANAGER_FALSE_DEPRECATION`, the host-flush probe `Doctrine\BlogKitHostFlushReporter` and `Doctrine\BlogKitEntityManagerFactory` (both internal), and the 1.10 "your manager must be clean before a blog write" `LogicException`, which only applied to that mode.
+- **BREAKING:** `doctrine.private_entity_manager: false` (deprecated since 1.12) fails the build: remove the key.
+- **BREAKING:** the host port interfaces deprecated since 1.9 (runtime notices since 1.12): `Security\BlogKitResourceAccessCheckerInterface` (and its service alias), `Security\RateLimit\BlogCommentRateLimiterInterface`, `Security\Captcha\BlogCommentCaptchaStrategyInterface`. `security.object_access.service`, `comments.rate_limit.service` and `comments.captcha.service` take only `BlogKitResourcePolicyInterface`, `BlogCommentRateLimitPolicyInterface` and `BlogCommentCaptchaVerifierInterface`. A host service still tied to a removed interface (a class implementing it, an alias, `#[AsAlias]` or `#[AsDecorator]` of its id, also with `onInvalid: IGNORE`) fails the build instead of being dropped silently (`DependencyInjection\Compiler\BlogKitRemovedPortsPass`).
+- **BREAKING:** `Event\BlogArticlePublishedEvent::getArticle()` (deprecated since 1.9): use `getArticleId()` / `getArticleSnapshot()`. The event no longer holds the entity.
+- **BREAKING:** the 1.7 deprecations that 1.12's "Preparing for 2.0" did not list (owner decision Q-W4-1): `security.manage_roles` / `moderate_roles` / `configure_roles`, `web_ui.css_framework` / `icon_set` / `row_actions_display` (and their `nowo_blog_kit.web_ui.*` container parameters; nothing is copied to `nowo_ui_kit` any more), the Twig globals `nowo_blog_kit_layout`, `nowo_blog_kit_public_layout`, `nowo_blog_kit_css_framework`, `nowo_blog_kit_icon_set`, `nowo_blog_kit_row_actions_display`, and the 1.x layout bridges `admin/_legacy_layout.html.twig` / `public/_legacy_layout.html.twig` (`BlogKitPages::LEGACY_*_BRIDGE`, the `nowo_blog_kit_legacy_*` page variables). A leftover key fails the build naming its replacement; a layout without the UiKit canonical blocks fails before the page renders.
+
+### Changed
+
+- **BREAKING:** without `doctrine.entity_manager` (the zero-config default) the bundle reads and writes its entities through its private entity manager (transaction-doctrine's `PrivateManager` kit, opt-in since 1.12.0) on your default manager's connection, mapping, listeners and tables. A blog write never flushes, clears, closes or resets your manager: a change you left pending in it stays pending (it is saved by your own flush, no longer by the bundle). Find what relied on the bundle's flush with the 1.12 probe lines before upgrading (UPGRADING "To 2.0.0"). `doctrine.private_entity_manager: true` is a deprecated no-op (removed in 3.0); `doctrine.entity_manager` (the DDD option) is unchanged.
+- `BlogCommentManager` re-loads by id, in the private manager, a comment your own manager loaded before it approves, rejects, deletes or answers it (it was changed where nobody saved it, or rejected by Doctrine); a comment whose row is gone fails with a `LogicException`.
+- A user of yours with no identifier yet (persisted, not flushed) assigned to a blog row (author, moderator, AuditKit blame) fails the blog write with a clear `LogicException` before anything is written, instead of Doctrine's "A new entity was found through the relationship".
+- The built-in object access checkers, comment rate limiters and captcha strategies implement the `@internal` `Security\Internal\*` interfaces (not extension points).
+- `BlogKitTransactionRunner`'s `$hostFlushReporter` argument and the `BlogKitExtension` (Twig) arguments of the removed globals are deprecated and ignored (removed in 3.0).
+- The development lock moves to `nowo-tech/audit-kit-bundle` 2.1 and `nowo-tech/transaction-doctrine` 1.9.3; the requirements are unchanged (`^1.1 || ^2.0`, `^1.9.1`).
+
+### Security
+
+- The 1.x line receives security fixes for 6 months after 2.0.0: Moderate and above are backported to the last 1.x minor; Low ones are fixed in 2.x only.
+
 ## [1.12.2] - 2026-11-22
 
 ### Fixed

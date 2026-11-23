@@ -17,7 +17,7 @@ UiKit scaffold and fill data blocks only; the public pages are unique pages on t
 - [Bundle partials](#bundle-partials)
 - [Translation tabs](#translation-tabs)
 - [Navigation](#navigation)
-- [Layout bridges (1.x layouts)](#layout-bridges-1x-layouts)
+- [1.x layouts (bridges removed in 2.0)](#1x-layouts-bridges-removed-in-20)
 - [Allowed exceptions](#allowed-exceptions)
 
 ## Pages
@@ -104,7 +104,6 @@ the new vendor file under `vendor/nowo-tech/blog-kit-bundle/src/Resources/views/
 | `admin/_modal_form.html.twig` | Inline CMS editor fragment (UiKit `dialog` partial) |
 | `admin/form_theme.html.twig` | Form theme block of the article resources collection (register it in `twig.form_themes`) |
 | `admin/icons/blog.svg.twig` | Blog icon (host menus) |
-| `admin/_legacy_layout.html.twig`, `public/_legacy_layout.html.twig` | Deprecated 1.x layout bridges |
 | `public/index.html.twig` | Public blog index |
 | `public/show.html.twig` | Public article |
 | `public/_items.html.twig` | Article cards (also the infinite-scroll fragment) |
@@ -157,13 +156,14 @@ area-nav registry: `nowo_ui_area_nav('blog_kit')` (Articles | Tags | Comments | 
 when the user may moderate / configure) and `nowo_ui_area_nav('blog_kit_settings')` (the settings sections). The admin
 pages render the same navigation as page-header tabs (fallback for hosts without DashboardMenu).
 
-## Layout bridges (1.x layouts)
+## 1.x layouts (bridges removed in 2.0)
 
-`web_ui.layout_template` / `public_layout_template` may still point at a 1.x layout (no `nowo_ui_page_header`
-block): `BlogKitPages` then wraps it in `admin/_legacy_layout.html.twig` (maps the canonical blocks into `admin`,
-`title`, `stylesheets`, `javascripts`) or `public/_legacy_layout.html.twig` (`body`, `title`, `meta_description`,
-`stylesheets`, `javascripts`) and triggers a deprecation. Canonical blocks the 1.x layout renders itself
-(`nowo_ui_flashes`, `nowo_ui_content`, `nowo_ui_modals`, …) are not printed twice. The bridges are removed in 2.0.
+`web_ui.layout_template` / `public_layout_template` must render the UiKit canonical blocks. The 1.7 bridges
+`admin/_legacy_layout.html.twig` and `public/_legacy_layout.html.twig` (deprecated since 1.7) and their page variables
+`nowo_blog_kit_legacy_layout`, `nowo_blog_kit_legacy_public_layout` and `nowo_blog_kit_legacy_blocks` were removed in
+2.0: a 1.x layout (no `nowo_ui_page_header` block) now fails before the page renders, with a `LogicException` naming
+the layout and the option. Render the canonical blocks (UiKit's one-file `_bridge` on top of your base layout, see
+[CONFIGURATION](CONFIGURATION.md)) or set the option to `null` to use `nowo_ui_kit.layouts`.
 
 ## Allowed exceptions
 

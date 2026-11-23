@@ -5,13 +5,10 @@ declare(strict_types=1);
 namespace Nowo\BlogKitBundle\DependencyInjection;
 
 use Doctrine\Bundle\DoctrineBundle\DependencyInjection\Configuration as DoctrineConfiguration;
-use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Events;
 use LogicException;
 use Nowo\BlogKitBundle\DependencyInjection\Compiler\ConflictResponsePass;
 use Nowo\BlogKitBundle\DependencyInjection\Configuration as BundleConfiguration;
-use Nowo\BlogKitBundle\Doctrine\BlogKitEntityManagerFactory;
-use Nowo\BlogKitBundle\Doctrine\BlogKitHostFlushReporter;
 use Nowo\BlogKitBundle\Doctrine\BlogKitPrivateUserReferenceListener;
 use Nowo\BlogKitBundle\Doctrine\BlogUserBlameListener;
 use Nowo\BlogKitBundle\Doctrine\BlogUserReferenceMetadataListener;
@@ -29,25 +26,24 @@ use Nowo\BlogKitBundle\Port\Ports;
 use Nowo\BlogKitBundle\Security\AllowAllBlogKitAccessChecker;
 use Nowo\BlogKitBundle\Security\AllowAllBlogKitResourceAccessChecker;
 use Nowo\BlogKitBundle\Security\BlogKitAccessCheckerInterface;
-use Nowo\BlogKitBundle\Security\BlogKitResourceAccessCheckerInterface;
 use Nowo\BlogKitBundle\Security\BlogKitResourcePolicyInterface;
 use Nowo\BlogKitBundle\Security\BlogProtection;
 use Nowo\BlogKitBundle\Security\BlogProtectionConfig;
-use Nowo\BlogKitBundle\Security\Captcha\BlogCommentCaptchaStrategyInterface;
 use Nowo\BlogKitBundle\Security\Captcha\BlogCommentCaptchaVerifierInterface;
 use Nowo\BlogKitBundle\Security\Captcha\CaptchaHttpClientInterface;
 use Nowo\BlogKitBundle\Security\Captcha\PublicBlogCommentCaptchaTypeExtension;
 use Nowo\BlogKitBundle\Security\Captcha\StreamCaptchaHttpClient;
 use Nowo\BlogKitBundle\Security\ConfigurableBlogKitAccessChecker;
+use Nowo\BlogKitBundle\Security\Internal\CommentCaptchaInterface;
+use Nowo\BlogKitBundle\Security\Internal\CommentRateLimiterInterface;
+use Nowo\BlogKitBundle\Security\Internal\ObjectAccessCheckerInterface;
 use Nowo\BlogKitBundle\Security\OwnerBlogKitResourceAccessChecker;
-use Nowo\BlogKitBundle\Security\RateLimit\BlogCommentRateLimiterInterface;
 use Nowo\BlogKitBundle\Security\RateLimit\BlogCommentRateLimitPolicyInterface;
 use Nowo\BlogKitBundle\Service\BlogSettingsProvider;
 use Nowo\BlogKitBundle\Transaction\BlogKitTransactionRunner;
 use Nowo\BlogKitBundle\User\BlogUsers;
 use Nowo\BlogKitBundle\Worker\BlogKitOwnEntityManagerSubscriber;
 use Nowo\BlogKitBundle\Worker\UnitOfWorkBoundaries;
-use Nowo\TransactionDoctrine\HostFlushProbe;
 use Nowo\TransactionDoctrine\PrivateManager\PrivateEntityManager;
 use Nowo\TransactionDoctrine\PrivateManager\PrivateEntityManagerMiddleware;
 use Nowo\TransactionDoctrine\PrivateManager\PrivateManagerRegistry;
@@ -69,7 +65,6 @@ use function is_array;
 use function is_string;
 use function sprintf;
 use function str_starts_with;
-use function trigger_deprecation;
 
 /**
  * Loads BlogKit services and publishes configuration parameters.
@@ -94,7 +89,7 @@ final class NowoBlogKitExtension extends Extension implements PrependExtensionIn
 
     public const string MAPPING_XML_DEDICATED = 'nowo_blog_kit.doctrine.mapping.xml_dedicated';
 
-    /** Since 1.12.0: container parameter holding `doctrine.private_entity_manager` (true, false or null). */
+    /** Since 1.12.0: container parameter holding `doctrine.private_entity_manager` (since 2.0: true or null, no effect; false is refused). */
     public const string PRIVATE_ENTITY_MANAGER_PARAMETER = 'nowo_blog_kit.doctrine.private_entity_manager';
 
     /**
@@ -103,10 +98,10 @@ final class NowoBlogKitExtension extends Extension implements PrependExtensionIn
      */
     public const string PRIVATE_SOURCE_MANAGER_PARAMETER = 'nowo_blog_kit.private_entity_manager.source_manager';
 
-    /** Since 1.12.0: the bundle's private entity manager (`doctrine.private_entity_manager: true`). */
+    /** Since 1.12.0: the bundle's private entity manager (since 2.0 the only mode without `doctrine.entity_manager`). */
     public const string PRIVATE_ENTITY_MANAGER_SERVICE = 'nowo_blog_kit.private_entity_manager';
 
-    /** Since 1.12.0: the registry the bundle's services get in the private mode (blog entities → the private manager). */
+    /** Since 1.12.0: the registry the bundle's services get with the private manager (blog entities → the private manager). */
     public const string PRIVATE_REGISTRY_SERVICE = 'nowo_blog_kit.private_manager_registry';
 
     /** Since 1.12.0: tells the private manager how the connection's transactions end (tagged by the compiler pass). */
@@ -115,13 +110,13 @@ final class NowoBlogKitExtension extends Extension implements PrependExtensionIn
     /** Since 1.12.0: savepoints of the bundle itself (the settings singleton insert): their rollback keeps the private manager. */
     public const string OWN_SAVEPOINT_PREFIX = 'blog_kit_';
 
-    /** Since 1.12.0: the notice of a host that sets neither `doctrine.private_entity_manager` nor `doctrine.entity_manager`. */
-    public const string PRIVATE_ENTITY_MANAGER_UNSET_DEPRECATION = 'Not setting "nowo_blog_kit.doctrine.private_entity_manager" is deprecated: blog writes flush your default entity manager, including your own pending changes. 2.0 always writes through a private entity manager on the same connection and tables, which never flushes them. Opt in now with "nowo_blog_kit: { doctrine: { private_entity_manager: true } }" (see UPGRADING.md "To 1.12.0").';
+    /** Since 2.0: the bundle named by the private entity manager's warnings (moved from the removed host-flush reporter). */
+    public const string BUNDLE_NAME = 'NowoBlogKitBundle';
 
-    /** Since 1.12.0: the notice of `doctrine.private_entity_manager: false` (without `doctrine.entity_manager`). */
-    public const string PRIVATE_ENTITY_MANAGER_FALSE_DEPRECATION = 'Setting "nowo_blog_kit.doctrine.private_entity_manager" to false is deprecated: the value false is removed in 2.0, which always writes through a private entity manager on the same connection and tables and never flushes your pending changes. Set it to true now with "nowo_blog_kit: { doctrine: { private_entity_manager: true } }", or name a dedicated manager with "doctrine.entity_manager" (see UPGRADING.md "To 1.12.0").';
+    /** Since 2.0: the bundle's entity namespace, the only classes the private entity manager writes. */
+    public const array OWN_NAMESPACES = ['Nowo\\BlogKitBundle\\Entity'];
 
-    /** Since 1.9.0: the configured host port services the ports pass checks (config key => [service id, 1.x interface, twin]). */
+    /** Since 1.9.0: the configured host port services the ports pass checks (since 2.0: config key => [service id, interface]). */
     public const string PORTS_PARAMETER = 'nowo_blog_kit.ports';
 
     public function prepend(ContainerBuilder $container): void
@@ -130,7 +125,6 @@ final class NowoBlogKitExtension extends Extension implements PrependExtensionIn
         $this->prependDoctrineResolveTarget($container);
         $this->prependDoctrineUserReference($container);
         $this->prependFrameworkDefaults($container);
-        $this->prependUiKitDefaults($container);
     }
 
     /**
@@ -223,53 +217,6 @@ final class NowoBlogKitExtension extends Extension implements PrependExtensionIn
         }
 
         $container->prependExtensionConfig('framework', $framework);
-    }
-
-    private function prependUiKitDefaults(ContainerBuilder $container): void
-    {
-        if (!$container->hasExtension('nowo_ui_kit')) {
-            return;
-        }
-
-        $hostHasCssFramework      = false;
-        $hostHasIconSet           = false;
-        $hostHasRowActionsDisplay = false;
-        foreach ($container->getExtensionConfig('nowo_ui_kit') as $cfg) {
-            if (array_key_exists('css_framework', $cfg)) {
-                $hostHasCssFramework = true;
-            }
-            if (array_key_exists('icon_set', $cfg)) {
-                $hostHasIconSet = true;
-            }
-            if (array_key_exists('row_actions_display', $cfg)) {
-                $hostHasRowActionsDisplay = true;
-            }
-        }
-
-        $config = $this->processConfiguration(new BundleConfiguration(), $container->getExtensionConfig(BundleConfiguration::ALIAS));
-        /** @var array<string, mixed> $webUi */
-        $webUi    = $config['web_ui'];
-        $defaults = [];
-
-        // Deprecated per-bundle keys (REQ-UI-003: the CSS stack is inherited from nowo_ui_kit): copied to UiKit only
-        // when the host set them and UiKit does not have its own value.
-        $copy = [
-            'css_framework'       => !$hostHasCssFramework,
-            'icon_set'            => !$hostHasIconSet,
-            'row_actions_display' => !$hostHasRowActionsDisplay,
-        ];
-        foreach ($copy as $key => $missing) {
-            $value = $webUi[$key] ?? null;
-            if ($missing && is_string($value) && $value !== '') {
-                $defaults[$key] = $value;
-            }
-        }
-
-        if ($defaults === []) {
-            return;
-        }
-
-        $container->prependExtensionConfig('nowo_ui_kit', $defaults);
     }
 
     private function prependDoctrineResolveTarget(ContainerBuilder $container): void
@@ -381,9 +328,6 @@ final class NowoBlogKitExtension extends Extension implements PrependExtensionIn
         $container->setParameter('nowo_blog_kit.web_ui.layout_template', $config['web_ui']['layout_template']);
         $container->setParameter('nowo_blog_kit.web_ui.public_layout_template', $config['web_ui']['public_layout_template']);
         $container->setParameter('nowo_blog_kit.web_ui.templates', $config['web_ui']['templates']);
-        $container->setParameter('nowo_blog_kit.web_ui.css_framework', $config['web_ui']['css_framework']);
-        $container->setParameter('nowo_blog_kit.web_ui.icon_set', $config['web_ui']['icon_set']);
-        $container->setParameter('nowo_blog_kit.web_ui.row_actions_display', $config['web_ui']['row_actions_display']);
         $container->setParameter('nowo_blog_kit.web_ui.page_size', $config['web_ui']['page_size']);
         $container->setParameter('nowo_blog_kit.web_ui.privacy_url', $config['web_ui']['privacy_url']);
         $container->setParameter('nowo_blog_kit.comments.staff_name', (string) $config['comments']['staff_name']);
@@ -477,7 +421,7 @@ final class NowoBlogKitExtension extends Extension implements PrependExtensionIn
         if ($security['allow_unauthenticated'] || $strategy === BlogObjectAccessStrategy::None) {
             $id = 'nowo_blog_kit.object_access.allow_all';
             $container->setDefinition($id, new Definition(AllowAllBlogKitResourceAccessChecker::class));
-            $container->setAlias(BlogKitResourceAccessCheckerInterface::class, $id);
+            $container->setAlias(ObjectAccessCheckerInterface::class, $id);
 
             return;
         }
@@ -488,12 +432,12 @@ final class NowoBlogKitExtension extends Extension implements PrependExtensionIn
                 throw new LogicException('nowo_blog_kit.security.object_access.service is required when strategy is service.');
             }
 
-            // Since 1.9.0: the 1.x interface or its twin (BlogKitResourcePolicyInterface), see Port\Ports.
-            $container->register('nowo_blog_kit.object_access.service', BlogKitResourceAccessCheckerInterface::class)
+            // Since 2.0: a BlogKitResourcePolicyInterface only (the 1.x interface was removed), see Port\Ports.
+            $container->register('nowo_blog_kit.object_access.service', ObjectAccessCheckerInterface::class)
                 ->setFactory([Ports::class, 'resourceAccess'])
                 ->setArguments([new Reference($custom)]);
-            $container->setAlias(BlogKitResourceAccessCheckerInterface::class, 'nowo_blog_kit.object_access.service');
-            $this->addPort($container, 'security.object_access.service', $custom, BlogKitResourceAccessCheckerInterface::class, BlogKitResourcePolicyInterface::class);
+            $container->setAlias(ObjectAccessCheckerInterface::class, 'nowo_blog_kit.object_access.service');
+            $this->addPort($container, 'security.object_access.service', $custom, BlogKitResourcePolicyInterface::class);
 
             return;
         }
@@ -507,7 +451,7 @@ final class NowoBlogKitExtension extends Extension implements PrependExtensionIn
         );
         $definition->setArgument('$users', new Reference(BlogUsers::class));
         $container->setDefinition($id, $definition);
-        $container->setAlias(BlogKitResourceAccessCheckerInterface::class, $id);
+        $container->setAlias(ObjectAccessCheckerInterface::class, $id);
     }
 
     /**
@@ -559,19 +503,19 @@ final class NowoBlogKitExtension extends Extension implements PrependExtensionIn
         $customCaptcha     = $this->optionalServiceId($captcha['service'] ?? null);
         $customSanitizer   = $this->optionalServiceId($html['service'] ?? null);
 
-        // Since 1.9.0: each port takes the 1.x interface or its twin (Port\Ports picks the gate).
+        // Since 2.0: each port takes only its 1.9 interface (the 1.x ones were removed); Port\Ports builds the gate.
         if ($customRateLimiter !== null) {
-            $container->register('nowo_blog_kit.comments.rate_limit.service', BlogCommentRateLimiterInterface::class)
+            $container->register('nowo_blog_kit.comments.rate_limit.service', CommentRateLimiterInterface::class)
                 ->setFactory([Ports::class, 'rateLimiter'])
                 ->setArguments([new Reference($customRateLimiter)]);
-            $this->addPort($container, 'comments.rate_limit.service', $customRateLimiter, BlogCommentRateLimiterInterface::class, BlogCommentRateLimitPolicyInterface::class);
+            $this->addPort($container, 'comments.rate_limit.service', $customRateLimiter, BlogCommentRateLimitPolicyInterface::class);
         }
 
         if ($customCaptcha !== null) {
-            $container->register('nowo_blog_kit.comments.captcha.service', BlogCommentCaptchaStrategyInterface::class)
+            $container->register('nowo_blog_kit.comments.captcha.service', CommentCaptchaInterface::class)
                 ->setFactory([Ports::class, 'captcha'])
                 ->setArguments([new Reference($customCaptcha), new Reference('request_stack')]);
-            $this->addPort($container, 'comments.captcha.service', $customCaptcha, BlogCommentCaptchaStrategyInterface::class, BlogCommentCaptchaVerifierInterface::class);
+            $this->addPort($container, 'comments.captcha.service', $customCaptcha, BlogCommentCaptchaVerifierInterface::class);
         }
 
         $container->register(BlogProtection::class)
@@ -597,13 +541,13 @@ final class NowoBlogKitExtension extends Extension implements PrependExtensionIn
     }
 
     /**
-     * Since 1.9.0: records a configured host port for {@see Compiler\BlogKitPortsPass}.
+     * Since 1.9.0: records a configured host port for {@see Compiler\BlogKitPortsPass} (since 2.0: its only interface).
      */
-    private function addPort(ContainerBuilder $container, string $key, string $serviceId, string $legacy, string $twin): void
+    private function addPort(ContainerBuilder $container, string $key, string $serviceId, string $interface): void
     {
-        /** @var array<string, array{0: string, 1: string, 2: string}> $ports */
+        /** @var array<string, array{0: string, 1: string}> $ports */
         $ports       = $container->hasParameter(self::PORTS_PARAMETER) ? $container->getParameter(self::PORTS_PARAMETER) : [];
-        $ports[$key] = [$serviceId, $legacy, $twin];
+        $ports[$key] = [$serviceId, $interface];
         $container->setParameter(self::PORTS_PARAMETER, $ports);
     }
 
@@ -622,7 +566,7 @@ final class NowoBlogKitExtension extends Extension implements PrependExtensionIn
         $dedicated     = $entityManager !== null;
 
         if ($dedicated && $private === true) {
-            throw new LogicException(sprintf('nowo_blog_kit.doctrine.private_entity_manager: true cannot be combined with nowo_blog_kit.doctrine.entity_manager "%s": the dedicated manager already keeps the blog writes apart from yours. Keep one of the two options.', $entityManager));
+            throw new LogicException(sprintf('nowo_blog_kit.doctrine.private_entity_manager: true cannot be combined with nowo_blog_kit.doctrine.entity_manager "%s": the dedicated manager already keeps the blog writes apart from yours. Remove private_entity_manager (deprecated since 2.0, no effect).', $entityManager));
         }
 
         if ($dedicated && $userReference !== BlogUsers::ID) {
@@ -657,26 +601,11 @@ final class NowoBlogKitExtension extends Extension implements PrependExtensionIn
                 ->addTag('doctrine.event_listener', ['event' => Events::onFlush]);
         }
 
-        // Since 1.12.0: the host-flush probe runs while the bundle flushes your manager (no option, or private: false).
-        $hostMode = !$dedicated && $private !== true;
-        if ($hostMode) {
-            trigger_deprecation('nowo-tech/blog-kit-bundle', '1.12.0', $private === false ? self::PRIVATE_ENTITY_MANAGER_FALSE_DEPRECATION : self::PRIVATE_ENTITY_MANAGER_UNSET_DEPRECATION);
-        }
-
         $container->setParameter(self::PRIVATE_ENTITY_MANAGER_PARAMETER, $private);
         $container->setParameter(self::PRIVATE_SOURCE_MANAGER_PARAMETER, '');
-        $container->register(BlogKitHostFlushReporter::class, BlogKitHostFlushReporter::class)
-            ->setAutowired(false)
-            ->setAutoconfigured(false)
-            ->setArguments([
-                $hostMode,
-                new Reference(HostFlushProbe::SERVICE_ID, ContainerInterface::NULL_ON_INVALID_REFERENCE),
-                new Reference('logger', ContainerInterface::NULL_ON_INVALID_REFERENCE),
-            ])
-            ->addTag('kernel.reset', ['method' => 'reset']);
 
         // Only services the unit of work already built: a boundary never builds one (REQ-RUNTIME-002).
-        $resettables = [new Reference(BlogKitHostFlushReporter::class, ContainerInterface::IGNORE_ON_UNINITIALIZED_REFERENCE)];
+        $resettables = [];
         $managers    = [];
         $managerName = null;
 
@@ -685,13 +614,10 @@ final class NowoBlogKitExtension extends Extension implements PrependExtensionIn
             $managerName = $entityManager;
             $managers[]  = new Reference($managerId, ContainerInterface::IGNORE_ON_UNINITIALIZED_REFERENCE);
             $container->setAlias(self::ENTITY_MANAGER_SERVICE, $managerId);
-        } elseif ($private === true) {
+        } else {
+            // Since 2.0 (REQ-ARCH-001 rule 6): the only mode without a dedicated manager; your manager is never flushed.
             $this->registerPrivateEntityManager($container, $userReference);
             $resettables[] = new Reference(self::PRIVATE_ENTITY_MANAGER_SERVICE, ContainerInterface::IGNORE_ON_UNINITIALIZED_REFERENCE);
-        } else {
-            $container->register(self::ENTITY_MANAGER_SERVICE, EntityManagerInterface::class)
-                ->setFactory([BlogKitEntityManagerFactory::class, 'create'])
-                ->setArguments([new Reference('doctrine')]);
         }
 
         $container->register(BlogKitOwnEntityManagerSubscriber::class, BlogKitOwnEntityManagerSubscriber::class)
@@ -706,7 +632,7 @@ final class NowoBlogKitExtension extends Extension implements PrependExtensionIn
     }
 
     /**
-     * Since 1.12.0 (`doctrine.private_entity_manager: true`, REQ-ARCH-001 rule 6): the bundle's repositories, its entity
+     * Since 1.12.0 (opt-in), the only mode without `doctrine.entity_manager` since 2.0 (REQ-ARCH-001 rule 6): the bundle's repositories, its entity
      * manager service (`nowo_blog_kit.entity_manager`, which the controllers and services get), its transaction runner
      * and its worker-state subscriber work through transaction-doctrine's {@see PrivateEntityManager}, created on the
      * connection, configuration and event manager of your default entity manager. Same tables, no host configuration.
@@ -724,7 +650,7 @@ final class NowoBlogKitExtension extends Extension implements PrependExtensionIn
                 new Reference('doctrine'),
                 $source,
                 BlogArticle::class,
-                BlogKitHostFlushReporter::BUNDLE_NAME,
+                self::BUNDLE_NAME,
                 new Reference('logger', ContainerInterface::NULL_ON_INVALID_REFERENCE),
             ])
             ->addTag(PrivateEntityManager::TAG)
@@ -735,7 +661,7 @@ final class NowoBlogKitExtension extends Extension implements PrependExtensionIn
             ->setArguments([
                 new Reference('doctrine'),
                 new Reference(self::PRIVATE_ENTITY_MANAGER_SERVICE),
-                BlogKitHostFlushReporter::OWN_NAMESPACES,
+                self::OWN_NAMESPACES,
                 $source,
             ]);
         // Tagged doctrine.middleware for the source manager's connection by BlogKitPrivateEntityManagerPass.

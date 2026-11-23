@@ -8,33 +8,21 @@ use Nowo\BlogKitBundle\Entity\BlogArticle;
 use Nowo\BlogKitBundle\ValueObject\BlogArticleSnapshot;
 use Symfony\Contracts\EventDispatcher\Event;
 
-use function trigger_deprecation;
-
 /**
  * Dispatched when a blog article becomes published (insert or unpublished→published), after the flush that saved it
  * (REQ-ARCH-001 rule 7).
  *
  * Since 1.9.0 (rule 4) it carries the article id and a {@see BlogArticleSnapshot} copied when the event is created;
- * listeners of DDD hosts use those and never touch the entity.
+ * listeners use those and never touch the entity. Since 2.0 the entity accessor `getArticle()` (deprecated since 1.9)
+ * is removed: the event no longer holds the entity at all.
  */
 final class BlogArticlePublishedEvent extends Event
 {
     private readonly BlogArticleSnapshot $snapshot;
 
-    public function __construct(
-        private readonly BlogArticle $article,
-    ) {
-        $this->snapshot = BlogArticleSnapshot::of($article);
-    }
-
-    /**
-     * @deprecated since 1.9.0, removed in 2.0: use {@see getArticleId()} / {@see getArticleSnapshot()}
-     */
-    public function getArticle(): BlogArticle
+    public function __construct(BlogArticle $article)
     {
-        trigger_deprecation('nowo-tech/blog-kit-bundle', '1.12.0', 'Calling "%s::getArticle()" is deprecated and the method is removed in 2.0: use getArticleId() or getArticleSnapshot() (see UPGRADING.md "To 1.9.0").', self::class);
-
-        return $this->article;
+        $this->snapshot = BlogArticleSnapshot::of($article);
     }
 
     /** Since 1.9.0: the id of the published article (null only for an article that was never saved). */

@@ -165,7 +165,7 @@ security:
         - { path: ^/admin/blog, roles: ROLE_EDITOR }
 ```
 
-You can replace role-based access with a custom service via `security.access_checker`. Scope publications with `security.object_access` (`owner` or a host `BlogKitResourceAccessCheckerInterface`).
+You can replace role-based access with a custom service via `security.access_checker`. Scope publications with `security.object_access` (`owner` or a host `BlogKitResourcePolicyInterface`).
 
 ## User entity
 

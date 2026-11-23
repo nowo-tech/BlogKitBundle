@@ -7,13 +7,11 @@ namespace Nowo\BlogKitBundle\Tests\Unit\DependencyInjection;
 use Doctrine\ORM\Events;
 use LogicException;
 use Nowo\BlogKitBundle\DependencyInjection\NowoBlogKitExtension;
-use Nowo\BlogKitBundle\Doctrine\BlogKitEntityManagerFactory;
 use Nowo\BlogKitBundle\Doctrine\BlogUserBlameListener;
 use Nowo\BlogKitBundle\Doctrine\BlogUserReferenceMetadataListener;
 use Nowo\BlogKitBundle\Doctrine\Type\BlogUserRefType;
 use Nowo\BlogKitBundle\User\BlogUsers;
 use Nowo\BlogKitBundle\Worker\BlogKitOwnEntityManagerSubscriber;
-use PHPUnit\Framework\Attributes\IgnoreDeprecations;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\DependencyInjection\Argument\IteratorArgument;
@@ -26,11 +24,10 @@ use Symfony\Component\DependencyInjection\Reference;
  * REQ-ARCH-001 rules 2 and 6 (1.9.0): `doctrine.user_reference`, `doctrine.mapping_type`, `doctrine.entity_manager`,
  * `user_directory`.
  */
-#[IgnoreDeprecations]
 final class NowoBlogKitExtensionPersistenceTest extends TestCase
 {
     #[Test]
-    public function theDefaultsKeepThe18Wiring(): void
+    public function theDefaultsWriteThroughThePrivateManager(): void
     {
         $container = $this->load([]);
 
@@ -43,10 +40,12 @@ final class NowoBlogKitExtensionPersistenceTest extends TestCase
             ['entity', new Reference('security.token_storage', ContainerInterface::NULL_ON_INVALID_REFERENCE), null],
             $container->getDefinition(BlogUsers::class)->getArguments(),
         );
-        self::assertSame(BlogKitEntityManagerFactory::class . '::create', implode('::', (array) $container->getDefinition(NowoBlogKitExtension::ENTITY_MANAGER_SERVICE)->getFactory()));
+        // Since 2.0 (REQ-ARCH-001 rule 6): the private manager, never the manager that maps the entities (yours).
+        self::assertSame(NowoBlogKitExtension::PRIVATE_ENTITY_MANAGER_SERVICE, (string) $container->getAlias(NowoBlogKitExtension::ENTITY_MANAGER_SERVICE));
+        self::assertFalse($container->hasDefinition(NowoBlogKitExtension::ENTITY_MANAGER_SERVICE));
         self::assertFalse($this->registered($container, BlogUserReferenceMetadataListener::class));
         self::assertFalse($this->registered($container, BlogUserBlameListener::class));
-        // Since 1.12.0 the boundary subscriber is always registered: it resets the host-flush reporter; no own manager.
+        // The boundary subscriber drops the private manager (its resettables); no dedicated manager.
         $subscriber = $container->getDefinition(BlogKitOwnEntityManagerSubscriber::class);
         self::assertEquals(new IteratorArgument([]), $subscriber->getArgument(1));
         self::assertNull($subscriber->getArgument(3));

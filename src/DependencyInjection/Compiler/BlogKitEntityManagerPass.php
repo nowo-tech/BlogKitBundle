@@ -60,7 +60,7 @@ final readonly class BlogKitEntityManagerPass implements CompilerPassInterface
 
         $default = $container->hasParameter('doctrine.default_entity_manager') ? $container->getParameter('doctrine.default_entity_manager') : null;
         if ($name === $default) {
-            throw new InvalidConfigurationException(sprintf('nowo_blog_kit.doctrine.entity_manager is "%s", your default Doctrine entity manager. The option names a manager the bundle owns (it clears it between requests): add a separate manager for the blog entities under doctrine.orm.entity_managers, or remove the option to keep the blog on your default manager.', $name));
+            throw new InvalidConfigurationException(sprintf('nowo_blog_kit.doctrine.entity_manager is "%s", your default Doctrine entity manager. The option names a manager the bundle owns (it clears it between requests): add a separate manager for the blog entities under doctrine.orm.entity_managers, or remove the option (the bundle then writes through its private entity manager on your default one).', $name));
         }
 
         if ($this->checkOnly) {

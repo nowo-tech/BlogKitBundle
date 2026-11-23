@@ -13,7 +13,7 @@ use Nowo\BlogKitBundle\Security\BlogProtection;
 use Nowo\BlogKitBundle\Security\Captcha\NoneCommentCaptchaStrategy;
 use Nowo\BlogKitBundle\Security\Captcha\StreamCaptchaHttpClient;
 use Nowo\BlogKitBundle\Security\Html\NullBlogHtmlSanitizer;
-use Nowo\BlogKitBundle\Security\RateLimit\BlogCommentRateLimiterInterface;
+use Nowo\BlogKitBundle\Security\Internal\CommentRateLimiterInterface;
 use Nowo\BlogKitBundle\Security\RateLimit\CacheBlogCommentRateLimiter;
 use Nowo\BlogKitBundle\Security\RateLimit\NullBlogCommentRateLimiter;
 use Nowo\BlogKitBundle\Service\BlogSettingsProvider;
@@ -113,7 +113,7 @@ final class BlogProtectionTest extends TestCase
     #[Test]
     public function serviceStrategyUsesCustomImplementationsOrNullFallback(): void
     {
-        $customLimiter = $this->createMock(BlogCommentRateLimiterInterface::class);
+        $customLimiter = $this->createMock(CommentRateLimiterInterface::class);
         $withCustom    = BlogProtectionTestFactory::create(
             [
                 'rateLimitStrategy' => CommentRateLimitStrategy::Service,

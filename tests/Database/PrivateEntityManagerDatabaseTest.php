@@ -6,7 +6,7 @@ namespace Nowo\BlogKitBundle\Tests\Database;
 
 use DateTimeImmutable;
 use Doctrine\ORM\Events;
-use Nowo\BlogKitBundle\Doctrine\BlogKitHostFlushReporter;
+use Nowo\BlogKitBundle\DependencyInjection\NowoBlogKitExtension;
 use Nowo\BlogKitBundle\Entity\BlogArticle;
 use Nowo\BlogKitBundle\Entity\BlogArticleTranslation;
 use Nowo\BlogKitBundle\Entity\BlogComment;
@@ -17,7 +17,6 @@ use Nowo\BlogKitBundle\Repository\BlogTagRepository;
 use Nowo\BlogKitBundle\Service\BlogCommentManager;
 use Nowo\BlogKitBundle\Service\BlogTagRegistry;
 use Nowo\BlogKitBundle\Tests\Integration\Worker\Entity\HostNote;
-use Nowo\BlogKitBundle\Tests\Support\CollectsDeprecations;
 use Nowo\BlogKitBundle\Tests\Support\ForwardingLevelListener;
 use Nowo\BlogKitBundle\Tests\Support\LocaleTestSupport;
 use Nowo\BlogKitBundle\Transaction\BlogKitTransactionRunner;
@@ -37,20 +36,17 @@ use Throwable;
 
 /**
  * Since 1.12.0 (REQ-ARCH-001 rule 6, REQ-RUNTIME-003) on a real server: the bundle's services on transaction-doctrine's
- * private entity manager (`doctrine.private_entity_manager: true`), created on "your" manager's connection with its
- * DBAL middleware, next to your pending change (a `HostNote` scheduled for insertion on your manager).
+ * private entity manager (since 2.0 the only mode without `doctrine.entity_manager`), created on "your" manager's
+ * connection with its DBAL middleware, next to your pending change (a `HostNote` scheduled for insertion on your manager).
  *
  * - Your pending change stays pending (never flushed, never cleared) after blog writes, conflicts and replays.
  * - Rule 6 holds in the private mode: 409 + Retry-After + CONFLICT_001 when nothing was committed, CONFLICT_002 without
  *   Retry-After after a commit of the same request; a unique violation is replayed, not a conflict.
  * - A rollback of your transaction around a blog write leaves no ghost row in the private manager.
- * - Host mode: the probe reports your pending change before the bundle flushes your manager.
  */
 #[Group('database')]
 final class PrivateEntityManagerDatabaseTest extends DatabaseTestCase
 {
-    use CollectsDeprecations;
-
     private PrivateEntityManager $private;
 
     private PrivateManagerRegistry $privateRegistry;
@@ -66,9 +62,9 @@ final class PrivateEntityManagerDatabaseTest extends DatabaseTestCase
         $this->levels = new ForwardingLevelListener();
         parent::setUp();
 
-        $this->private         = new PrivateEntityManager($this->registry, 'default', BlogArticle::class, BlogKitHostFlushReporter::BUNDLE_NAME);
+        $this->private         = new PrivateEntityManager($this->registry, 'default', BlogArticle::class, NowoBlogKitExtension::BUNDLE_NAME);
         $this->levels->target  = $this->private;
-        $this->privateRegistry = new PrivateManagerRegistry($this->registry, $this->private, BlogKitHostFlushReporter::OWN_NAMESPACES, 'default');
+        $this->privateRegistry = new PrivateManagerRegistry($this->registry, $this->private, NowoBlogKitExtension::OWN_NAMESPACES, 'default');
         $this->privateRunner   = new BlogKitTransactionRunner($this->private, $this->privateRegistry, null, $this->publishedEvents, privateSourceManager: 'default');
 
         $this->note = new HostNote('pending host change');
@@ -190,22 +186,6 @@ final class PrivateEntityManagerDatabaseTest extends DatabaseTestCase
         self::assertNull($this->private->find(BlogComment::class, $id), 'the rolled-back row is not served from memory');
         $this->assertYourChangeIsPending();
         $this->assertConnectionUsable();
-    }
-
-    #[Test]
-    public function hostModeReportsYourPendingChangeBeforeFlushingYourManager(): void
-    {
-        $runner = new BlogKitTransactionRunner($this->entityManager, $this->registry, null, $this->publishedEvents, hostFlushReporter: new BlogKitHostFlushReporter(true));
-        $this->entityManager->detach($this->note);
-        $article = $this->createArticle('host-mode');
-        $this->entityManager->persist(new HostNote('pending host change'));
-        $article->setPosition(7);
-
-        self::assertSame(
-            ['Your pending changes to ' . HostNote::class . ' were flushed by NowoBlogKitBundle; 2.0 no longer does.'],
-            self::deprecationsOf(static fn () => $runner->flushPending()),
-        );
-        self::assertSame(1, (int) $this->writer->fetchOne('SELECT COUNT(*) FROM worker_host_note'), '1.x: your change is written with the blog change');
     }
 
     protected function extraMiddlewares(): array

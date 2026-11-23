@@ -11,7 +11,7 @@
 | Setting | FrankenPHP worker mode with the kernel kept alive and **not reset** (`FRANKENPHP_RESET_KERNEL=false`), and hosts that bypass the services resetter (REQ-RUNTIME-002) |
 | Worker test | `tests/Integration/Worker/WorkerKeptAliveKernelTest.php`: one kernel, `http_kernel->handle()` + `terminate()` (never `Kernel::handle()`), no services resetter, **1,000** admin listings alternating **two users** (`alice`, `bob`) on a standard host and on a DDD host; each response shows only that user's article; memory growth after request 50 stays under **128 KB**, measured without the test harness' own growth (`KeptAliveMemory`) |
 | Static checks | `composer igor` (REQ-CS-008) and the `nowo-tech/phpstan-frankenphp` classic + worker rulesets (`phpstan.neon.dist`) pass in CI |
-| **Verdict** | ✅ **Viable with the kernel not reset** — bundle memos are cleared at every main request, Messenger message and outermost console command by a bundle-owned subscriber; the bundle's own entity manager (`doctrine.entity_manager`) is cleared at every outermost boundary and recreated when closed; per-user flags are Twig functions; the publish buffer cannot outlive a failed flush. Host rule (REQ-RUNTIME-002 rule 7): in the default mode the blog uses **your** entity manager, which the bundle never clears; clear your managers at each boundary when you bypass the services resetter (W-04). |
+| **Verdict** | ✅ **Viable with the kernel not reset** — bundle memos are cleared at every main request, Messenger message and outermost console command by a bundle-owned subscriber; the bundle's own entity manager (`doctrine.entity_manager`) is cleared at every outermost boundary and recreated when closed; per-user flags are Twig functions; the publish buffer cannot outlive a failed flush. Since 2.0 the default mode writes through the bundle's **private** entity manager, dropped at every outermost boundary and at `kernel.reset` (W-08); your managers are never flushed, cleared or reset by the bundle. Host rule (REQ-RUNTIME-002 rule 7): clear your own managers at each boundary when you bypass the services resetter (W-04). |
 
 ## Table of contents
 
@@ -26,6 +26,7 @@
   - [W-05 — Captcha verification timeout is fixed at 5 s (Low)](#w-05--captcha-verification-timeout-is-fixed-at-5-s-low)
   - [W-06 — Memos only cleared at the main request (Medium, 1.9.0)](#w-06--memos-only-cleared-at-the-main-request-medium-190)
   - [W-07 — Own entity manager (1.9.0)](#w-07--own-entity-manager-190)
+  - [W-08 — Private entity manager (the default since 2.0)](#w-08--private-entity-manager-the-default-since-20)
 - [Kept-alive kernel test](#kept-alive-kernel-test)
 - [Usage recommendations in worker mode](#usage-recommendations-in-worker-mode)
 - [Re-audit triggers](#re-audit-triggers)
@@ -145,6 +146,24 @@ No other findings. No superglobals, `ini_set`, native headers/sessions, static c
 - **Tests:** `tests/Unit/Worker/BlogKitOwnEntityManagerSubscriberTest.php`, `UnitOfWorkBoundariesTest.php`,
   `UnitOfWorkBoundariesNxTest.php` (the tracker suites shared with PageBuilderKit / DashboardMenu) and the DDD cases of
   the kept-alive kernel test.
+
+### W-08 — Private entity manager (the default since 2.0)
+
+- **Where:** `src/DependencyInjection/NowoBlogKitExtension.php` (`registerPrivateEntityManager()`),
+  `src/Worker/BlogKitOwnEntityManagerSubscriber.php`, transaction-doctrine's `PrivateManager\PrivateEntityManager`.
+- **What:** without `doctrine.entity_manager` (the zero-config default since 2.0; opt-in since 1.12.0) the bundle writes
+  through a private manager created on your default manager's connection. It is dropped (pending changes logged and
+  discarded) at the same OUTERMOST boundaries as W-07 — main `kernel.request` and `kernel.terminate`, Messenger
+  received / handled / failed, outermost console command start / terminate — through the subscriber's resettables (an
+  `IGNORE_ON_UNINITIALIZED_REFERENCE` iterator: a boundary never builds it), at `kernel.reset`, and through the
+  `nowo_transaction_doctrine.private_entity_manager` tag when NowoTransactionDoctrineBundle is registered; it is
+  replaced when closed. Nothing is memoised per request outside it. The 1.12 host-flush reporter (its "already reported"
+  classes were reset at the same boundaries) was removed in 2.0 with the mode that flushed your manager.
+- **Tests:** `tests/Integration/Worker/PrivateEntityManagerKernelTest.php` (600 alternating requests through one
+  kept-alive kernel: the private manager is dropped at the end of each request, memory stays flat; Messenger
+  boundaries drop it; a closed one is replaced), `HostPendingChangesTestCase.php` (your pending changes survive blog
+  writes, a failed blog write, an admin request and a Messenger boundary; SQLite and the real servers) and the
+  extension test of the resettables (`tests/Unit/DependencyInjection/PrivateEntityManagerOptionTest.php`).
 
 ## Kept-alive kernel test
 

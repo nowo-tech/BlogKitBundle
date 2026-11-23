@@ -11,7 +11,7 @@ use Nowo\BlogKitBundle\Entity\BlogCommentStatus;
 use Nowo\BlogKitBundle\Repository\BlogCommentRepository;
 use Nowo\BlogKitBundle\Security\AllowAllBlogKitResourceAccessChecker;
 use Nowo\BlogKitBundle\Security\BlogKitAccessDenied;
-use Nowo\BlogKitBundle\Security\BlogKitResourceAccessCheckerInterface;
+use Nowo\BlogKitBundle\Security\Internal\ObjectAccessCheckerInterface;
 use Nowo\BlogKitBundle\Service\BlogCommentManager;
 use Nowo\BlogKitBundle\Tests\Support\ControllerTestHelper;
 use Nowo\BlogKitBundle\Tests\Support\LocaleTestSupport;
@@ -555,7 +555,7 @@ final class BlogCommentControllerTest extends TestCase
 
     private function rejectingAccessDenied(): BlogKitAccessDenied
     {
-        $checker = $this->createMock(BlogKitResourceAccessCheckerInterface::class);
+        $checker = $this->createMock(ObjectAccessCheckerInterface::class);
         $checker->method('canModerateComment')->willReturn(false);
 
         return new BlogKitAccessDenied($checker);

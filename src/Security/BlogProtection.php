@@ -8,7 +8,6 @@ use Nowo\BlogKitBundle\Entity\BlogSettings;
 use Nowo\BlogKitBundle\Enum\CommentCaptchaStrategy;
 use Nowo\BlogKitBundle\Enum\CommentRateLimitStrategy;
 use Nowo\BlogKitBundle\Enum\HtmlSanitizeStrategy;
-use Nowo\BlogKitBundle\Security\Captcha\BlogCommentCaptchaStrategyInterface;
 use Nowo\BlogKitBundle\Security\Captcha\CaptchaHttpClientInterface;
 use Nowo\BlogKitBundle\Security\Captcha\HoneypotCommentCaptchaStrategy;
 use Nowo\BlogKitBundle\Security\Captcha\NoneCommentCaptchaStrategy;
@@ -17,7 +16,8 @@ use Nowo\BlogKitBundle\Security\Html\AllowlistBlogHtmlSanitizer;
 use Nowo\BlogKitBundle\Security\Html\BlogHtmlSanitizerInterface;
 use Nowo\BlogKitBundle\Security\Html\NullBlogHtmlSanitizer;
 use Nowo\BlogKitBundle\Security\Html\StripBlogHtmlSanitizer;
-use Nowo\BlogKitBundle\Security\RateLimit\BlogCommentRateLimiterInterface;
+use Nowo\BlogKitBundle\Security\Internal\CommentCaptchaInterface;
+use Nowo\BlogKitBundle\Security\Internal\CommentRateLimiterInterface;
 use Nowo\BlogKitBundle\Security\RateLimit\CacheBlogCommentRateLimiter;
 use Nowo\BlogKitBundle\Security\RateLimit\NullBlogCommentRateLimiter;
 use Nowo\BlogKitBundle\Service\BlogSettingsProvider;
@@ -40,14 +40,14 @@ final readonly class BlogProtection
         private RequestStack $requestStack,
         private ?CacheItemPoolInterface $cachePool = null,
         ?ClockInterface $clock = null,
-        private ?BlogCommentRateLimiterInterface $customRateLimiter = null,
-        private ?BlogCommentCaptchaStrategyInterface $customCaptcha = null,
+        private ?CommentRateLimiterInterface $customRateLimiter = null,
+        private ?CommentCaptchaInterface $customCaptcha = null,
         private ?BlogHtmlSanitizerInterface $customSanitizer = null,
     ) {
         $this->clock = $clock ?? new NativeClock();
     }
 
-    public function rateLimiter(): BlogCommentRateLimiterInterface
+    public function rateLimiter(): CommentRateLimiterInterface
     {
         $strategy = $this->resolveRateLimitStrategy();
         $limit    = $this->resolveRateLimit();
@@ -70,7 +70,7 @@ final readonly class BlogProtection
         );
     }
 
-    public function captcha(): BlogCommentCaptchaStrategyInterface
+    public function captcha(): CommentCaptchaInterface
     {
         $strategy = $this->resolveCaptchaStrategy();
 

@@ -11,15 +11,14 @@ use Nowo\BlogKitBundle\Port\BlogCommentRequestContexts;
 use Nowo\BlogKitBundle\Port\BlogKitResourcePolicyGate;
 use Nowo\BlogKitBundle\Port\Ports;
 use Nowo\BlogKitBundle\Security\AllowAllBlogKitResourceAccessChecker;
-use Nowo\BlogKitBundle\Security\BlogKitResourceAccessCheckerInterface;
 use Nowo\BlogKitBundle\Security\BlogKitResourcePolicyInterface;
-use Nowo\BlogKitBundle\Security\Captcha\BlogCommentCaptchaStrategyInterface;
 use Nowo\BlogKitBundle\Security\Captcha\BlogCommentCaptchaVerifierInterface;
 use Nowo\BlogKitBundle\Security\Captcha\NoneCommentCaptchaStrategy;
-use Nowo\BlogKitBundle\Security\RateLimit\BlogCommentRateLimiterInterface;
+use Nowo\BlogKitBundle\Security\Internal\CommentCaptchaInterface;
+use Nowo\BlogKitBundle\Security\Internal\CommentRateLimiterInterface;
+use Nowo\BlogKitBundle\Security\Internal\ObjectAccessCheckerInterface;
 use Nowo\BlogKitBundle\Security\RateLimit\BlogCommentRateLimitPolicyInterface;
 use Nowo\BlogKitBundle\Security\RateLimit\NullBlogCommentRateLimiter;
-use Nowo\BlogKitBundle\Tests\Support\CollectsDeprecations;
 use Nowo\BlogKitBundle\ValueObject\BlogCommentCaptchaWidget;
 use Nowo\BlogKitBundle\ValueObject\BlogCommentRequestContext;
 use PHPUnit\Framework\Attributes\Test;
@@ -31,42 +30,46 @@ use Symfony\Component\Form\Forms;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 
+use function array_keys;
+use function interface_exists;
+
 /**
- * Selection rule (1.9.0): the 1.x interface is asked as before, a twin-only service through its gate, anything else fails.
+ * Selection rule: since 2.0 a key takes only its 1.9 interface (asked through its gate); anything else fails.
  */
 final class PortsTest extends TestCase
 {
-    use CollectsDeprecations;
-
     #[Test]
-    public function legacyServicesAreAskedAsBefore(): void
+    public function builtInsOfTheRemoved1xInterfacesAreRefused(): void
     {
-        $access  = new AllowAllBlogKitResourceAccessChecker();
-        $limiter = new NullBlogCommentRateLimiter();
-        $captcha = new NoneCommentCaptchaStrategy();
-
-        $deprecations = self::deprecationsOf(static function () use ($access, $limiter, $captcha): void {
-            self::assertSame($access, Ports::resourceAccess($access));
-            self::assertSame($limiter, Ports::rateLimiter($limiter));
-            self::assertSame($captcha, Ports::captcha($captcha, new RequestStack()));
-        });
-
-        // Since 1.12.0: one notice per legacy-only service, when it is built.
-        self::assertSame([
-            'Since nowo-tech/blog-kit-bundle 1.12.0: The service "' . AllowAllBlogKitResourceAccessChecker::class . '" of "nowo_blog_kit.security.object_access.service" implements the deprecated ' . BlogKitResourceAccessCheckerInterface::class . ', removed in 2.0. Implement ' . BlogKitResourcePolicyInterface::class . ' instead (the same configuration key takes it now; see UPGRADING.md "To 1.9.0").',
-            'Since nowo-tech/blog-kit-bundle 1.12.0: The service "' . NullBlogCommentRateLimiter::class . '" of "nowo_blog_kit.comments.rate_limit.service" implements the deprecated ' . BlogCommentRateLimiterInterface::class . ', removed in 2.0. Implement ' . BlogCommentRateLimitPolicyInterface::class . ' instead (the same configuration key takes it now; see UPGRADING.md "To 1.9.0").',
-            'Since nowo-tech/blog-kit-bundle 1.12.0: The service "' . NoneCommentCaptchaStrategy::class . '" of "nowo_blog_kit.comments.captcha.service" implements the deprecated ' . BlogCommentCaptchaStrategyInterface::class . ', removed in 2.0. Implement ' . BlogCommentCaptchaVerifierInterface::class . ' instead (the same configuration key takes it now; see UPGRADING.md "To 1.9.0").',
-        ], $deprecations);
+        // Since 2.0 each key takes only the 1.9 interface: an object of the bundle's internal interfaces (what a 1.x
+        // port became inside the bundle) is not accepted as a host port either.
+        foreach ([
+            [static fn (): ObjectAccessCheckerInterface => Ports::resourceAccess(new AllowAllBlogKitResourceAccessChecker()), 'nowo_blog_kit.security.object_access.service is a ' . AllowAllBlogKitResourceAccessChecker::class . ', which does not implement ' . BlogKitResourcePolicyInterface::class],
+            [static fn (): CommentRateLimiterInterface => Ports::rateLimiter(new NullBlogCommentRateLimiter()), 'nowo_blog_kit.comments.rate_limit.service is a ' . NullBlogCommentRateLimiter::class . ', which does not implement ' . BlogCommentRateLimitPolicyInterface::class],
+            [static fn (): CommentCaptchaInterface => Ports::captcha(new NoneCommentCaptchaStrategy(), new RequestStack()), 'nowo_blog_kit.comments.captcha.service is a ' . NoneCommentCaptchaStrategy::class . ', which does not implement ' . BlogCommentCaptchaVerifierInterface::class],
+        ] as [$build, $message]) {
+            try {
+                $build();
+                self::fail('Refused: ' . $message);
+            } catch (LogicException $exception) {
+                self::assertSame($message . ' (since 2.0 the only interface this key takes; see UPGRADING.md "To 2.0.0").', $exception->getMessage());
+            }
+        }
     }
 
     #[Test]
-    public function servicesImplementingTheTwinTriggerNoNotice(): void
+    public function theRemovedInterfacesAreGone(): void
     {
-        self::assertSame([], self::deprecationsOf(function (): void {
-            Ports::resourceAccess($this->createStub(BlogKitResourcePolicyInterface::class));
-            Ports::rateLimiter($this->createStub(BlogCommentRateLimitPolicyInterface::class));
-            Ports::captcha($this->createStub(BlogCommentCaptchaVerifierInterface::class), new RequestStack());
-        }));
+        foreach (Ports::REMOVED as $removed => $replacement) {
+            self::assertFalse(interface_exists($removed), $removed . ' was removed in 2.0');
+            self::assertTrue(interface_exists($replacement), $replacement . ' replaces it');
+        }
+
+        self::assertSame([
+            'Nowo\\BlogKitBundle\\Security\\BlogKitResourceAccessCheckerInterface',
+            'Nowo\\BlogKitBundle\\Security\\RateLimit\\BlogCommentRateLimiterInterface',
+            'Nowo\\BlogKitBundle\\Security\\Captcha\\BlogCommentCaptchaStrategyInterface',
+        ], array_keys(Ports::REMOVED));
     }
 
     #[Test]

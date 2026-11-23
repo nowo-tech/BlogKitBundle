@@ -9,7 +9,7 @@ use Nowo\BlogKitBundle\Entity\BlogComment;
 use Nowo\BlogKitBundle\Entity\BlogTag;
 use Nowo\BlogKitBundle\Enum\CssFramework;
 use Nowo\BlogKitBundle\Security\BlogKitAccessCheckerInterface;
-use Nowo\BlogKitBundle\Security\BlogKitResourceAccessCheckerInterface;
+use Nowo\BlogKitBundle\Security\Internal\ObjectAccessCheckerInterface;
 use Nowo\BlogKitBundle\Tests\Support\BlogProtectionTestFactory;
 use Nowo\BlogKitBundle\Tests\Support\TestUser;
 use Nowo\BlogKitBundle\Twig\BlogKitExtension;
@@ -25,19 +25,15 @@ use Twig\Loader\ArrayLoader;
 final class BlogKitExtensionTest extends TestCase
 {
     #[Test]
-    public function getGlobalsReturnsTemplateLocaleAndAccessFlags(): void
+    public function getGlobalsReturnsLocaleAndAccessFlags(): void
     {
         $extension = $this->createExtension();
 
+        // Since 2.0 the 1.7 layout / CSS / icon / row-action globals are removed (owner answer Q-W4-1).
         self::assertSame([
-            'nowo_blog_kit_layout'              => '@NowoBlogKitBundle/admin/layout.html.twig',
-            'nowo_blog_kit_public_layout'       => '@NowoBlogKitBundle/public/layout.html.twig',
-            'nowo_blog_kit_css_framework'       => 'tailwind',
-            'nowo_blog_kit_default_locale'      => 'es',
-            'nowo_blog_kit_locales'             => ['es', 'en'],
-            'nowo_blog_kit_privacy_url'         => '/privacy',
-            'nowo_blog_kit_icon_set'            => null,
-            'nowo_blog_kit_row_actions_display' => null,
+            'nowo_blog_kit_default_locale' => 'es',
+            'nowo_blog_kit_locales'        => ['es', 'en'],
+            'nowo_blog_kit_privacy_url'    => '/privacy',
             // SEC-004 I6: fail closed (a global is frozen per Twig environment in workers)
             'nowo_blog_kit_can_manage'    => false,
             'nowo_blog_kit_can_moderate'  => false,
@@ -124,7 +120,7 @@ final class BlogKitExtensionTest extends TestCase
     #[Test]
     public function objectAccessFunctionsDelegateToResourceChecker(): void
     {
-        $resourceAccess = $this->createMock(BlogKitResourceAccessCheckerInterface::class);
+        $resourceAccess = $this->createMock(ObjectAccessCheckerInterface::class);
         $resourceAccess->method('canManageArticle')->willReturn(false);
         $resourceAccess->method('canManageTag')->willReturn(false);
         $resourceAccess->method('canModerateComment')->willReturn(false);
@@ -181,14 +177,24 @@ final class BlogKitExtensionTest extends TestCase
         $accessChecker->method('canConfigure')->willReturn(true);
 
         return new BlogKitExtension(
-            '@NowoBlogKitBundle/admin/layout.html.twig',
-            '@NowoBlogKitBundle/public/layout.html.twig',
+            null,
+            null,
             $cssFramework,
             'es',
             ['es', 'en'],
             '/privacy',
             $accessChecker,
         );
+    }
+
+    /** Since 2.0 the arguments that fed the removed globals are ignored; a value other than null is reported. */
+    #[Test]
+    public function theIgnoredGlobalArgumentsAreReported(): void
+    {
+        $this->expectUserDeprecationMessage('Since nowo-tech/blog-kit-bundle 2.0: The $layoutTemplate, $publicLayoutTemplate, $iconSet and $rowActionsDisplay arguments of "' . BlogKitExtension::class . '" are ignored since 2.0 (the Twig globals they fed were removed) and are removed in 3.0: pass null.');
+
+        $extension = new BlogKitExtension('layout.html.twig', null, null, 'es', ['es'], '#', $this->createStub(BlogKitAccessCheckerInterface::class), 'bootstrap-icons', 'inline');
+        self::assertArrayNotHasKey('nowo_blog_kit_layout', $extension->getGlobals());
     }
 
     #[Test]
