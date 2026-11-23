@@ -21,6 +21,7 @@ How to publish articles, render the public blog, moderate comments, and override
 - [Translation overrides](#translation-overrides)
 - [Infinite scroll assets](#infinite-scroll-assets)
 - [Rich text notes](#rich-text-notes)
+- [Browser console](#browser-console)
 
 ## Screenshots
 
@@ -285,3 +286,7 @@ required, invalid tabs marked and opened, keyboard navigation and the `nowo-ui:t
 `public/show.html.twig` renders `article.body` with `|raw`. Set `html.sanitize.strategy` to `allowlist` or `strip` (or a host sanitizer) so untrusted HTML is cleaned on save and on public render. `none` keeps trusted-editor HTML unchanged.
 
 Comment bodies use auto-escaping plus `|nl2br`.
+
+## Browser console
+
+The bundle's script logs one line when it loads (`📦 [blog-kit] script loaded, build: 2026-11-23 14:05 UTC`) so a developer can tell which build a page runs. To silence it, set `<html data-nowo-console="quiet">` or `globalThis.NOWO_CONSOLE = 'quiet'` before the script loads; nothing is printed then. The default is unchanged.
