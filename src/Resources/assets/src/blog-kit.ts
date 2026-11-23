@@ -8,6 +8,13 @@
 import { bindCommentCaptcha } from './blog-captcha';
 import { bindFormCollection } from './blog-form-collection';
 import { startBlogInfinite } from './blog-infinite-controller';
+import { createBundleLogger } from './logger';
+
+declare const __BLOG_KIT_BUILD_TIME__: string;
+
+createBundleLogger('blog-kit', {
+    buildTime: typeof __BLOG_KIT_BUILD_TIME__ !== 'undefined' ? __BLOG_KIT_BUILD_TIME__ : undefined,
+}).scriptLoaded();
 
 /**
  * Start Blog Kit browser behaviours.
