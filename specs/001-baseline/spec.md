@@ -116,7 +116,8 @@ As a maintainer, I run the Symfony 8 FrankenPHP demo and smoke checks.
 | FR-UI-001 | Configurable CSS framework and layout templates |
 | FR-UI-002 | Admin routes require Symfony Security or a custom checker unless `allow_unauthenticated` |
 | FR-UI-003 | Object-level publication access via `security.object_access` (`none` / `owner` / host `service`) and `BlogKitAccessDenied` — not Symfony voters |
-| FR-UI-004 | UiKit page contract (REQ-UI-003): `Ui/BlogKitPages` resolves the admin / public layouts (1.x layouts through a deprecated bridge), `Ui/BlogKitPageFactory` builds the page view models (headers, columns, POST + CSRF row actions, filters, pagination, empty states) and `Ui/BlogKitAreaNav` publishes the `blog_kit` / `blog_kit_settings` area navs for host menus |
+| FR-UI-004 | UiKit page contract (REQ-UI-003): `Ui/BlogKitPages` resolves the admin / public layouts (2.0: UiKit canonical layouts only; the 1.x layout bridge, the 1.7 `web_ui.css_framework` / `icon_set` / `row_actions_display` and `security.*_roles` keys and the `nowo_blog_kit_layout*` Twig globals are removed), `Ui/BlogKitPageFactory` builds the page view models (headers, columns, POST + CSRF row actions, filters, pagination, empty states) and `Ui/BlogKitAreaNav` publishes the `blog_kit` / `blog_kit_settings` area navs for host menus |
+| FR-UI-005 | `blog-kit.ts` (`createBundleLogger('blog-kit', { buildTime })`, built to `blog-kit.js` and its legacy copy `blog-infinite-controller.js`) prints one `📦 [blog-kit] script loaded, build: <date> UTC` console line (build label from the committed `build-info.json`, `__BLOG_KIT_BUILD_TIME__`); `<html data-nowo-console="quiet">` or `globalThis.NOWO_CONSOLE = 'quiet'` silences it; level methods are no-ops unless `setDebug(true)` (2.1.0, REQ-ASSETS-005) |
 | FR-FORM-001 | Prepend FormKit profiles `blog_kit` / `filter` and `type_map.entity` when the host has not defined them |
 | FR-TWIG-001 | Application templates under `templates/bundles/NowoBlogKitBundle/` take precedence |
 | FR-TWIG-005 | Kit Twig must not ship raw `<form>` / `<input>`; render with `form_start` + `form_row` loops |
@@ -125,7 +126,8 @@ As a maintainer, I run the Symfony 8 FrankenPHP demo and smoke checks.
 
 | ID | Requirement |
 | --- | --- |
-| FR-ARC-001 | Every host port (object access, comment CAPTCHA, comment rate limit) also accepts a framework-free twin taking snapshots / request contexts instead of entities and `Request` (1.9, REQ-ARCH-001); the same configuration key selects either, and the build fails when a service implements neither |
+| FR-ARC-001 | Every host port (object access, comment CAPTCHA, comment rate limit) takes a framework-free interface that sees snapshots / request contexts instead of entities and `Request` (`BlogKitResourcePolicyInterface`, `BlogCommentCaptchaVerifierInterface`, `BlogCommentRateLimitPolicyInterface`; 1.9, REQ-ARCH-001). Since 2.0 these are the only port interfaces: gates (`Port/*Gate`) adapt them to the `@internal` `Security\Internal\{ObjectAccessChecker,CommentCaptcha,CommentRateLimiter}Interface` the controllers and Twig use, and the 1.x `BlogKitResourceAccessCheckerInterface`, `BlogCommentRateLimiterInterface` and `BlogCommentCaptchaStrategyInterface` are removed; the build fails when a configured service implements none of the three |
+| FR-ARC-002 | 2.0 `BlogKitRemovedPortsPass` fails the container build on every trace of a removed 1.x port (a definition whose loading error names it, a service or alias under a removed id, a decorator of one, also with `onInvalid: IGNORE`), so a host decorator that restricted object access can never be dropped silently (`Ports::REMOVED` lists each removed interface and its replacement) |
 
 ### Persistence (`FR-ORM-*`)
 
@@ -135,7 +137,8 @@ As a maintainer, I run the Symfony 8 FrankenPHP demo and smoke checks.
 | FR-ORM-002 | Opt-in dedicated entity manager (`doctrine.entity_manager`, 1.9): blog entities mapped only on that manager; the default stays the manager that maps them |
 | FR-ORM-003 | `doctrine.mapping_type: attribute` (default) or `xml` (shipped `Resources/config/doctrine-xml/*.orm.xml`, 1.9) |
 | FR-ORM-004 | `doctrine.user_reference: entity` (default, relation to `user_class`) or `id` (string id columns, `BlogUserRef`, optional `user_directory` labels); a user whose id cannot be kept exactly may not write (1.9) |
-| FR-ORM-005 | Opt-in private entity manager (`doctrine.private_entity_manager`, 1.12): the pass resolves the manager it is created on, the user-reference listener keeps entity-mode user associations valid on it, and `BlogKitHostFlushReporter` reports host changes a blog write would flush on the host manager (REQ-ARCH-001 rule 6 deprecation layer) |
+| FR-ORM-005 | Private entity manager (REQ-ARCH-001 rule 6; opt-in since 1.12, the only mode without `doctrine.entity_manager` since 2.0): the pass resolves the manager it is created on (same connection, mapping, listeners, tables), the user-reference listener keeps entity-mode user associations valid on it, and a blog write never flushes, clears, closes or resets the host's manager. `doctrine.private_entity_manager: false` fails the build. The host-flush probe (`BlogKitHostFlushReporter`) and `BlogKitEntityManagerFactory` are removed |
+| FR-ORM-006 | 2.0: `BlogKitTransactionRunner` runs every unit on the private manager; `BlogCommentManager` re-loads by id a comment the host's manager loaded before it approves, rejects, deletes or answers it (a vanished row fails with a `LogicException`); a host user with no identifier yet assigned to a blog row (author, moderator, blame) fails the write with a `LogicException` before anything is written |
 
 ### Internationalization (`FR-I18N-*`)
 
@@ -143,6 +146,7 @@ As a maintainer, I run the Symfony 8 FrankenPHP demo and smoke checks.
 | --- | --- |
 | FR-I18N-002 | Ship catalogues for en, es, fr, de, it, nl, pt with key parity |
 | FR-I18N-003 | Translation domain is `NowoBlogKitBundle` |
+| FR-I18N-004 | Constraint messages live in the Symfony `validators` domain (`validators.{en,es,fr,de,it,nl,pt}.yaml`): `admin.validation.slug` and `blog.comments.privacy_required` (fix #88; Symfony translates constraint messages there, not in the bundle domain) |
 
 ### Security (`FR-SEC-*`)
 
@@ -186,7 +190,7 @@ As a maintainer, I run the Symfony 8 FrankenPHP demo and smoke checks.
 
 ## Success criteria (`SC-*`)
 
-- **SC-001**: **185/185** files tracked under `src/` are mapped in [`code-inventory.md`](code-inventory.md) (audit: `git ls-files src | wc -l`).
+- **SC-001**: **198/198** files tracked under `src/` are mapped in [`code-inventory.md`](code-inventory.md) (audit: `git ls-files src | wc -l`).
 - **SC-002**: Every `FR-*` ID cited in the inventory is defined in this spec.
 - **SC-003**: `composer qa` (cs-check, PHPStan, PHPUnit) and `make release-check` pass; PHPUnit line coverage for `src/` stays at 100% (`make test-coverage-100`).
 - **SC-004**: Vitest specs pass (`make test-ts`).

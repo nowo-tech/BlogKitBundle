@@ -2,10 +2,10 @@
 
 **Baseline spec**: [`spec.md`](spec.md)  
 **Package**: `nowo-tech/blog-kit-bundle`  
-**Last audited**: 2026-11-22  
-**Coverage summary**: **191/191** files tracked under `src/` mapped (see [Coverage summary](#coverage-summary)); audit command: `git ls-files src | wc -l`.
+**Last audited**: 2026-11-27 (2.1.0; 2.0.0 removals, 2.1.0 banner and validators mapped)  
+**Coverage summary**: **198/198** files tracked under `src/` mapped (see [Coverage summary](#coverage-summary)); audit command: `git ls-files src | wc -l`.
 
-Maps **100%** of the files under `src/` (139 PHP classes + Twig views, translations, config, public assets, TypeScript sources and co-located Vitest specs). Paths are relative to `src/`. Test and demo trees outside `src/` are out of Packagist scope unless promoted in the spec.
+Maps **100%** of the files under `src/` (PHP classes + Twig views, translations, config, public assets, TypeScript sources and co-located Vitest specs). Paths are relative to `src/`. Test and demo trees outside `src/` are out of Packagist scope unless promoted in the spec.
 
 ## Bundle entry
 
@@ -23,7 +23,8 @@ Maps **100%** of the files under `src/` (139 PHP classes + Twig views, translati
 | `DependencyInjection/Compiler/CsrfProtectionPass.php` | Fails closed without form CSRF protection | FR-SEC-006 |
 | `DependencyInjection/TablePrefixListener.php` | Optional table prefix | FR-ORM-001 |
 | `DependencyInjection/Compiler/BlogKitEntityManagerPass.php` | Keeps the blog entities on the opt-in `doctrine.entity_manager` only (1.9) | FR-ORM-002 |
-| `DependencyInjection/Compiler/BlogKitPortsPass.php` | Fails the build when a configured port service implements neither the 1.x interface nor its twin (1.9) | FR-ARC-001 |
+| `DependencyInjection/Compiler/BlogKitRemovedPortsPass.php` | 2.0: fails the build on any trace of the three removed 1.x host ports (a definition whose loading error names one, a service or alias under a removed id, a decorator of one), so a host object-access decorator can never be silently dropped | FR-ARC-002 |
+| `DependencyInjection/Compiler/BlogKitPortsPass.php` | Fails the build when a configured port service implements none of the 1.9 port interfaces (2.0: the 1.x ones are removed) | FR-ARC-001 |
 | `DependencyInjection/Compiler/ConflictResponsePass.php` | Wires the conflict policy and responder of `BlogKitConflictSubscriber` (`conflict_response`, transaction-doctrine's when registered) (1.10) | FR-CONC-002 |
 | `DependencyInjection/Compiler/BlogKitPrivateEntityManagerPass.php` | Since 1.12.0 (`doctrine.private_entity_manager: true`): resolves your manager the private one is created on — your default entity manager (`doctrine.default_ent | FR-ORM-005 |
 
@@ -94,7 +95,7 @@ Maps **100%** of the files under `src/` (139 PHP classes + Twig views, translati
 | `Service/BlogCommentManager.php` | Comment lifecycle | FR-CMT-001, FR-CMT-002, FR-CMT-003 |
 | `Service/BlogHashtagProcessor.php` | Hashtag parse/format | FR-TAG-002 |
 | `Service/BlogTagRegistry.php` | Tag lookup/create; one unit, replayed once on a concurrent duplicate slug (1.10) | FR-TAG-001, FR-CONC-003 |
-| `Transaction/BlogKitTransactionRunner.php` | The bundle's transaction runner on transaction-doctrine: units, replay on duplicate, bound-form flush, publish events after commit (1.10) | FR-CONC-001 |
+| `Transaction/BlogKitTransactionRunner.php` | The bundle's transaction runner on transaction-doctrine: units, replay on duplicate, bound-form flush, publish events after commit (1.10); 2.0 runs on the private entity manager, the host-flush reporter argument is ignored | FR-CONC-001, FR-ORM-006 |
 | `Service/BlogArticleBodyEnhancer.php` | Body post-processing | FR-ART-001 |
 | `Service/BlogPostBodyFormatter.php` | Body formatting | FR-ART-001 |
 | `Service/BlogLocalesLocaleResolver.php` | Request locale vs config | FR-I18N-003 |
@@ -136,19 +137,19 @@ Maps **100%** of the files under `src/` (139 PHP classes + Twig views, translati
 | Source file | Purpose | Requirement IDs |
 | --- | --- | --- |
 | `Security/BlogKitAccessCheckerInterface.php` | Access checker contract | FR-UI-002 |
+| `Security/Internal/ObjectAccessCheckerInterface.php` | 2.0, `@internal`: how controllers and Twig ask the object-level admin access; implemented by the built-in checkers and by the gate over `BlogKitResourcePolicyInterface` (replaces the removed 1.x `BlogKitResourceAccessCheckerInterface`) | FR-UI-003, FR-ARC-001 |
 | `Security/ConfigurableBlogKitAccessChecker.php` | Default role-based checker | FR-UI-002 |
 | `Security/AllowAllBlogKitAccessChecker.php` | Demo allow-all checker | FR-UI-002 |
-| `Security/BlogKitResourceAccessCheckerInterface.php` | Object-level publication/tag/comment access | FR-UI-003 |
 | `Security/AllowAllBlogKitResourceAccessChecker.php` | Default: no extra object filter | FR-UI-003 |
 | `Security/OwnerBlogKitResourceAccessChecker.php` | `createdBy` publication scoping | FR-UI-003 |
 | `Security/BlogKitAccessDenied.php` | Throws AccessDeniedException for object checks | FR-UI-003 |
 | `Support/BlogUserIdResolver.php` | Compare blameable / security users | FR-UI-003 |
 | `Security/BlogProtectionConfig.php` | YAML protection defaults | FR-CMT-004, FR-SEC-005 |
 | `Security/BlogProtection.php` | Strategy resolver (YAML + settings) | FR-CMT-004, FR-SEC-005 |
-| `Security/RateLimit/BlogCommentRateLimiterInterface.php` | Rate-limit contract | FR-CMT-004 |
+| `Security/Internal/CommentRateLimiterInterface.php` | 2.0, `@internal`: how the public comment controller consumes one submission against the active limiter; built-in limiters and the policy gate implement it (replaces the removed 1.x `BlogCommentRateLimiterInterface`) | FR-CMT-004, FR-ARC-001 |
+| `Security/Internal/CommentCaptchaInterface.php` | 2.0, `@internal`: how the public form configures and verifies the active CAPTCHA strategy; built-in strategies and the verifier gate implement it (replaces the removed 1.x `BlogCommentCaptchaStrategyInterface`) | FR-CMT-004, FR-ARC-001 |
 | `Security/RateLimit/NullBlogCommentRateLimiter.php` | `none` / disabled limiter | FR-CMT-004 |
 | `Security/RateLimit/CacheBlogCommentRateLimiter.php` | Cache-backed windows | FR-CMT-004 |
-| `Security/Captcha/BlogCommentCaptchaStrategyInterface.php` | CAPTCHA contract | FR-CMT-004 |
 | `Security/Captcha/NoneCommentCaptchaStrategy.php` | `none` CAPTCHA | FR-CMT-004 |
 | `Security/Captcha/HoneypotCommentCaptchaStrategy.php` | Honeypot field | FR-CMT-004 |
 | `Security/Captcha/RemoteCommentCaptchaStrategy.php` | reCAPTCHA / hCaptcha / Turnstile | FR-CMT-004 |
@@ -165,12 +166,10 @@ Maps **100%** of the files under `src/` (139 PHP classes + Twig views, translati
 
 | Source file | Purpose | Requirement IDs |
 | --- | --- | --- |
-| `Doctrine/BlogKitEntityManagerFactory.php` | Entity manager of the blog entities when `doctrine.entity_manager` is not set | FR-ORM-002 |
 | `Doctrine/ExcludedEntityNamespaceDriver.php` | Maps nothing for the blog namespace on every other entity manager | FR-ORM-002 |
 | `Doctrine/BlogUserReferenceMetadataListener.php` | Maps the user fields as id string columns (`user_reference: id`) | FR-ORM-004 |
 | `Doctrine/BlogUserBlameListener.php` | Stamps `createdBy` / `updatedBy` with the current user reference (`user_reference: id`) | FR-ORM-004 |
 | `Doctrine/Type/BlogUserRefType.php` | Column type of the user id fields (`BlogUserRef`) | FR-ORM-004 |
-| `Doctrine/BlogKitHostFlushReporter.php` | Since 1.12.0 (REQ-ARCH-001 rule 6 deprecation layer): reports your pending changes that a blog write flushes while the bundle writes through your entity manager | FR-ORM-005 |
 | `Doctrine/BlogKitPrivateUserReferenceListener.php` | Since 1.12.0 (`doctrine.private_entity_manager: true` with `doctrine.user_reference: entity`): before a flush, a blog row whose to-one association to one of you | FR-ORM-005 |
 | `User/BlogUsers.php` | How blog rows reference host users (entity relation or id) | FR-ORM-004 |
 | `User/BlogUserDirectoryInterface.php` | Optional host port: label of a stored user id | FR-ORM-004, FR-ARC-001 |
@@ -181,10 +180,10 @@ Maps **100%** of the files under `src/` (139 PHP classes + Twig views, translati
 
 | Source file | Purpose | Requirement IDs |
 | --- | --- | --- |
-| `Port/Ports.php` | Selection rule: a configured service implements the 1.x interface or its twin | FR-ARC-001 |
-| `Port/BlogKitResourcePolicyGate.php` | Adapts a `BlogKitResourcePolicyInterface` twin to the 1.x checker | FR-ARC-001, FR-UI-003 |
-| `Port/BlogCommentCaptchaVerifierGate.php` | Adapts a `BlogCommentCaptchaVerifierInterface` twin to the 1.x strategy | FR-ARC-001, FR-CMT-004 |
-| `Port/BlogCommentRateLimitPolicyGate.php` | Adapts a `BlogCommentRateLimitPolicyInterface` twin (HTTP 429 on deny) | FR-ARC-001, FR-CMT-004 |
+| `Port/Ports.php` | 2.0: each port key takes only the 1.9 interface; `Ports::REMOVED` maps the three removed 1.x interfaces to their replacements; anything else fails when built | FR-ARC-001 |
+| `Port/BlogKitResourcePolicyGate.php` | Adapts a `BlogKitResourcePolicyInterface` to the internal `ObjectAccessCheckerInterface` | FR-ARC-001, FR-UI-003 |
+| `Port/BlogCommentCaptchaVerifierGate.php` | Adapts a `BlogCommentCaptchaVerifierInterface` to the internal `CommentCaptchaInterface` | FR-ARC-001, FR-CMT-004 |
+| `Port/BlogCommentRateLimitPolicyGate.php` | Adapts a `BlogCommentRateLimitPolicyInterface` to the internal `CommentRateLimiterInterface` (HTTP 429 on deny) | FR-ARC-001, FR-CMT-004 |
 | `Port/BlogCommentRequestContexts.php` | Builds the request context of the request-free ports per call | FR-ARC-001, FR-WORKER-006 |
 | `Security/BlogKitResourcePolicyInterface.php` | Object access twin taking snapshots instead of entities | FR-ARC-001, FR-UI-003 |
 | `Security/Captcha/BlogCommentCaptchaVerifierInterface.php` | CAPTCHA twin without the Form builder | FR-ARC-001, FR-CMT-004 |
@@ -207,7 +206,7 @@ Maps **100%** of the files under `src/` (139 PHP classes + Twig views, translati
 
 | Source file | Role | Requirement IDs |
 | --- | --- | --- |
-| `Ui/BlogKitPages.php` | Layout resolution and 1.x layout bridge | FR-UI-004 |
+| `Ui/BlogKitPages.php` | Layout resolution (2.0: UiKit canonical layouts only, the 1.x layout bridge is removed) | FR-UI-004 |
 | `Ui/BlogKitPageFactory.php` | Page view models shared by controllers and the page contract test | FR-UI-004 |
 | `Ui/BlogKitAreaNav.php` | `blog_kit` / `blog_kit_settings` area navs | FR-UI-004 |
 
@@ -225,7 +224,6 @@ Maps **100%** of the files under `src/` (139 PHP classes + Twig views, translati
 | `Resources/views/_stylesheets.html.twig` | Bundle CSS include (asset package) | FR-PUB-001, FR-ADM-001 |
 | `Resources/views/admin/_audit_cells.html.twig` | Created/updated-by audit cells of the admin lists | FR-ADM-001, FR-TWIG-005 |
 | `Resources/views/admin/_form_body.html.twig` | Article form body (FormKit `form_row` loop) | FR-ADM-001, FR-TWIG-005 |
-| `Resources/views/admin/_legacy_layout.html.twig` | 1.x admin layout bridge | FR-ADM-001, FR-TWIG-005, FR-UI-004 |
 | `Resources/views/admin/_modal_form.html.twig` | Inline modal form for articles | FR-ADM-001, FR-TWIG-005 |
 | `Resources/views/admin/comments/index.html.twig` | Comment moderation queue | FR-ADM-001, FR-TWIG-005, FR-CMT-001, FR-CMT-004 |
 | `Resources/views/admin/form.html.twig` | Article create/edit page | FR-ADM-001, FR-TWIG-005 |
@@ -239,11 +237,17 @@ Maps **100%** of the files under `src/` (139 PHP classes + Twig views, translati
 | `Resources/views/public/_aside_show.html.twig` | Article page sidebar | FR-PUB-001, FR-TWIG-005 |
 | `Resources/views/public/_comments.html.twig` | Public comments + comment form | FR-PUB-001, FR-TWIG-005, FR-CMT-001, FR-CMT-004 |
 | `Resources/views/public/_items.html.twig` | Article list items (infinite scroll page) | FR-PUB-001, FR-TWIG-005 |
-| `Resources/views/public/_legacy_layout.html.twig` | 1.x public layout bridge | FR-PUB-001, FR-TWIG-005, FR-UI-004 |
 | `Resources/views/public/_meta.html.twig` | SEO / Open Graph meta of an article | FR-PUB-001, FR-TWIG-005 |
 | `Resources/views/public/_search.html.twig` | Public search / filter form | FR-PUB-001, FR-TWIG-005 |
 | `Resources/views/public/index.html.twig` | Public article index | FR-PUB-001, FR-TWIG-005 |
 | `Resources/views/public/show.html.twig` | Public article page | FR-PUB-001, FR-TWIG-005 |
+| `Resources/translations/validators.de.yaml` | `validators` domain (de): constraint messages of the slug field and the comment privacy checkbox | FR-I18N-004 |
+| `Resources/translations/validators.en.yaml` | `validators` domain (en): constraint messages of the slug field and the comment privacy checkbox | FR-I18N-004 |
+| `Resources/translations/validators.es.yaml` | `validators` domain (es): constraint messages of the slug field and the comment privacy checkbox | FR-I18N-004 |
+| `Resources/translations/validators.fr.yaml` | `validators` domain (fr): constraint messages of the slug field and the comment privacy checkbox | FR-I18N-004 |
+| `Resources/translations/validators.it.yaml` | `validators` domain (it): constraint messages of the slug field and the comment privacy checkbox | FR-I18N-004 |
+| `Resources/translations/validators.nl.yaml` | `validators` domain (nl): constraint messages of the slug field and the comment privacy checkbox | FR-I18N-004 |
+| `Resources/translations/validators.pt.yaml` | `validators` domain (pt): constraint messages of the slug field and the comment privacy checkbox | FR-I18N-004 |
 | `Resources/translations/NowoBlogKitBundle.en.yaml` | Reference catalogue | FR-I18N-002, FR-I18N-003 |
 | `Resources/translations/NowoBlogKitBundle.es.yaml` | Locale parity | FR-I18N-002, FR-I18N-003 |
 | `Resources/translations/NowoBlogKitBundle.it.yaml` | Locale parity | FR-I18N-002, FR-I18N-003 |
@@ -254,7 +258,8 @@ Maps **100%** of the files under `src/` (139 PHP classes + Twig views, translati
 | `Resources/public/blog.css` | Public styles | FR-PUB-001 |
 | `Resources/public/blog-kit.js` | Infinite scroll + collection IIFE | FR-PUB-002, FR-ADM-001 |
 | `Resources/public/blog-infinite-controller.js` | Legacy filename copy of `blog-kit.js` | FR-PUB-002 |
-| `Resources/assets/src/blog-kit.ts` | Vite IIFE entry | FR-PUB-002 |
+| `Resources/assets/src/blog-kit.ts` | Vite IIFE entry; logs the `script loaded` banner | FR-PUB-002, FR-UI-005 |
+| `Resources/assets/src/logger.ts` | Bundle logger: `scriptLoaded()` banner with the build label, quiet switch (`data-nowo-console`, `NOWO_CONSOLE`), debug-gated levels (REQ-ASSETS-005, 2.1.0) | FR-UI-005 |
 | `Resources/assets/src/blog-infinite-controller.ts` | Infinite scroll module | FR-PUB-002 |
 | `Resources/assets/src/blog-form-collection.ts` | CollectionType add/remove | FR-ADM-001 |
 | `Resources/assets/src/blog-captcha.ts` | reCAPTCHA v3 submit hook | FR-CMT-004 |
@@ -279,6 +284,8 @@ Vitest specs live next to the TypeScript sources under `src/`; they are not load
 | `Resources/assets/src/blog-infinite-controller.test.ts` | Vitest: infinite scroll module | FR-TEST-001, FR-PUB-002 |
 | `Resources/assets/src/blog-form-collection.test.ts` | Vitest: CollectionType add/remove | FR-TEST-001, FR-ADM-001 |
 | `Resources/assets/src/blog-captcha.test.ts` | Vitest: reCAPTCHA v3 submit hook | FR-TEST-001, FR-CMT-004 |
+| `Resources/assets/src/logger.test.ts` | Vitest: logger banner, quiet switch, debug gate | FR-TEST-001, FR-UI-005 |
+| `Resources/assets/src/script-loaded.test.ts` | Vitest: the entry logs `script loaded` once, build time injected | FR-TEST-001, FR-UI-005 |
 | `Resources/assets/src/vitest-setup.ts` | Vitest environment setup | FR-TEST-001 |
 
 ## Coverage summary
@@ -286,7 +293,7 @@ Vitest specs live next to the TypeScript sources under `src/`; they are not load
 | Category | Files | Mapped |
 | --- | ---: | ---: |
 | Bundle entry | 1 | 1 |
-| DependencyInjection | 9 | 9 |
+| DependencyInjection | 10 | 10 |
 | Controllers | 9 | 9 |
 | Entity & persistence | 17 | 17 |
 | Domain model & enums | 17 | 17 |
@@ -294,11 +301,11 @@ Vitest specs live next to the TypeScript sources under `src/`; they are not load
 | HTTP, events, command | 7 | 7 |
 | Forms | 15 | 15 |
 | Security | 24 | 24 |
-| Doctrine — entity manager and user references | 11 | 11 |
+| Doctrine — entity manager and user references | 9 | 9 |
 | Host ports — 1.9 framework-free twins | 14 | 14 |
 | Worker boundaries | 2 | 2 |
 | UiKit pages | 3 | 3 |
 | Twig | 1 | 1 |
-| Non-PHP production assets (documented) | 47 | 47 |
-| Co-located Vitest sources (`FR-TEST-*`) | 5 | 5 |
-| **Total production files (`git ls-files src`)** | **191** | **191** |
+| Non-PHP production assets (documented) | 53 | 53 |
+| Co-located Vitest sources (`FR-TEST-*`) | 7 | 7 |
+| **Total production files (`git ls-files src`)** | **198** | **198** |
