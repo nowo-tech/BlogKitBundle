@@ -19,7 +19,6 @@ use Nowo\BlogKitBundle\Tests\Integration\Worker\Entity\HostNote;
 use Nowo\BlogKitBundle\Tests\Support\CollectsDeprecations;
 use Nowo\BlogKitBundle\Tests\Support\MappedTestUser;
 use Nowo\BlogKitBundle\Transaction\BlogKitTransactionRunner;
-use Nowo\BlogKitBundle\Worker\UnitOfWorkBoundaries;
 use Nowo\TransactionDoctrine\PrivateManager\PrivateEntityManager;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
@@ -30,6 +29,9 @@ use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
 use Symfony\Component\HttpKernel\TerminableInterface;
+use Symfony\Component\Messenger\Envelope;
+use Symfony\Component\Messenger\Event\WorkerMessageHandledEvent;
+use Symfony\Component\Messenger\Event\WorkerMessageReceivedEvent;
 
 use function array_slice;
 use function array_unique;
@@ -188,10 +190,10 @@ final class PrivateEntityManagerKernelTest extends TestCase
 
         $dispatcher = $container->get('event_dispatcher');
         self::assertInstanceOf(EventDispatcherInterface::class, $dispatcher);
-        $dispatcher->dispatch(new stdClass(), UnitOfWorkBoundaries::MESSENGER_WORKER_MESSAGE_RECEIVED);
+        $dispatcher->dispatch(new WorkerMessageReceivedEvent(new Envelope(new stdClass()), 'async'));
         $private->getRepository(BlogArticle::class)->findAll();
         self::assertTrue($private->isCreated());
-        $dispatcher->dispatch(new stdClass(), UnitOfWorkBoundaries::MESSENGER_WORKER_MESSAGE_HANDLED);
+        $dispatcher->dispatch(new WorkerMessageHandledEvent(new Envelope(new stdClass()), 'async'));
         self::assertFalse($private->isCreated(), 'the message boundary drops the private manager');
     }
 

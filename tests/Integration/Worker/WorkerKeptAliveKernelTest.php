@@ -16,7 +16,6 @@ use Nowo\BlogKitBundle\Tests\Integration\Worker\Entity\HostNote;
 use Nowo\BlogKitBundle\Tests\Support\MappedTestUser;
 use Nowo\BlogKitBundle\ValueObject\BlogUserRef;
 use Nowo\BlogKitBundle\Worker\BlogKitOwnEntityManagerSubscriber;
-use Nowo\BlogKitBundle\Worker\UnitOfWorkBoundaries;
 use PHPUnit\Framework\Attributes\IgnoreDeprecations;
 use PHPUnit\Framework\TestCase;
 use stdClass;
@@ -26,6 +25,9 @@ use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
 use Symfony\Component\HttpKernel\TerminableInterface;
+use Symfony\Component\Messenger\Envelope;
+use Symfony\Component\Messenger\Event\WorkerMessageHandledEvent;
+use Symfony\Component\Messenger\Event\WorkerMessageReceivedEvent;
 
 use function array_slice;
 use function count;
@@ -111,10 +113,10 @@ final class WorkerKeptAliveKernelTest extends TestCase
 
         $dispatcher = $container->get('event_dispatcher');
         self::assertInstanceOf(EventDispatcherInterface::class, $dispatcher);
-        $dispatcher->dispatch(new stdClass(), UnitOfWorkBoundaries::MESSENGER_WORKER_MESSAGE_RECEIVED);
+        $dispatcher->dispatch(new WorkerMessageReceivedEvent(new Envelope(new stdClass()), 'async'));
         $blog->getRepository(BlogArticle::class)->findAll();
         self::assertGreaterThan(0, $blog->getUnitOfWork()->size());
-        $dispatcher->dispatch(new stdClass(), UnitOfWorkBoundaries::MESSENGER_WORKER_MESSAGE_HANDLED);
+        $dispatcher->dispatch(new WorkerMessageHandledEvent(new Envelope(new stdClass()), 'async'));
         self::assertSame(0, $blog->getUnitOfWork()->size(), 'the message boundary clears the own manager');
     }
 
